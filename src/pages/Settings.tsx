@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { LogOut } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
 
 const Settings = () => {
   const { signOut } = useAuth();
@@ -15,6 +15,18 @@ const Settings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [applicationUpdates, setApplicationUpdates] = useState(true);
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  const toggleTheme = (dark: boolean) => {
+    setIsDark(dark);
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
@@ -65,6 +77,23 @@ const Settings = () => {
                 <p className="text-xs text-muted-foreground">Notifications when your applications are reviewed.</p>
               </div>
               <Switch checked={applicationUpdates} onCheckedChange={setApplicationUpdates} />
+            </div>
+          </div>
+        </section>
+
+        {/* Appearance */}
+        <section className="mb-8">
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Appearance</h2>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isDark ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
+                <div>
+                  <p className="text-sm font-medium text-foreground">Dark mode</p>
+                  <p className="text-xs text-muted-foreground">Switch between light and dark theme.</p>
+                </div>
+              </div>
+              <Switch checked={isDark} onCheckedChange={toggleTheme} />
             </div>
           </div>
         </section>
