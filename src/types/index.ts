@@ -123,6 +123,18 @@ export interface ProjectResource {
   created_at: string;
 }
 
+// Group join requests
+export interface GroupJoinRequest {
+  id: number;
+  group_id: number;
+  user_id: number;
+  message: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  reviewed_by?: number;
+  reviewed_at?: string;
+  created_at: string;
+}
+
 // Chat types
 export interface ChatRoom {
   id: number;
