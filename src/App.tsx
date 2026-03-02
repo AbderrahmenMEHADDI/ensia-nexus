@@ -13,6 +13,7 @@ import LabExplorer from "./pages/LabExplorer";
 import ProjectBoard from "./pages/ProjectBoard";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,7 @@ const AppRoutes = () => (
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
