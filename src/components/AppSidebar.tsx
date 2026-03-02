@@ -1,0 +1,113 @@
+import { Link, useLocation } from 'react-router-dom';
+import { NavLink } from '@/components/NavLink';
+import { RoleBadge } from '@/components/Badges';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  LayoutDashboard,
+  FlaskConical,
+  Kanban,
+  FileText,
+  User,
+  Shield,
+  LogOut,
+} from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+
+const navItems = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/labs', label: 'Labs & Groups', icon: FlaskConical },
+  { path: '/projects/1', label: 'Project Board', icon: Kanban },
+  { path: '/applications', label: 'Applications', icon: FileText },
+  { path: '/profile', label: 'Profile', icon: User },
+  { path: '/admin', label: 'Admin', icon: Shield },
+];
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const collapsed = state === 'collapsed';
+  const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarContent>
+        {/* Logo */}
+        <div className="p-4 flex items-center gap-3">
+          <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
+            <div className="h-8 w-8 shrink-0 rounded-lg bg-primary flex items-center justify-center">
+              <FlaskConical className="h-4 w-4 text-primary-foreground" />
+            </div>
+            {!collapsed && (
+              <span className="font-serif text-sm font-bold text-foreground truncate">
+                ENSIA Research Hub
+              </span>
+            )}
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.path}
+                      end={item.path === '/dashboard'}
+                      className="hover:bg-sidebar-accent"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.label}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      {/* Footer with user info */}
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        {user && (
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground">
+              {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{user.full_name}</p>
+                <RoleBadge role={user.role} />
+              </div>
+            )}
+            {!collapsed && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={signOut}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

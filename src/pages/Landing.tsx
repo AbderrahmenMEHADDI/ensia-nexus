@@ -39,16 +39,16 @@ const Landing = () => {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                to="/labs"
+                to="/signin"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
               >
-                Explore Labs <ArrowRight className="h-4 w-4" />
+                Sign In <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/dashboard"
+                to="/signup"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium text-sm hover:bg-secondary transition-colors"
               >
-                Go to Dashboard
+                Create Account
               </Link>
             </div>
           </motion.div>
