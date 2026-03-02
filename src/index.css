@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Sora:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -73,7 +73,70 @@
     --status-done: 152 55% 40%;
     --status-cancelled: 20 5% 40%;
 
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Sora', system-ui, sans-serif;
+  }
+
+  .dark {
+    --background: 20 10% 10%;
+    --foreground: 30 15% 90%;
+
+    --card: 20 10% 13%;
+    --card-foreground: 30 15% 90%;
+
+    --popover: 20 10% 13%;
+    --popover-foreground: 30 15% 90%;
+
+    --primary: 24 70% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 20 8% 18%;
+    --secondary-foreground: 30 10% 75%;
+
+    --muted: 20 6% 16%;
+    --muted-foreground: 20 8% 55%;
+
+    --accent: 20 8% 18%;
+    --accent-foreground: 30 15% 90%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 8% 20%;
+    --input: 20 8% 20%;
+    --ring: 24 70% 50%;
+
+    --sidebar-background: 20 10% 11%;
+    --sidebar-foreground: 20 8% 60%;
+    --sidebar-primary: 24 70% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 20 8% 16%;
+    --sidebar-accent-foreground: 30 15% 90%;
+    --sidebar-border: 20 8% 18%;
+    --sidebar-ring: 24 70% 50%;
+
+    --success: 152 50% 45%;
+    --success-foreground: 152 60% 95%;
+    --warning: 35 85% 55%;
+    --warning-foreground: 35 90% 10%;
+    --info: 210 55% 55%;
+    --info-foreground: 210 70% 95%;
+
+    --priority-low: 152 50% 45%;
+    --priority-medium: 35 75% 55%;
+    --priority-high: 20 80% 55%;
+    --priority-urgent: 0 65% 55%;
+
+    --role-student: 210 55% 55%;
+    --role-mca: 270 45% 55%;
+    --role-professor: 24 65% 50%;
+    --role-doctor: 152 50% 45%;
+    --role-admin: 0 60% 55%;
+
+    --status-todo: 20 8% 55%;
+    --status-in-progress: 210 55% 55%;
+    --status-blocked: 0 60% 55%;
+    --status-done: 152 50% 45%;
+    --status-cancelled: 20 5% 45%;
   }
 }
 
@@ -85,11 +148,6 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "liga" 1, "calt" 1;
-  }
-
-  h1, h2, h3, h4 {
-    font-family: 'Sora', 'Inter', sans-serif;
-    font-weight: 600;
   }
 
   code, pre, .font-mono {
