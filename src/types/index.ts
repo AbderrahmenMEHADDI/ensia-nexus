@@ -122,3 +122,20 @@ export interface ProjectResource {
   created_by: number;
   created_at: string;
 }
+
+// Chat types
+export interface ChatRoom {
+  id: number;
+  name: string;
+  type: 'TEAM' | 'PROJECT';
+  project_id?: number;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  room_id: number;
+  sender_user_id: number;
+  content: string;
+  created_at: string;
+}
