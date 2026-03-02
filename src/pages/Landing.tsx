@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { projects, getUserById, getGroupById, getLabById, researchLabs, researchGroups, tasks } from '@/data/mockData';
 import { ArrowRight, FlaskConical, Users, FolderOpen, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Landing = () => {
   const publicProjects = projects.filter(p => p.visibility === 'PUBLIC');
@@ -15,40 +16,34 @@ const Landing = () => {
   ];
 
   return (
-    <div>
+    <div className="min-h-screen bg-background">
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent" />
-        <div className="container relative py-24 md:py-36">
+      <section className="border-b border-border">
+        <div className="container py-24 md:py-36">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="max-w-3xl"
+            transition={{ duration: 0.5 }}
+            className="max-w-2xl"
           >
-            <span className="inline-block mb-4 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-mono font-medium tracking-wider uppercase">
+            <span className="inline-block mb-4 px-3 py-1 rounded-full border border-border bg-muted text-muted-foreground text-xs font-medium tracking-wide">
               École Nationale Supérieure d'Intelligence Artificielle
             </span>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-foreground leading-[1.1] mb-6">
-              ENSIA<br />
-              <span className="text-gradient-amber">Research Hub</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] mb-6">
+              ENSIA Research Hub
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8 leading-relaxed">
-              A collaborative platform for managing research labs, groups, and projects. 
+            <p className="text-lg text-muted-foreground max-w-xl mb-8 leading-relaxed">
+              A collaborative platform for managing research labs, groups, and projects.
               Explore cutting-edge AI, cybersecurity, and data science research.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Link
-                to="/signin"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors"
-              >
-                Sign In <ArrowRight className="h-4 w-4" />
+            <div className="flex flex-wrap gap-3">
+              <Link to="/signin">
+                <Button size="lg" className="gap-2">
+                  Sign In <ArrowRight className="h-4 w-4" />
+                </Button>
               </Link>
-              <Link
-                to="/signup"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium text-sm hover:bg-secondary transition-colors"
-              >
-                Create Account
+              <Link to="/signup">
+                <Button variant="outline" size="lg">Create Account</Button>
               </Link>
             </div>
           </motion.div>
@@ -61,14 +56,14 @@ const Landing = () => {
           {stats.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
-              className="flex flex-col items-center gap-2 py-8 border-r border-border last:border-r-0"
+              transition={{ delay: 0.2 + i * 0.08, duration: 0.4 }}
+              className="flex flex-col items-center gap-1.5 py-8 border-r border-border last:border-r-0"
             >
-              <stat.icon className="h-5 w-5 text-primary mb-1" />
-              <span className="text-3xl font-serif font-bold text-foreground">{stat.value}</span>
-              <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{stat.label}</span>
+              <stat.icon className="h-4 w-4 text-primary mb-1" />
+              <span className="text-2xl font-display font-bold text-foreground">{stat.value}</span>
+              <span className="text-xs text-muted-foreground">{stat.label}</span>
             </motion.div>
           ))}
         </div>
@@ -76,23 +71,16 @@ const Landing = () => {
 
       {/* Featured Projects */}
       <section className="container py-20">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          <div className="flex items-end justify-between mb-10">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
+          <div className="flex items-end justify-between mb-8">
             <div>
-              <span className="text-xs font-mono text-primary uppercase tracking-wider">Featured Work</span>
-              <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-2">Public Projects</h2>
+              <h2 className="text-2xl font-display font-semibold text-foreground">Public Projects</h2>
+              <p className="text-sm text-muted-foreground mt-1">Featured research from our labs.</p>
             </div>
-            <Link to="/labs" className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {publicProjects.map((project, i) => {
+          <div className="grid md:grid-cols-2 gap-4">
+            {publicProjects.map((project) => {
               const group = getGroupById(project.group_id);
               const lab = group ? getLabById(group.lab_id) : null;
               const creator = getUserById(project.created_by);
@@ -100,33 +88,19 @@ const Landing = () => {
               const doneTasks = projectTasks.filter(t => t.status === 'DONE').length;
 
               return (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + i * 0.1, duration: 0.5 }}
-                >
-                  <Link
-                    to={`/projects/${project.id}`}
-                    className="block p-6 rounded-xl border border-border bg-card hover:border-primary/30 hover:bg-card/80 transition-all group"
-                  >
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-mono text-muted-foreground">{lab?.name.split('—')[0]?.trim()}</span>
-                      <span className="text-muted-foreground/30">·</span>
-                      <span className="text-xs font-mono text-muted-foreground">{group?.name}</span>
-                    </div>
-                    <h3 className="text-xl font-serif font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                      {project.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{project.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-muted-foreground">by {creator?.full_name}</span>
-                      <span className="text-xs font-mono text-primary">
-                        {doneTasks}/{projectTasks.length} tasks done
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
+                <div key={project.id} className="p-5 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                    <span>{lab?.name.split('—')[0]?.trim()}</span>
+                    <span>·</span>
+                    <span>{group?.name}</span>
+                  </div>
+                  <h3 className="text-base font-display font-semibold text-foreground mb-1">{project.title}</h3>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{project.description}</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>by {creator?.full_name}</span>
+                    <span className="text-primary">{doneTasks}/{projectTasks.length} done</span>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -134,45 +108,25 @@ const Landing = () => {
       </section>
 
       {/* Labs */}
-      <section className="border-t border-border bg-secondary/30">
+      <section className="border-t border-border bg-muted/30">
         <div className="container py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Infrastructure</span>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-2 mb-10">Research Labs</h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {researchLabs.map((lab, i) => {
+          <h2 className="text-2xl font-display font-semibold text-foreground mb-8">Research Labs</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            {researchLabs.map((lab) => {
               const head = getUserById(lab.head_teacher_id);
               const groups = researchGroups.filter(g => g.lab_id === lab.id);
               return (
-                <motion.div
-                  key={lab.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                >
-                  <Link
-                    to="/labs"
-                    className="block p-6 rounded-xl border border-border bg-card hover:border-primary/30 transition-all h-full"
-                  >
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                      <FlaskConical className="h-5 w-5 text-primary" />
-                    </div>
-                    <h3 className="font-serif font-semibold text-foreground mb-2">{lab.name.split('—')[0]?.trim()}</h3>
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{lab.description}</p>
-                    <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-                      <span>Head: {head?.full_name}</span>
-                      <span>{groups.length} groups</span>
-                    </div>
-                  </Link>
-                </motion.div>
+                <div key={lab.id} className="p-5 rounded-xl border border-border bg-card">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                    <FlaskConical className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-1 text-sm">{lab.name.split('—')[0]?.trim()}</h3>
+                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{lab.description}</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Head: {head?.full_name}</span>
+                    <span>{groups.length} groups</span>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -180,13 +134,13 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-10">
+      <footer className="border-t border-border py-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
               <FlaskConical className="h-3 w-3 text-primary-foreground" />
             </div>
-            <span className="text-sm font-mono text-muted-foreground">ENSIA Research Hub © 2026</span>
+            <span className="text-sm text-muted-foreground">ENSIA Research Hub © 2026</span>
           </div>
           <p className="text-xs text-muted-foreground">
             Built for advancing AI, cybersecurity & data science research.

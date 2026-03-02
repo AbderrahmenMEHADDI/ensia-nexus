@@ -23,24 +23,24 @@ const SignUp = () => {
   }, [isAuthenticated, navigate]);
 
   return (
-    <div className="min-h-screen bg-background grain flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center mb-4">
-            <FlaskConical className="h-7 w-7 text-primary-foreground" />
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
+            <FlaskConical className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
-          <p className="text-muted-foreground mt-1">Join ENSIA Research Hub</p>
+          <h1 className="text-xl font-display font-semibold text-foreground">Create your account</h1>
+          <p className="text-sm text-muted-foreground mt-1">Join ENSIA Research Hub</p>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-8">
+        <div className="rounded-xl border border-border bg-card p-6">
           <Button
             variant="outline"
-            className="w-full h-12 text-base border-border hover:bg-secondary"
+            className="w-full h-11"
             onClick={signInWithGoogle}
             disabled={isLoading}
           >
@@ -52,7 +52,7 @@ const SignUp = () => {
             Sign up with Google
           </Button>
 
-          <p className="text-xs text-muted-foreground text-center mt-6">
+          <p className="text-xs text-muted-foreground text-center mt-5">
             Already have an account?{' '}
             <a href="/signin" className="text-primary hover:underline">Sign in</a>
           </p>

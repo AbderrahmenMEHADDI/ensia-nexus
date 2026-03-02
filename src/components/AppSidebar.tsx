@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { NavLink } from '@/components/NavLink';
 import { RoleBadge } from '@/components/Badges';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,7 @@ import {
   FileText,
   User,
   Shield,
+  Settings,
   LogOut,
 } from 'lucide-react';
 import {
@@ -16,7 +17,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -37,7 +37,6 @@ const navItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const location = useLocation();
   const { user, signOut } = useAuth();
 
   return (
@@ -50,7 +49,7 @@ export function AppSidebar() {
               <FlaskConical className="h-4 w-4 text-primary-foreground" />
             </div>
             {!collapsed && (
-              <span className="font-serif text-sm font-bold text-foreground truncate">
+              <span className="text-sm font-display font-semibold text-foreground truncate">
                 ENSIA Research Hub
               </span>
             )}
@@ -59,7 +58,6 @@ export function AppSidebar() {
 
         {/* Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -82,16 +80,28 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer with user info */}
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      {/* Footer */}
+      <SidebarFooter className="border-t border-sidebar-border p-3 space-y-2">
+        {!collapsed && (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <NavLink to="/settings" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
         {user && (
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground">
+            <div className="h-8 w-8 shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
               {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{user.full_name}</p>
+                <p className="text-sm font-medium text-foreground truncate">{user.full_name}</p>
                 <RoleBadge role={user.role} />
               </div>
             )}
