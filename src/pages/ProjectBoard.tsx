@@ -1,10 +1,15 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { getProjectById, getTasksByProject, getUserById, getParticipantsByProject, getResourcesByProject, getGroupById, getLabById } from '@/data/mockData';
-import { RoleBadge, PriorityBadge, StatusBadge, getPriorityBorderClass } from '@/components/Badges';
-import type { Task, TaskStatus } from '@/types';
-import { Calendar, User, ExternalLink, GitBranch, FileText, Database, Plus, GripVertical } from 'lucide-react';
+import { projects, getTasksByProject, getUserById, getParticipantsByProject, getResourcesByProject, getGroupById, getLabById } from '@/data/mockData';
+import { PriorityBadge, getPriorityBorderClass } from '@/components/Badges';
+import type { Task, TaskStatus, TaskPriority } from '@/types';
+import { Calendar, ExternalLink, GitBranch, FileText, Database, Plus, GripVertical } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 const statusColumns: { status: TaskStatus; label: string; color: string }[] = [
   { status: 'TODO', label: 'To Do', color: 'bg-status-todo' },
@@ -21,12 +26,28 @@ const resourceIcons: Record<string, React.ElementType> = {
 };
 
 const ProjectBoard = () => {
-  const { projectId } = useParams();
-  const project = getProjectById(Number(projectId) || 1);
-  
-  const [localTasks, setLocalTasks] = useState<Task[]>(() => 
-    getTasksByProject(project?.id || 1)
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(projects[0]?.id || 1);
+  const project = projects.find(p => p.id === selectedProjectId);
+
+  const [localTasks, setLocalTasks] = useState<Task[]>(() =>
+    getTasksByProject(selectedProjectId)
   );
+
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
+
+  // Create task dialog
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createStatus, setCreateStatus] = useState<TaskStatus>('TODO');
+  const [newTitle, setNewTitle] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+  const [newPriority, setNewPriority] = useState<TaskPriority>('MEDIUM');
+
+  const handleProjectChange = (val: string) => {
+    const id = Number(val);
+    setSelectedProjectId(id);
+    setLocalTasks(getTasksByProject(id));
+  };
 
   if (!project) {
     return <div className="container py-10 text-center text-muted-foreground">Project not found.</div>;
@@ -37,10 +58,63 @@ const ProjectBoard = () => {
   const participants = getParticipantsByProject(project.id);
   const resources = getResourcesByProject(project.id);
 
-  const moveTask = (taskId: number, newStatus: TaskStatus) => {
-    setLocalTasks(prev =>
-      prev.map(t => t.id === taskId ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t)
-    );
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent, taskId: number) => {
+    setDraggedTaskId(taskId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(taskId));
+  };
+
+  const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverColumn(status);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
+    e.preventDefault();
+    const taskId = Number(e.dataTransfer.getData('text/plain'));
+    if (taskId) {
+      setLocalTasks(prev =>
+        prev.map(t => t.id === taskId ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t)
+      );
+    }
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOverColumn(null);
+  };
+
+  const handleCreateTask = () => {
+    if (!newTitle.trim()) return;
+    const newTask: Task = {
+      id: Date.now(),
+      project_id: selectedProjectId,
+      title: newTitle.trim(),
+      description: newDesc.trim(),
+      status: createStatus,
+      priority: newPriority,
+      created_by: 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setLocalTasks(prev => [...prev, newTask]);
+    setNewTitle('');
+    setNewDesc('');
+    setNewPriority('MEDIUM');
+    setCreateOpen(false);
+  };
+
+  const openCreateForColumn = (status: TaskStatus) => {
+    setCreateStatus(status);
+    setCreateOpen(true);
   };
 
   return (
@@ -53,27 +127,39 @@ const ProjectBoard = () => {
             <span>/</span>
             <span>{group?.name}</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground">{project.title}</h1>
-          <p className="text-muted-foreground mt-2 max-w-2xl">{project.description}</p>
-          
-          <div className="flex flex-wrap items-center gap-4 mt-4">
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-3">
+            <Select value={String(selectedProjectId)} onValueChange={handleProjectChange}>
+              <SelectTrigger className="w-full sm:w-[340px] h-auto py-2">
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map(p => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <span className={`text-xs font-mono px-2 py-0.5 rounded ${project.visibility === 'PUBLIC' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
               {project.visibility}
             </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono text-muted-foreground">Team:</span>
-              {participants.map(p => {
-                const user = getUserById(p.user_id);
-                if (!user) return null;
-                return (
-                  <div key={p.user_id} className="flex items-center gap-1">
-                    <div className="h-6 w-6 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground">
-                      {user.full_name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          </div>
+
+          <p className="text-muted-foreground text-sm max-w-2xl mb-3">{project.description}</p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-muted-foreground">Team:</span>
+            {participants.map(p => {
+              const user = getUserById(p.user_id);
+              if (!user) return null;
+              return (
+                <div key={p.user_id} className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground" title={user.full_name}>
+                  {user.full_name.split(' ').map(n => n[0]).join('')}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -81,8 +167,15 @@ const ProjectBoard = () => {
         <div className="grid md:grid-cols-4 gap-4 mb-10">
           {statusColumns.map(col => {
             const columnTasks = localTasks.filter(t => t.status === col.status);
+            const isOver = dragOverColumn === col.status;
             return (
-              <div key={col.status} className="rounded-xl border border-border bg-card/50 p-3">
+              <div
+                key={col.status}
+                className={`rounded-xl border border-border bg-card/50 p-3 transition-colors min-h-[200px] ${isOver ? 'border-primary/40 bg-primary/5' : ''}`}
+                onDragOver={(e) => handleDragOver(e, col.status)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, col.status)}
+              >
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className={`h-2.5 w-2.5 rounded-full ${col.color}`} />
                   <span className="text-sm font-medium text-foreground">{col.label}</span>
@@ -92,13 +185,17 @@ const ProjectBoard = () => {
                 <div className="space-y-2">
                   {columnTasks.map((task, i) => {
                     const assignee = task.assignee_user_id ? getUserById(task.assignee_user_id) : null;
+                    const isDragging = draggedTaskId === task.id;
                     return (
                       <motion.div
                         key={task.id}
                         initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className={`p-3 rounded-lg border border-border bg-card border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-pointer hover:border-primary/30 transition-colors`}
+                        animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        draggable
+                        onDragStart={(e: any) => handleDragStart(e, task.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`p-3 rounded-lg border border-border bg-card border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <span className="text-sm font-medium text-foreground leading-tight">{task.title}</span>
@@ -108,10 +205,8 @@ const ProjectBoard = () => {
                         <div className="flex items-center justify-between">
                           <PriorityBadge priority={task.priority} />
                           {assignee && (
-                            <div className="flex items-center gap-1" title={assignee.full_name}>
-                              <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-medium text-secondary-foreground">
-                                {assignee.full_name.split(' ').map(n => n[0]).join('')}
-                              </div>
+                            <div className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-medium text-secondary-foreground" title={assignee.full_name}>
+                              {assignee.full_name.split(' ').map(n => n[0]).join('')}
                             </div>
                           )}
                         </div>
@@ -121,23 +216,19 @@ const ProjectBoard = () => {
                             {task.due_date}
                           </div>
                         )}
-                        
-                        {/* Quick status change */}
-                        <div className="hidden group-hover:flex gap-1 mt-2 pt-2 border-t border-border">
-                          {statusColumns.filter(s => s.status !== col.status).map(s => (
-                            <button
-                              key={s.status}
-                              onClick={() => moveTask(task.id, s.status)}
-                              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground hover:bg-primary/20 hover:text-primary transition-colors"
-                            >
-                              → {s.label}
-                            </button>
-                          ))}
-                        </div>
                       </motion.div>
                     );
                   })}
                 </div>
+
+                {/* Add task button per column */}
+                <button
+                  onClick={() => openCreateForColumn(col.status)}
+                  className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border text-xs font-mono text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add task
+                </button>
               </div>
             );
           })}
@@ -174,6 +265,70 @@ const ProjectBoard = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Create Task Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Task</DialogTitle>
+            <DialogDescription>Add a new task to the board.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="task-title">Title</Label>
+              <Input
+                id="task-title"
+                placeholder="Task title..."
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-desc">Description</Label>
+              <Textarea
+                id="task-desc"
+                placeholder="Describe the task..."
+                value={newDesc}
+                onChange={e => setNewDesc(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={createStatus} onValueChange={(v) => setCreateStatus(v as TaskStatus)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusColumns.map(s => (
+                      <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={newPriority} onValueChange={(v) => setNewPriority(v as TaskPriority)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">Low</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="URGENT">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateTask} disabled={!newTitle.trim()}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
