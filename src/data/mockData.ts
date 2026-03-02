@@ -1,4 +1,4 @@
-import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage } from '@/types';
+import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage, GroupJoinRequest } from '@/types';
 
 export const users: User[] = [
   { id: 1, full_name: 'Dr. Amina Belkacem', email: 'a.belkacem@ensia.edu.dz', role: 'DOCTOR', created_at: '2023-01-15' },
@@ -134,6 +134,15 @@ export const getApplicationsByProject = (projectId: number) => projectApplicatio
 
 // Current user simulation
 export const currentUser = users[0]; // Dr. Amina Belkacem (DOCTOR)
+
+// Group join requests
+export const groupJoinRequests: GroupJoinRequest[] = [
+  { id: 1, group_id: 1, user_id: 9, message: 'I want to contribute to Arabic NLP research. I have experience with transformer models.', status: 'PENDING', created_at: '2024-12-01' },
+  { id: 2, group_id: 2, user_id: 4, message: 'Interested in medical imaging. I have completed a course on computer vision.', status: 'PENDING', created_at: '2024-12-05' },
+  { id: 3, group_id: 3, user_id: 7, message: 'I want to explore blockchain and cryptography applications.', status: 'ACCEPTED', reviewed_by: 10, reviewed_at: '2024-12-10', created_at: '2024-12-02' },
+];
+
+export const getJoinRequestsByGroup = (groupId: number) => groupJoinRequests.filter(r => r.group_id === groupId);
 
 // Chat rooms
 export const chatRooms: ChatRoom[] = [
