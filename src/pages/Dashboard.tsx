@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
-import { currentUser, projects, tasks, projectApplications, researchGroups, getUserById, getGroupById, projectParticipants } from '@/data/mockData';
+import { currentUser, projects, tasks, projectApplications, researchGroups, researchLabs, getUserById, getGroupById, getLabById, groupMembers, projectParticipants } from '@/data/mockData';
 import { RoleBadge, StatusBadge, PriorityBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Calendar } from 'lucide-react';
+import { ArrowRight, Calendar, Users } from 'lucide-react';
 
 const Dashboard = () => {
   const myParticipations = projectParticipants.filter(p => p.user_id === currentUser.id);
@@ -14,6 +14,10 @@ const Dashboard = () => {
   const pendingApplications = projectApplications.filter(a => a.status === 'PENDING');
   const pendingGroups = researchGroups.filter(g => !g.is_validated);
   const isTeacherOrAdmin = ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(currentUser.role);
+
+  // Groups the user belongs to
+  const myGroupIds = groupMembers.filter(m => m.user_id === currentUser.id && m.is_active).map(m => m.group_id);
+  const myGroups = researchGroups.filter(g => myGroupIds.includes(g.id));
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -42,6 +46,33 @@ const Dashboard = () => {
               </Link>
             )}
           </div>
+        )}
+
+        {/* My Groups */}
+        {myGroups.length > 0 && (
+          <section className="mb-10">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">My Groups</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {myGroups.map(group => {
+                const lab = getLabById(group.lab_id);
+                const leader = getUserById(group.leader_user_id);
+                const memberCount = groupMembers.filter(m => m.group_id === group.id && m.is_active).length;
+                const groupProjects = projects.filter(p => p.group_id === group.id);
+
+                return (
+                  <div key={group.id} className="p-4 rounded-xl border border-border bg-card">
+                    <div className="text-xs text-muted-foreground mb-1">{lab?.name.split('—')[0]?.trim()}</div>
+                    <h3 className="text-sm font-medium text-foreground mb-1">{group.name}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{group.description}</p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {memberCount} members</span>
+                      <span>{groupProjects.length} project(s)</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* My Projects */}

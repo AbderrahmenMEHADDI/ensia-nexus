@@ -1,4 +1,4 @@
-import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource } from '@/types';
+import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage } from '@/types';
 
 export const users: User[] = [
   { id: 1, full_name: 'Dr. Amina Belkacem', email: 'a.belkacem@ensia.edu.dz', role: 'DOCTOR', created_at: '2023-01-15' },
@@ -134,3 +134,37 @@ export const getApplicationsByProject = (projectId: number) => projectApplicatio
 
 // Current user simulation
 export const currentUser = users[0]; // Dr. Amina Belkacem (DOCTOR)
+
+// Chat rooms
+export const chatRooms: ChatRoom[] = [
+  { id: 1, name: 'General', type: 'TEAM', created_at: '2024-01-01' },
+  { id: 2, name: 'Announcements', type: 'TEAM', created_at: '2024-01-01' },
+  { id: 3, name: 'Arabic Sentiment — General', type: 'PROJECT', project_id: 1, created_at: '2024-01-20' },
+  { id: 4, name: 'Arabic Sentiment — Data Pipeline', type: 'PROJECT', project_id: 1, created_at: '2024-02-01' },
+  { id: 5, name: 'Retinal Detection — General', type: 'PROJECT', project_id: 2, created_at: '2024-02-01' },
+  { id: 6, name: 'ZK Identity — General', type: 'PROJECT', project_id: 3, created_at: '2024-03-01' },
+  { id: 7, name: 'Traffic RL — General', type: 'PROJECT', project_id: 4, created_at: '2024-04-01' },
+  { id: 8, name: 'Paper Summarization — General', type: 'PROJECT', project_id: 5, created_at: '2024-06-01' },
+];
+
+export const chatMessages: ChatMessage[] = [
+  { id: 1, room_id: 1, sender_user_id: 5, content: 'Welcome to the ENSIA Research Hub! Please use this channel for general discussions.', created_at: '2024-01-01T09:00:00' },
+  { id: 2, room_id: 1, sender_user_id: 1, content: 'Thanks! Excited to collaborate here.', created_at: '2024-01-01T09:15:00' },
+  { id: 3, room_id: 1, sender_user_id: 3, content: 'Hello everyone! Looking forward to working on the NLP project.', created_at: '2024-01-02T10:00:00' },
+  { id: 4, room_id: 1, sender_user_id: 2, content: 'Great to see the platform up and running.', created_at: '2024-01-02T14:30:00' },
+  { id: 5, room_id: 2, sender_user_id: 5, content: 'Reminder: All group proposals must be submitted by end of month.', created_at: '2024-01-15T08:00:00' },
+  { id: 6, room_id: 3, sender_user_id: 1, content: 'Let\'s discuss the data collection strategy for the Twitter scraping.', created_at: '2024-01-20T11:00:00' },
+  { id: 7, room_id: 3, sender_user_id: 3, content: 'I can handle the snscrape setup. Should we filter by specific hashtags?', created_at: '2024-01-20T11:15:00' },
+  { id: 8, room_id: 3, sender_user_id: 1, content: 'Yes, focus on Algerian dialect hashtags. I\'ll share a list.', created_at: '2024-01-20T11:20:00' },
+  { id: 9, room_id: 3, sender_user_id: 4, content: 'I can help with annotation once we have the dataset.', created_at: '2024-01-20T14:00:00' },
+  { id: 10, room_id: 4, sender_user_id: 3, content: 'Data pipeline v1 is ready. Processing ~2k tweets/min.', created_at: '2024-02-10T16:00:00' },
+  { id: 11, room_id: 5, sender_user_id: 6, content: 'APTOS dataset downloaded. Starting preprocessing tomorrow.', created_at: '2024-02-05T17:00:00' },
+  { id: 12, room_id: 5, sender_user_id: 7, content: 'Great! I\'ll set up the augmentation pipeline.', created_at: '2024-02-05T17:30:00' },
+  { id: 13, room_id: 7, sender_user_id: 2, content: 'SUMO simulator is configured. Let\'s start with a simple intersection scenario.', created_at: '2024-04-10T09:00:00' },
+  { id: 14, room_id: 7, sender_user_id: 4, content: 'On it. I\'ll implement the basic PPO agent first.', created_at: '2024-04-10T09:30:00' },
+];
+
+export const getChatRoomById = (id: number) => chatRooms.find(r => r.id === id);
+export const getMessagesByRoom = (roomId: number) => chatMessages.filter(m => m.room_id === roomId);
+export const getChatRoomsByProject = (projectId: number) => chatRooms.filter(r => r.project_id === projectId);
+export const getTeamChatRooms = () => chatRooms.filter(r => r.type === 'TEAM');

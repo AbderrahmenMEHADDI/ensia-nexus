@@ -11,6 +11,7 @@ import {
   Shield,
   Settings,
   LogOut,
+  MessageCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -27,9 +28,9 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/labs', label: 'Labs & Groups', icon: FlaskConical },
   { path: '/projects/1', label: 'Project Board', icon: Kanban },
   { path: '/applications', label: 'Applications', icon: FileText },
+  { path: '/chat', label: 'Chat', icon: MessageCircle },
   { path: '/profile', label: 'Profile', icon: User },
   { path: '/admin', label: 'Admin', icon: Shield },
 ];
