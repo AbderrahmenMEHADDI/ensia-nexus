@@ -9,7 +9,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (userId?: number) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -28,10 +28,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading: false,
   });
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (userId?: number) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
-      const user = await authRepository.signInWithGoogle();
+      const user = await authRepository.signInWithGoogle(userId);
       setState({ user, isAuthenticated: true, isLoading: false });
     } catch {
       setState(s => ({ ...s, isLoading: false }));

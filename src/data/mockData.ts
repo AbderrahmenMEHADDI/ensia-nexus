@@ -1,16 +1,16 @@
 import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage, GroupJoinRequest } from '@/types';
 
 export const users: User[] = [
-  { id: 1, full_name: 'Dr. Amina Belkacem', email: 'a.belkacem@ensia.edu.dz', role: 'DOCTOR', created_at: '2023-01-15' },
-  { id: 2, full_name: 'Prof. Karim Hadj', email: 'k.hadj@ensia.edu.dz', role: 'PROFESSOR', created_at: '2023-02-01' },
+  { id: 1, full_name: 'Dr. Amina Belkacem', email: 'a.belkacem@ensia.edu.dz', role: 'TEACHER', created_at: '2023-01-15' },
+  { id: 2, full_name: 'Prof. Karim Hadj', email: 'k.hadj@ensia.edu.dz', role: 'TEACHER', created_at: '2023-02-01' },
   { id: 3, full_name: 'Yasmine Cherifi', email: 'y.cherifi@ensia.edu.dz', role: 'STUDENT', created_at: '2024-09-01' },
   { id: 4, full_name: 'Mohamed Ait Said', email: 'm.aitsaid@ensia.edu.dz', role: 'STUDENT', created_at: '2024-09-01' },
   { id: 5, full_name: 'Fatima Zahra Bouzid', email: 'f.bouzid@ensia.edu.dz', role: 'ADMIN', created_at: '2022-06-01' },
-  { id: 6, full_name: 'Rachid Mebarki', email: 'r.mebarki@ensia.edu.dz', role: 'MCA', created_at: '2023-05-10' },
+  { id: 6, full_name: 'Rachid Mebarki', email: 'r.mebarki@ensia.edu.dz', role: 'TEACHER', created_at: '2023-05-10' },
   { id: 7, full_name: 'Lina Touati', email: 'l.touati@ensia.edu.dz', role: 'STUDENT', created_at: '2024-09-01' },
-  { id: 8, full_name: 'Prof. Nadia Rahmani', email: 'n.rahmani@ensia.edu.dz', role: 'PROFESSOR', created_at: '2023-03-01' },
+  { id: 8, full_name: 'Prof. Nadia Rahmani', email: 'n.rahmani@ensia.edu.dz', role: 'TEACHER', created_at: '2023-03-01' },
   { id: 9, full_name: 'Sofiane Khelifi', email: 's.khelifi@ensia.edu.dz', role: 'STUDENT', created_at: '2024-09-01' },
-  { id: 10, full_name: 'Dr. Youcef Merad', email: 'y.merad@ensia.edu.dz', role: 'DOCTOR', created_at: '2023-01-20' },
+  { id: 10, full_name: 'Dr. Youcef Merad', email: 'y.merad@ensia.edu.dz', role: 'TEACHER', created_at: '2023-01-20' },
 ];
 
 export const students: Student[] = [
@@ -23,7 +23,6 @@ export const students: Student[] = [
 export const teachers: Teacher[] = [
   { user_id: 1, experience_years: 15, grade: 'DOCTOR', department: 'Computer Science', research_interests: 'NLP, Deep Learning, Transformers', created_at: '2023-01-15' },
   { user_id: 2, experience_years: 20, grade: 'PROFESSOR', department: 'Mathematics & AI', research_interests: 'Optimization, Reinforcement Learning', created_at: '2023-02-01' },
-  { user_id: 5, experience_years: 10, grade: 'ADMIN', department: 'Administration', research_interests: 'EdTech, Digital Governance', created_at: '2022-06-01' },
   { user_id: 6, experience_years: 5, grade: 'MCA', department: 'Computer Science', research_interests: 'Computer Vision, Medical Imaging', created_at: '2023-05-10' },
   { user_id: 8, experience_years: 18, grade: 'PROFESSOR', department: 'Data Science', research_interests: 'Big Data, Distributed Systems, Stream Processing', created_at: '2023-03-01' },
   { user_id: 10, experience_years: 12, grade: 'DOCTOR', department: 'Cybersecurity', research_interests: 'Cryptography, Blockchain, Zero-Knowledge Proofs', created_at: '2023-01-20' },
@@ -133,7 +132,7 @@ export const getResourcesByProject = (projectId: number) => projectResources.fil
 export const getApplicationsByProject = (projectId: number) => projectApplications.filter(a => a.project_id === projectId);
 
 // Current user simulation
-export const currentUser = users[0]; // Dr. Amina Belkacem (DOCTOR)
+export const currentUser = users[0]; // Dr. Amina Belkacem (TEACHER)
 
 // Group join requests
 export const groupJoinRequests: GroupJoinRequest[] = [

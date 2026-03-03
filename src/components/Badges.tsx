@@ -2,11 +2,11 @@ import { type UserRole, type TaskPriority, type TaskStatus, type ApplicationStat
 
 const roleConfig: Record<UserRole, { label: string; className: string }> = {
   STUDENT: { label: 'Student', className: 'bg-info/15 text-info border-info/30' },
-  MCA: { label: 'MCA', className: 'bg-role-mca/15 text-role-mca border-role-mca/30' },
-  PROFESSOR: { label: 'Professor', className: 'bg-primary/15 text-primary border-primary/30' },
-  DOCTOR: { label: 'Doctor', className: 'bg-success/15 text-success border-success/30' },
+  TEACHER: { label: 'Teacher', className: 'bg-primary/15 text-primary border-primary/30' },
   ADMIN: { label: 'Admin', className: 'bg-destructive/15 text-destructive border-destructive/30' },
+  PARTNER: { label: 'Partner', className: 'bg-success/15 text-success border-success/30' },
 };
+
 
 export const RoleBadge = ({ role }: { role: UserRole }) => {
   const config = roleConfig[role];

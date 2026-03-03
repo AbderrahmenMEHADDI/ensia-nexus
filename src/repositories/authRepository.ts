@@ -11,9 +11,11 @@ export const authRepository = {
    * Sign in with Google OAuth.
    * TODO: Replace with real Google OAuth flow (e.g., POST /api/auth/google)
    */
-  async signInWithGoogle(): Promise<User> {
+  async signInWithGoogle(userId?: number): Promise<User> {
     await delay(800);
-    // Mock: return first user as the authenticated user
+    if (userId) {
+      return users.find((u) => u.id === userId) || users[0];
+    }
     return users[0];
   },
 
