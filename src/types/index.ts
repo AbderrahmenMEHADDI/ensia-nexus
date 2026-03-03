@@ -151,3 +151,32 @@ export interface ChatMessage {
   content: string;
   created_at: string;
 }
+
+// Feed types
+export interface FeedPost {
+  id: number;
+  author_user_id: number;
+  content: string;
+  tags: string[];
+  project_id?: number;
+  group_id?: number;
+  created_at: string;
+}
+
+export interface FeedComment {
+  id: number;
+  post_id: number;
+  author_user_id: number;
+  content: string;
+  created_at: string;
+}
+
+export interface FeedLike {
+  post_id: number;
+  user_id: number;
+}
+
+export interface FeedSave {
+  post_id: number;
+  user_id: number;
+}

@@ -1,4 +1,4 @@
-import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage, GroupJoinRequest } from '@/types';
+import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage, GroupJoinRequest, FeedPost, FeedComment, FeedLike, FeedSave } from '@/types';
 
 export const users: User[] = [
   { id: 1, full_name: 'Dr. Amina Belkacem', email: 'a.belkacem@ensia.edu.dz', role: 'TEACHER', created_at: '2023-01-15' },
@@ -176,3 +176,104 @@ export const getChatRoomById = (id: number) => chatRooms.find(r => r.id === id);
 export const getMessagesByRoom = (roomId: number) => chatMessages.filter(m => m.room_id === roomId);
 export const getChatRoomsByProject = (projectId: number) => chatRooms.filter(r => r.project_id === projectId);
 export const getTeamChatRooms = () => chatRooms.filter(r => r.type === 'TEAM');
+
+// Feed posts
+export const feedPosts: FeedPost[] = [
+  {
+    id: 1,
+    author_user_id: 1,
+    content: "🎉 Excited to share that our Arabic Sentiment Analysis model has achieved 89.3% accuracy on the test set! The DziriBERT fine-tuning approach is showing very promising results for Algerian dialect classification. Big thanks to the team for the incredible work on data collection and annotation.\n\nNext steps: evaluation pipeline and preparing our EMNLP submission draft.",
+    tags: ['NLP', 'Research', 'Milestone'],
+    project_id: 1,
+    created_at: '2025-02-28T14:30:00',
+  },
+  {
+    id: 2,
+    author_user_id: 6,
+    content: "Just published our preprocessing pipeline for retinal fundus images. We've processed over 8,000 images with automated augmentation including rotation, contrast adjustment, and noise injection.\n\nThe pipeline handles DICOM and standard formats seamlessly. If anyone is working with medical imaging data, happy to share our approach!",
+    tags: ['Computer Vision', 'Medical AI', 'Open Source'],
+    project_id: 2,
+    created_at: '2025-02-25T10:15:00',
+  },
+  {
+    id: 3,
+    author_user_id: 2,
+    content: "📝 Reading recommendation: \"Multi-Agent Reinforcement Learning: A Selective Overview\" — an excellent survey that covers cooperative, competitive, and mixed MARL settings.\n\nParticularly relevant for our traffic optimization project. The section on communication protocols between agents is eye-opening.\n\nhttps://arxiv.org/abs/2103.01955",
+    tags: ['Reinforcement Learning', 'Paper', 'Recommendation'],
+    project_id: 4,
+    created_at: '2025-02-22T09:00:00',
+  },
+  {
+    id: 4,
+    author_user_id: 5,
+    content: "📢 Announcement: The ENSIA Research Hub now supports project-level chat rooms! Each project can have multiple dedicated channels for discussions, data pipelines, and general coordination.\n\nPlease make sure your group leaders set up the appropriate channels for your projects.",
+    tags: ['Platform', 'Announcement'],
+    created_at: '2025-02-20T08:00:00',
+  },
+  {
+    id: 5,
+    author_user_id: 10,
+    content: "Successfully implemented our first zk-SNARK circuit for identity attribute verification! The proof generation takes ~2.3 seconds on consumer hardware which is well within our target.\n\nThe privacy guarantees are solid — the verifier learns nothing about the user's actual attributes beyond the boolean result. Next: deploying the verification contract on Ethereum Sepolia testnet.",
+    tags: ['Blockchain', 'Zero-Knowledge', 'Cryptography'],
+    project_id: 3,
+    created_at: '2025-02-18T16:45:00',
+  },
+  {
+    id: 6,
+    author_user_id: 3,
+    content: "🧵 Thread on lessons learned from building our tweet collection pipeline:\n\n1. Rate limiting is your friend, not your enemy\n2. Algerian dialect detection needs a multi-layer filter\n3. Manual annotation of even 5k samples dramatically improves model quality\n4. Always version your datasets\n\nHappy to discuss any of these in more detail!",
+    tags: ['NLP', 'Data Engineering', 'Tips'],
+    project_id: 1,
+    created_at: '2025-02-15T11:30:00',
+  },
+  {
+    id: 7,
+    author_user_id: 7,
+    content: "Looking for collaborators interested in the intersection of cybersecurity and medical imaging. There's fascinating work to be done on adversarial robustness of diagnostic AI systems.\n\nIf you're interested, DM me or drop a comment below!",
+    tags: ['Collaboration', 'Medical AI', 'Security'],
+    created_at: '2025-02-12T14:00:00',
+  },
+  {
+    id: 8,
+    author_user_id: 4,
+    content: "SUMO traffic simulator is fully configured with real Algiers map data! 🚗 We've modeled 12 major intersections with realistic traffic patterns based on 2023 traffic census data.\n\nThe MAPPO agent training starts next week. Expecting first results by end of month.",
+    tags: ['Reinforcement Learning', 'Traffic', 'Simulation'],
+    project_id: 4,
+    created_at: '2025-02-10T13:20:00',
+  },
+];
+
+export const feedComments: FeedComment[] = [
+  { id: 1, post_id: 1, author_user_id: 3, content: "Amazing results! The annotation work was definitely worth it. Can't wait to see the evaluation metrics.", created_at: '2025-02-28T15:00:00' },
+  { id: 2, post_id: 1, author_user_id: 4, content: 'Congrats to the team! Should we start drafting the related work section?', created_at: '2025-02-28T15:30:00' },
+  { id: 3, post_id: 1, author_user_id: 2, content: 'Impressive accuracy. How does it compare with multilingual BERT on the same test set?', created_at: '2025-02-28T16:00:00' },
+  { id: 4, post_id: 2, author_user_id: 7, content: "The augmentation pipeline is really robust! I've tested it on edge cases and it handles them well.", created_at: '2025-02-25T11:00:00' },
+  { id: 5, post_id: 2, author_user_id: 1, content: 'Would love to see a writeup on this. Cross-domain applications could be interesting.', created_at: '2025-02-25T12:30:00' },
+  { id: 6, post_id: 3, author_user_id: 4, content: "Thanks for sharing! The communication protocols section is exactly what we need for our multi-intersection coordination.", created_at: '2025-02-22T10:00:00' },
+  { id: 7, post_id: 5, author_user_id: 9, content: '2.3 seconds is great! What proving system are you using — Groth16 or PLONK?', created_at: '2025-02-18T17:00:00' },
+  { id: 8, post_id: 5, author_user_id: 10, content: "Groth16 for now since the circuit is relatively small. We'll evaluate PLONK when we scale up.", created_at: '2025-02-18T17:15:00' },
+  { id: 9, post_id: 6, author_user_id: 1, content: 'Great tips! Point 3 is so important — quality over quantity for annotation.', created_at: '2025-02-15T12:00:00' },
+  { id: 10, post_id: 8, author_user_id: 2, content: 'Excellent work on the simulation setup! The real map data will make our results much more credible.', created_at: '2025-02-10T14:00:00' },
+];
+
+export const feedLikes: FeedLike[] = [
+  { post_id: 1, user_id: 2 }, { post_id: 1, user_id: 3 }, { post_id: 1, user_id: 4 }, { post_id: 1, user_id: 5 }, { post_id: 1, user_id: 6 }, { post_id: 1, user_id: 7 },
+  { post_id: 2, user_id: 1 }, { post_id: 2, user_id: 3 }, { post_id: 2, user_id: 7 }, { post_id: 2, user_id: 10 },
+  { post_id: 3, user_id: 1 }, { post_id: 3, user_id: 4 }, { post_id: 3, user_id: 8 },
+  { post_id: 4, user_id: 1 }, { post_id: 4, user_id: 2 }, { post_id: 4, user_id: 3 }, { post_id: 4, user_id: 6 }, { post_id: 4, user_id: 7 }, { post_id: 4, user_id: 8 }, { post_id: 4, user_id: 9 }, { post_id: 4, user_id: 10 },
+  { post_id: 5, user_id: 1 }, { post_id: 5, user_id: 2 }, { post_id: 5, user_id: 9 },
+  { post_id: 6, user_id: 1 }, { post_id: 6, user_id: 4 }, { post_id: 6, user_id: 7 },
+  { post_id: 7, user_id: 1 }, { post_id: 7, user_id: 3 },
+  { post_id: 8, user_id: 2 }, { post_id: 8, user_id: 1 }, { post_id: 8, user_id: 9 },
+];
+
+export const feedSaves: FeedSave[] = [
+  { post_id: 1, user_id: 5 }, { post_id: 1, user_id: 7 },
+  { post_id: 3, user_id: 1 }, { post_id: 3, user_id: 4 },
+  { post_id: 5, user_id: 1 }, { post_id: 5, user_id: 3 },
+  { post_id: 6, user_id: 4 },
+];
+
+export const getCommentsByPost = (postId: number) => feedComments.filter(c => c.post_id === postId);
+export const getLikesByPost = (postId: number) => feedLikes.filter(l => l.post_id === postId);
+export const getSavesByPost = (postId: number) => feedSaves.filter(s => s.post_id === postId);
