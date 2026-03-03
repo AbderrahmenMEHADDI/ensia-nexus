@@ -9,7 +9,7 @@ import { type UserRole } from "@/types";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import Dashboard from "./pages/Dashboard";
+import Feed from "./pages/Feed";
 import LabExplorer from "./pages/LabExplorer";
 import ProjectBoard from "./pages/ProjectBoard";
 import Chat from "./pages/Chat";
@@ -49,7 +49,7 @@ const AppRoutes = () => (
       <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
       <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignUp /></PublicOnlyRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="/labs" element={<ProtectedRoute><LabExplorer /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/applications" element={<RoleProtectedRoute allowedRoles={['TEACHER', 'ADMIN', 'PARTNER']}><Applications /></RoleProtectedRoute>} />

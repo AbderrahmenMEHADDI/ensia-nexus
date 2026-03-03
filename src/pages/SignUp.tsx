@@ -41,7 +41,7 @@ const SignUp = () => {
           <Button
             variant="outline"
             className="w-full h-11"
-            onClick={signInWithGoogle}
+            onClick={() => signInWithGoogle()}
             disabled={isLoading}
           >
             {isLoading ? (
