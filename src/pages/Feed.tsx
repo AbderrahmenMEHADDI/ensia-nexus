@@ -1,236 +1,321 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
-  currentUser, projects, tasks, projectParticipants, researchGroups,
-  groupMembers, getUserById, getGroupById, getLabById, taskUpdates,
-  projectApplications, users
+  currentUser, feedPosts, feedComments, feedLikes, feedSaves,
+  getUserById, projects, getCommentsByPost, getLikesByPost, getSavesByPost,
+  researchGroups, groupMembers, getLabById, users, tasks, projectParticipants,
 } from '@/data/mockData';
-import { RoleBadge, StatusBadge, PriorityBadge } from '@/components/Badges';
+import { RoleBadge } from '@/components/Badges';
 import {
-  ArrowRight, Users, FileText, CheckCircle2, MessageSquare,
-  GitBranch, UserPlus, Clock, FlaskConical, Calendar
+  Heart, Bookmark, MessageCircle, Send, MoreHorizontal,
+  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { FeedComment, FeedLike, FeedSave } from '@/types';
 
-// Build a unified activity feed from various data sources
-interface FeedItem {
-  id: string;
-  type: 'task_update' | 'task_created' | 'member_joined' | 'project_created' | 'application';
-  title: string;
-  description: string;
-  timestamp: string;
-  userId: number;
-  projectId?: number;
-  meta?: Record<string, any>;
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `${weeks}w ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function buildFeed(): FeedItem[] {
-  const items: FeedItem[] = [];
+const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number }) => {
+  const author = getUserById(post.author_user_id);
+  const project = post.project_id ? projects.find(p => p.id === post.project_id) : null;
 
-  // Task updates
-  taskUpdates.forEach(u => {
-    const task = tasks.find(t => t.id === u.task_id);
-    const proj = task ? projects.find(p => p.id === task.project_id) : null;
-    items.push({
-      id: `tu-${u.id}`,
-      type: 'task_update',
-      title: `Updated "${task?.title}"`,
-      description: u.note,
-      timestamp: u.created_at,
-      userId: u.author_user_id,
-      projectId: task?.project_id,
-      meta: { newStatus: u.new_status, progress: u.new_progress },
-    });
-  });
+  const [likes, setLikes] = useState<FeedLike[]>(getLikesByPost(post.id));
+  const [saves, setSaves] = useState<FeedSave[]>(getSavesByPost(post.id));
+  const [comments, setComments] = useState<FeedComment[]>(getCommentsByPost(post.id));
+  const [showComments, setShowComments] = useState(false);
+  const [newComment, setNewComment] = useState('');
 
-  // Tasks created
-  tasks.forEach(t => {
-    const proj = projects.find(p => p.id === t.project_id);
-    items.push({
-      id: `tc-${t.id}`,
-      type: 'task_created',
-      title: `Created task "${t.title}"`,
-      description: t.description,
-      timestamp: t.created_at,
-      userId: t.created_by,
-      projectId: t.project_id,
-      meta: { priority: t.priority, status: t.status },
-    });
-  });
+  const isLiked = likes.some(l => l.user_id === currentUser.id);
+  const isSaved = saves.some(s => s.user_id === currentUser.id);
 
-  // Members joined projects
-  projectParticipants.forEach(pp => {
-    const proj = projects.find(p => p.id === pp.project_id);
-    items.push({
-      id: `mj-${pp.project_id}-${pp.user_id}`,
-      type: 'member_joined',
-      title: `Joined "${proj?.title}"`,
-      description: `Joined as ${pp.participant_role.toLowerCase()}`,
-      timestamp: pp.joined_at,
-      userId: pp.user_id,
-      projectId: pp.project_id,
-    });
-  });
+  const toggleLike = () => {
+    setLikes(prev =>
+      isLiked ? prev.filter(l => l.user_id !== currentUser.id) : [...prev, { post_id: post.id, user_id: currentUser.id }]
+    );
+  };
 
-  // Projects created
-  projects.forEach(p => {
-    items.push({
-      id: `pc-${p.id}`,
-      type: 'project_created',
-      title: `Created project "${p.title}"`,
-      description: p.description,
-      timestamp: p.created_at,
-      userId: p.created_by,
-      projectId: p.id,
-    });
-  });
+  const toggleSave = () => {
+    setSaves(prev =>
+      isSaved ? prev.filter(s => s.user_id !== currentUser.id) : [...prev, { post_id: post.id, user_id: currentUser.id }]
+    );
+  };
 
-  // Sort by date descending
-  items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  return items;
-}
+  const submitComment = () => {
+    if (!newComment.trim()) return;
+    setComments(prev => [...prev, {
+      id: Date.now(),
+      post_id: post.id,
+      author_user_id: currentUser.id,
+      content: newComment.trim(),
+      created_at: new Date().toISOString(),
+    }]);
+    setNewComment('');
+    setShowComments(true);
+  };
 
-const feedIcons: Record<FeedItem['type'], any> = {
-  task_update: MessageSquare,
-  task_created: FileText,
-  member_joined: UserPlus,
-  project_created: GitBranch,
-  application: CheckCircle2,
-};
+  if (!author) return null;
 
-const feedColors: Record<FeedItem['type'], string> = {
-  task_update: 'bg-primary/10 text-primary',
-  task_created: 'bg-accent/60 text-accent-foreground',
-  member_joined: 'bg-primary/10 text-primary',
-  project_created: 'bg-primary/15 text-primary',
-  application: 'bg-muted text-muted-foreground',
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      className="rounded-xl border border-border bg-card overflow-hidden"
+    >
+      {/* Author header */}
+      <div className="flex items-start gap-3 p-5 pb-0">
+        <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+          {author.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-foreground">{author.full_name}</span>
+            <RoleBadge role={author.role} />
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
+            {project && (
+              <>
+                <span className="text-xs text-muted-foreground">·</span>
+                <Link to={`/projects/${project.id}`} className="text-xs text-primary hover:underline truncate">
+                  {project.title}
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-5 pt-3 pb-4">
+        <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{post.content}</p>
+        {post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {post.tags.map(tag => (
+              <span key={tag} className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent text-accent-foreground">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Engagement stats */}
+      {(likes.length > 0 || comments.length > 0) && (
+        <div className="flex items-center justify-between px-5 py-2 border-t border-border">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {likes.length > 0 && (
+              <span className="flex items-center gap-1">
+                <Heart className="h-3 w-3 fill-primary text-primary" />
+                {likes.length}
+              </span>
+            )}
+          </div>
+          {comments.length > 0 && (
+            <button
+              onClick={() => setShowComments(!showComments)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {comments.length} comment{comments.length > 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex items-center border-t border-border">
+        <button
+          onClick={toggleLike}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50 ${isLiked ? 'text-primary' : 'text-muted-foreground'}`}
+        >
+          <Heart className={`h-4 w-4 ${isLiked ? 'fill-primary' : ''}`} />
+          Like
+        </button>
+        <button
+          onClick={() => setShowComments(!showComments)}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Comment
+        </button>
+        <button
+          onClick={toggleSave}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50 ${isSaved ? 'text-primary' : 'text-muted-foreground'}`}
+        >
+          <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-primary' : ''}`} />
+          Save
+        </button>
+      </div>
+
+      {/* Comments section */}
+      <AnimatePresence>
+        {showComments && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-border"
+          >
+            <div className="p-4 space-y-3">
+              {comments.map(comment => {
+                const cAuthor = getUserById(comment.author_user_id);
+                if (!cAuthor) return null;
+                return (
+                  <div key={comment.id} className="flex gap-2.5">
+                    <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                      {cAuthor.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="rounded-lg bg-accent/50 p-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-foreground">{cAuthor.full_name}</span>
+                          <span className="text-[11px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
+                        </div>
+                        <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* New comment input */}
+              <div className="flex gap-2.5 pt-1">
+                <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                  {currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+                <div className="flex-1 flex gap-2">
+                  <input
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && submitComment()}
+                    placeholder="Write a comment..."
+                    className="flex-1 text-xs bg-accent/40 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim()}>
+                    <Send className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.article>
+  );
 };
 
 const Feed = () => {
-  const feedItems = buildFeed();
-
-  const myParticipations = projectParticipants.filter(p => p.user_id === currentUser.id);
-  const myProjects = myParticipations.map(p => projects.find(proj => proj.id === p.project_id)!).filter(Boolean);
+  const [newPostContent, setNewPostContent] = useState('');
 
   const myGroupIds = groupMembers.filter(m => m.user_id === currentUser.id && m.is_active).map(m => m.group_id);
   const myGroups = researchGroups.filter(g => myGroupIds.includes(g.id));
-
+  const myParticipations = projectParticipants.filter(p => p.user_id === currentUser.id);
+  const myProjects = myParticipations.map(p => projects.find(proj => proj.id === p.project_id)!).filter(Boolean);
   const activeTasks = tasks.filter(
     t => (t.assignee_user_id === currentUser.id || t.created_by === currentUser.id) &&
       (t.status === 'IN_PROGRESS' || t.status === 'TODO')
   );
 
-  const pendingApplications = projectApplications.filter(a => a.status === 'PENDING');
-  const isTeacherOrAdmin = ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(currentUser.role);
-
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {/* Greeting */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-display font-semibold text-foreground">
-            Welcome back, {currentUser.full_name.split(' ')[0]}
-          </h1>
-          <p className="text-muted-foreground mt-1">Here's the latest activity across the platform.</p>
-        </div>
-
-        {/* Alerts */}
-        {isTeacherOrAdmin && pendingApplications.length > 0 && (
-          <Link to="/applications" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors mb-6">
-            <span className="text-sm font-medium text-foreground">{pendingApplications.length} pending application(s) to review</span>
-            <ArrowRight className="h-4 w-4 text-primary" />
-          </Link>
-        )}
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main feed */}
-          <div className="lg:col-span-2 space-y-1">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Activity Feed</h2>
-
-            <div className="space-y-3">
-              {feedItems.slice(0, 20).map((item, i) => {
-                const user = getUserById(item.userId);
-                const Icon = feedIcons[item.type];
-                const proj = item.projectId ? projects.find(p => p.id === item.projectId) : null;
-
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.03, duration: 0.25 }}
-                    className="flex gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/20 transition-colors"
-                  >
-                    <div className={`h-8 w-8 shrink-0 rounded-lg flex items-center justify-center ${feedColors[item.type]}`}>
-                      <Icon className="h-4 w-4" />
+        <div className="grid lg:grid-cols-[1fr_280px] gap-6">
+          {/* Main column */}
+          <div className="space-y-4">
+            {/* Composer */}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex gap-3">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                  {currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+                <div className="flex-1">
+                  <textarea
+                    value={newPostContent}
+                    onChange={e => setNewPostContent(e.target.value)}
+                    placeholder="Share an update, insight, or milestone..."
+                    rows={3}
+                    className="w-full text-sm bg-transparent text-foreground placeholder:text-muted-foreground resize-none focus:outline-none"
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Visible to all members</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {user?.full_name}
-                            {proj && (
-                              <> · <Link to={`/projects/${proj.id}`} className="text-primary hover:underline">{proj.title}</Link></>
-                            )}
-                          </p>
-                        </div>
-                        <span className="text-[11px] font-mono text-muted-foreground shrink-0 mt-0.5">{item.timestamp}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{item.description}</p>
-                      {item.meta?.newStatus && (
-                        <div className="mt-2">
-                          <StatusBadge status={item.meta.newStatus} />
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    <Button size="sm" disabled={!newPostContent.trim()} className="h-8 px-4 text-xs">
+                      Post
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* Posts feed */}
+            {feedPosts.map((post, i) => (
+              <PostCard key={post.id} post={post} index={i} />
+            ))}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-8">
+          {/* Right sidebar */}
+          <aside className="hidden lg:block space-y-5">
             {/* Quick stats */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">Overview</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl border border-border bg-card text-center">
-                  <span className="text-2xl font-display font-semibold text-foreground">{myProjects.length}</span>
-                  <p className="text-xs text-muted-foreground mt-1">Projects</p>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-muted-foreground">
+                  {currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </div>
-                <div className="p-3 rounded-xl border border-border bg-card text-center">
-                  <span className="text-2xl font-display font-semibold text-foreground">{activeTasks.length}</span>
-                  <p className="text-xs text-muted-foreground mt-1">Active Tasks</p>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{currentUser.full_name}</p>
+                  <RoleBadge role={currentUser.role} />
                 </div>
-                <div className="p-3 rounded-xl border border-border bg-card text-center">
-                  <span className="text-2xl font-display font-semibold text-foreground">{myGroups.length}</span>
-                  <p className="text-xs text-muted-foreground mt-1">Groups</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2 rounded-lg bg-accent/50">
+                  <span className="text-lg font-display font-semibold text-foreground">{myProjects.length}</span>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Projects</p>
                 </div>
-                <div className="p-3 rounded-xl border border-border bg-card text-center">
-                  <span className="text-2xl font-display font-semibold text-foreground">{users.length}</span>
-                  <p className="text-xs text-muted-foreground mt-1">Members</p>
+                <div className="p-2 rounded-lg bg-accent/50">
+                  <span className="text-lg font-display font-semibold text-foreground">{activeTasks.length}</span>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Tasks</p>
+                </div>
+                <div className="p-2 rounded-lg bg-accent/50">
+                  <span className="text-lg font-display font-semibold text-foreground">{myGroups.length}</span>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Groups</p>
                 </div>
               </div>
             </div>
 
             {/* My Groups */}
             {myGroups.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">My Groups</h3>
-                <div className="space-y-2">
+              <div className="rounded-xl border border-border bg-card p-4">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">My Groups</h3>
+                <div className="space-y-2.5">
                   {myGroups.map(group => {
                     const lab = getLabById(group.lab_id);
                     const memberCount = groupMembers.filter(m => m.group_id === group.id && m.is_active).length;
                     return (
-                      <div key={group.id} className="p-3 rounded-xl border border-border bg-card">
-                        <p className="text-sm font-medium text-foreground">{group.name}</p>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                          <Users className="h-3 w-3" />
-                          <span>{memberCount} members</span>
-                          <span>·</span>
-                          <FlaskConical className="h-3 w-3" />
-                          <span className="truncate">{lab?.name.split('—')[0]?.trim()}</span>
+                      <div key={group.id} className="flex items-start gap-2.5">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <FlaskConical className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-foreground truncate">{group.name}</p>
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Users className="h-3 w-3" /> {memberCount}
+                          </p>
                         </div>
                       </div>
                     );
@@ -239,33 +324,18 @@ const Feed = () => {
               </div>
             )}
 
-            {/* Active tasks */}
-            {activeTasks.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">My Tasks</h3>
-                <div className="space-y-2">
-                  {activeTasks.slice(0, 5).map(task => {
-                    const proj = projects.find(p => p.id === task.project_id);
-                    return (
-                      <div key={task.id} className="p-3 rounded-xl border border-border bg-card">
-                        <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <PriorityBadge priority={task.priority} />
-                          <StatusBadge status={task.status} />
-                        </div>
-                        {task.due_date && (
-                          <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            <span>{task.due_date}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Trending tags */}
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Trending Topics</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {['NLP', 'Research', 'Computer Vision', 'Blockchain', 'Reinforcement Learning', 'Medical AI', 'Data Engineering'].map(tag => (
+                  <span key={tag} className="px-2 py-1 rounded-full text-[11px] font-medium bg-accent text-accent-foreground cursor-pointer hover:bg-accent/80 transition-colors">
+                    #{tag}
+                  </span>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          </aside>
         </div>
       </motion.div>
     </div>
