@@ -13,6 +13,7 @@ export const TEACHER_ROLES: UserRole[] = ['MCA', 'PROFESSOR', 'DOCTOR', 'TEACHER
 interface AuthContextType extends AuthState {
   signInWithGoogle: (userId?: number) => Promise<void>;
   signOut: () => Promise<void>;
+  checkAuth: () => Promise<void>;
   role: UserRole | null;
   hasRole: (role: UserRole | UserRole[]) => boolean;
 }
@@ -90,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ...state,
     signInWithGoogle,
     signOut,
+    checkAuth,
     role,
     hasRole,
   };

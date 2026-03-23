@@ -1,24 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { researchLabs, researchGroups, getUserById, getMembersByGroup, getProjectsByGroup } from '@/data/mockData';
+import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
 import { FlaskConical, Users, ChevronDown, ChevronRight, CheckCircle2, Clock, FolderOpen } from 'lucide-react';
+import type { ResearchLab, ResearchGroup, GroupMember, Project, User } from '@/types';
 
 const LabExplorer = () => {
-  const [expandedLab, setExpandedLab] = useState<number | null>(1);
+  const [expandedLab, setExpandedLab] = useState<number | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<number | null>(null);
+  const [labs, setLabs] = useState<ResearchLab[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [l, g, m, p, u] = await Promise.all([
+          apiRepository.getLabs(),
+          apiRepository.getGroups(),
+          apiRepository.getGroupMembers(),
+          apiRepository.getProjects(),
+          apiRepository.getUsers(),
+        ]);
+        setLabs(l);
+        setGroups(g);
+        setMembers(m);
+        setProjects(p);
+        setUsers(u);
+        if (l.length > 0) setExpandedLab(l[0].id);
+      } catch (e) {
+        console.error('LabExplorer load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const getUserById = (id: number) => users.find(u => u.id === id);
+  const getMembersByGroup = (groupId: number) => members.filter(m => m.group_id === groupId);
+  const getProjectsByGroup = (groupId: number) => projects.filter(p => p.group_id === groupId);
+
+  if (loading) {
+    return (
+      <div className="container py-10">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-48" />
+          {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-10">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <span className="text-xs font-mono text-primary uppercase tracking-wider">Explorer</span>
-        <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1 mb-8">Labs & Research Groups</h1>
+        <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1 mb-8">Labs &amp; Research Groups</h1>
 
         <div className="space-y-6">
-          {researchLabs.map((lab) => {
+          {labs.map((lab) => {
             const head = getUserById(lab.head_teacher_id);
-            const groups = researchGroups.filter(g => g.lab_id === lab.id);
+            const labGroups = groups.filter(g => g.lab_id === lab.id);
             const isExpanded = expandedLab === lab.id;
 
             return (
@@ -44,16 +91,16 @@ const LabExplorer = () => {
                     <div className="flex items-center gap-3 mt-2 text-xs font-mono text-muted-foreground">
                       <span>Head: {head?.full_name}</span>
                       <span>·</span>
-                      <span>{groups.length} group{groups.length !== 1 ? 's' : ''}</span>
+                      <span>{labGroups.length} group{labGroups.length !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 </button>
 
                 {isExpanded && (
                   <div className="border-t border-border">
-                    {groups.map(group => {
+                    {labGroups.map(group => {
                       const leader = getUserById(group.leader_user_id);
-                      const members = getMembersByGroup(group.id);
+                      const groupMembers = getMembersByGroup(group.id);
                       const groupProjects = getProjectsByGroup(group.id);
                       const isGroupExpanded = expandedGroup === group.id;
 
@@ -84,9 +131,9 @@ const LabExplorer = () => {
                             <div className="px-6 pb-4 space-y-4">
                               {/* Members */}
                               <div>
-                                <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Members ({members.length})</span>
+                                <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">Members ({groupMembers.length})</span>
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                  {members.map(m => {
+                                  {groupMembers.map(m => {
                                     const user = getUserById(m.user_id);
                                     if (!user) return null;
                                     return (
@@ -144,6 +191,9 @@ const LabExplorer = () => {
               </motion.div>
             );
           })}
+          {labs.length === 0 && (
+            <p className="text-muted-foreground text-center py-16">No laboratories found.</p>
+          )}
         </div>
       </motion.div>
     </div>

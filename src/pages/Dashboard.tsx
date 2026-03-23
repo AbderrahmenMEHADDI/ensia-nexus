@@ -1,23 +1,87 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { currentUser, projects, tasks, projectApplications, researchGroups, researchLabs, getUserById, getGroupById, getLabById, groupMembers, projectParticipants } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge, StatusBadge, PriorityBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Calendar, Users } from 'lucide-react';
+import type { Project, Task, ProjectParticipant, GroupMember, ResearchGroup, ResearchLab, ProjectApplication } from '@/types';
 
 const Dashboard = () => {
-  const myParticipations = projectParticipants.filter(p => p.user_id === currentUser.id);
-  const myProjects = myParticipations.map(p => projects.find(proj => proj.id === p.project_id)!).filter(Boolean);
-  
-  const myTasks = tasks.filter(t => t.assignee_user_id === currentUser.id || t.created_by === currentUser.id);
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [labs, setLabs] = useState<ResearchLab[]>([]);
+  const [applications, setApplications] = useState<ProjectApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      try {
+        const [p, t, part, gm, g, l, apps] = await Promise.all([
+          apiRepository.getProjects(),
+          apiRepository.getTasks(),
+          apiRepository.getProjectParticipants(),
+          apiRepository.getGroupMembers(),
+          apiRepository.getGroups(),
+          apiRepository.getLabs(),
+          apiRepository.getApplications(),
+        ]);
+        setProjects(p);
+        setTasks(t);
+        setParticipants(part);
+        setGroupMembers(gm);
+        setGroups(g);
+        setLabs(l);
+        setApplications(apps);
+      } catch (e) {
+        console.error('Dashboard load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user]);
+
+  if (!user) return null;
+
+  const getLabById = (id: number) => labs.find(l => l.id === id);
+  const getGroupById = (id: number) => groups.find(g => g.id === id);
+
+  const myParticipations = participants.filter(p => p.user_id === user.id);
+  const myProjects = myParticipations
+    .map(p => projects.find(proj => proj.id === p.project_id)!)
+    .filter(Boolean);
+
+  const myTasks = tasks.filter(t => t.assignee_user_id === user.id || t.created_by === user.id);
   const activeTasks = myTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'TODO');
 
-  const pendingApplications = projectApplications.filter(a => a.status === 'PENDING');
-  const pendingGroups = researchGroups.filter(g => !g.is_validated);
-  const isTeacherOrAdmin = ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(currentUser.role);
+  const pendingApplications = applications.filter(a => a.status === 'PENDING');
+  const pendingGroups = groups.filter(g => !g.is_validated);
+  const isTeacherOrAdmin = ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(user.role);
 
-  // Groups the user belongs to
-  const myGroupIds = groupMembers.filter(m => m.user_id === currentUser.id && m.is_active).map(m => m.group_id);
-  const myGroups = researchGroups.filter(g => myGroupIds.includes(g.id));
+  const myGroupIds = groupMembers
+    .filter(m => m.user_id === user.id && m.is_active)
+    .map(m => m.group_id);
+  const myGroups = groups.filter(g => myGroupIds.includes(g.id));
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-48" />
+          <div className="h-4 bg-muted rounded w-64" />
+          <div className="grid sm:grid-cols-2 gap-3 mt-8">
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-muted rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -25,13 +89,13 @@ const Dashboard = () => {
         {/* Greeting */}
         <div className="mb-10">
           <h1 className="text-2xl font-display font-semibold text-foreground">
-            Good morning, {currentUser.full_name.split(' ')[0]}
+            Good morning, {user.full_name.split(' ')[0]}
           </h1>
           <p className="text-muted-foreground mt-1">Here's what's happening with your research.</p>
         </div>
 
         {/* Pending reviews for teachers */}
-        {isTeacherOrAdmin && (pendingApplications.length > 0 || (currentUser.role === 'ADMIN' && pendingGroups.length > 0)) && (
+        {isTeacherOrAdmin && (pendingApplications.length > 0 || (user.role === 'ADMIN' && pendingGroups.length > 0)) && (
           <div className="mb-8 space-y-2">
             {pendingApplications.length > 0 && (
               <Link to="/applications" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
@@ -39,7 +103,7 @@ const Dashboard = () => {
                 <ArrowRight className="h-4 w-4 text-primary" />
               </Link>
             )}
-            {currentUser.role === 'ADMIN' && pendingGroups.length > 0 && (
+            {user.role === 'ADMIN' && pendingGroups.length > 0 && (
               <Link to="/admin" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
                 <span className="text-sm font-medium text-foreground">{pendingGroups.length} group(s) awaiting validation</span>
                 <ArrowRight className="h-4 w-4 text-primary" />
@@ -55,10 +119,8 @@ const Dashboard = () => {
             <div className="grid sm:grid-cols-2 gap-3">
               {myGroups.map(group => {
                 const lab = getLabById(group.lab_id);
-                const leader = getUserById(group.leader_user_id);
                 const memberCount = groupMembers.filter(m => m.group_id === group.id && m.is_active).length;
                 const groupProjects = projects.filter(p => p.group_id === group.id);
-
                 return (
                   <div key={group.id} className="p-4 rounded-xl border border-border bg-card">
                     <div className="text-xs text-muted-foreground mb-1">{lab?.name.split('—')[0]?.trim()}</div>
@@ -87,7 +149,6 @@ const Dashboard = () => {
               const projectTasks = tasks.filter(t => t.project_id === project.id);
               const done = projectTasks.filter(t => t.status === 'DONE').length;
               const progress = projectTasks.length ? Math.round((done / projectTasks.length) * 100) : 0;
-
               return (
                 <Link
                   key={project.id}
@@ -107,6 +168,9 @@ const Dashboard = () => {
                 </Link>
               );
             })}
+            {myProjects.length === 0 && (
+              <p className="text-sm text-muted-foreground py-8 text-center">You're not part of any projects yet.</p>
+            )}
           </div>
         </section>
 

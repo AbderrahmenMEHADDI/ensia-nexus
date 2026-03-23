@@ -1,19 +1,74 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { currentUser, getTeacherByUserId, getStudentByUserId, tasks, projects, projectParticipants } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge, StatusBadge, PriorityBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
 import { Mail, Calendar, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { Student, Teacher, Project, Task, ProjectParticipant, User } from '@/types';
 
 const Profile = () => {
-  const teacher = getTeacherByUserId(currentUser.id);
-  const student = getStudentByUserId(currentUser.id);
+  const { user } = useAuth();
+  const [teacher, setTeacher] = useState<Teacher | null>(null);
+  const [student, setStudent] = useState<Student | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const myParticipations = projectParticipants.filter(p => p.user_id === currentUser.id);
-  const myProjects = myParticipations.map(p => ({ ...projects.find(proj => proj.id === p.project_id)!, role: p.participant_role })).filter(p => p.id);
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      try {
+        const [p, t, part] = await Promise.all([
+          apiRepository.getProjects(),
+          apiRepository.getTasks(),
+          apiRepository.getProjectParticipants(),
+        ]);
+        setProjects(p);
+        setTasks(t);
+        setParticipants(part);
+        // Fetch role-specific profile
+        if (['DOCTOR', 'PROFESSOR', 'MCA'].includes(user.role)) {
+          try {
+            setTeacher(await apiRepository.getTeacherProfile(user.id));
+          } catch { /* not a teacher */ }
+        } else if (user.role === 'STUDENT') {
+          try {
+            setStudent(await apiRepository.getStudentProfile(user.id));
+          } catch { /* not a student */ }
+        }
+      } catch (e) {
+        console.error('Profile load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user]);
 
-  const myTasks = tasks.filter(t => t.assignee_user_id === currentUser.id || t.created_by === currentUser.id);
-  const recentTasks = [...myTasks].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 6);
+  if (!user) return null;
+
+  const myParticipations = participants.filter(p => p.user_id === user.id);
+  const myProjects = myParticipations
+    .map(p => ({ ...projects.find(proj => proj.id === p.project_id)!, role: p.participant_role }))
+    .filter(p => p.id);
+
+  const myTasks = tasks.filter(t => t.assignee_user_id === user.id || t.created_by === user.id);
+  const recentTasks = [...myTasks]
+    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    .slice(0, 6);
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-10">
+        <div className="animate-pulse space-y-4">
+          <div className="flex gap-4 items-center"><div className="h-16 w-16 bg-muted rounded-2xl" /><div className="space-y-2"><div className="h-5 bg-muted rounded w-40" /><div className="h-4 bg-muted rounded w-24" /></div></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -23,15 +78,15 @@ const Profile = () => {
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
               <span className="text-xl font-display font-bold text-primary">
-                {currentUser.full_name.split(' ').map(n => n[0]).join('')}
+                {user.full_name.split(' ').map(n => n[0]).join('')}
               </span>
             </div>
             <div>
-              <h1 className="text-xl font-display font-semibold text-foreground">{currentUser.full_name}</h1>
+              <h1 className="text-xl font-display font-semibold text-foreground">{user.full_name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                <RoleBadge role={currentUser.role} />
+                <RoleBadge role={user.role} />
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Mail className="h-3 w-3" /> {currentUser.email}
+                  <Mail className="h-3 w-3" /> {user.email}
                 </span>
               </div>
             </div>
@@ -49,25 +104,14 @@ const Profile = () => {
           <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             {teacher && (
               <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Department</span>
-                  <span className="text-foreground">{teacher.department}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Grade</span>
-                  <span className="text-foreground">{teacher.grade}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Experience</span>
-                  <span className="text-foreground">{teacher.experience_years} years</span>
-                </div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Department</span><span className="text-foreground">{teacher.department}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Grade</span><span className="text-foreground">{teacher.grade}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Experience</span><span className="text-foreground">{teacher.experience_years} years</span></div>
                 <div className="pt-2 border-t border-border">
                   <span className="text-xs text-muted-foreground block mb-2">Research Interests</span>
                   <div className="flex flex-wrap gap-1.5">
                     {teacher.research_interests.split(', ').map(interest => (
-                      <span key={interest} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
-                        {interest}
-                      </span>
+                      <span key={interest} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">{interest}</span>
                     ))}
                   </div>
                 </div>
@@ -75,24 +119,12 @@ const Profile = () => {
             )}
             {student && (
               <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">University</span>
-                  <span className="text-foreground">{student.university}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Level</span>
-                  <span className="text-foreground">{student.level}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Major</span>
-                  <span className="text-foreground">{student.major}</span>
-                </div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">University</span><span className="text-foreground">{student.university}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Level</span><span className="text-foreground">{student.level}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Major</span><span className="text-foreground">{student.major}</span></div>
               </>
             )}
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Joined</span>
-              <span className="text-foreground">{currentUser.created_at}</span>
-            </div>
+            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Joined</span><span className="text-foreground">{user.created_at}</span></div>
           </div>
         </section>
 
@@ -101,11 +133,7 @@ const Profile = () => {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Projects</h2>
           <div className="grid sm:grid-cols-2 gap-2">
             {myProjects.map(p => (
-              <Link
-                key={p.id}
-                to={`/projects/${p.id}`}
-                className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
-              >
+              <Link key={p.id} to={`/projects/${p.id}`} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
                 <h3 className="text-sm font-medium text-foreground mb-1">{p.title}</h3>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="text-primary">{p.role}</span>
@@ -114,6 +142,7 @@ const Profile = () => {
                 </div>
               </Link>
             ))}
+            {myProjects.length === 0 && <p className="text-sm text-muted-foreground">No projects yet.</p>}
           </div>
         </section>
 
@@ -139,6 +168,7 @@ const Profile = () => {
                 </div>
               );
             })}
+            {recentTasks.length === 0 && <p className="text-sm text-muted-foreground">No tasks found.</p>}
           </div>
         </section>
       </motion.div>
