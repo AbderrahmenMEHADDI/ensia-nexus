@@ -1,38 +1,39 @@
 import type { User } from '@/types';
-import { users } from '@/data/mockData';
+import { api } from '../lib/apiClient';
 
-// This repository abstracts all auth API calls.
-// Replace the mock implementations with real API calls when backend is ready.
-
-const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-
+/**
+ * This repository abstracts all auth API calls.
+ * Backend handles the session via HttpOnly cookies.
+ */
 export const authRepository = {
   /**
    * Sign in with Google OAuth.
-   * TODO: Replace with real Google OAuth flow (e.g., POST /api/auth/google)
+   * Backend handles the redirect and sets HttpOnly cookies.
    */
   async signInWithGoogle(userId?: number): Promise<User> {
-    await delay(800);
-    if (userId) {
-      return users.find((u) => u.id === userId) || users[0];
-    }
-    return users[0];
+    // For now, this might just be a redirect or a post to a trigger endpoint
+    // until the full OAuth flow is linked.
+    return api.post<User>('/auth/google', { user_id: userId });
   },
 
   /**
    * Sign out the current user.
-   * TODO: Replace with real sign-out (e.g., POST /api/auth/logout)
+   * Backend clears the HttpOnly cookies.
    */
   async signOut(): Promise<void> {
-    await delay(300);
+    return api.post<void>('/auth/logout');
   },
 
   /**
    * Get the current session user (e.g., from a cookie/token).
-   * TODO: Replace with real session check (e.g., GET /api/auth/me)
+   * Backend checks the server-only cookie.
    */
   async getCurrentUser(): Promise<User | null> {
-    await delay(200);
-    return null;
+    try {
+      return await api.get<User>('/auth/me');
+    } catch (error) {
+      // If unauthorized, return null
+      return null;
+    }
   },
 };
