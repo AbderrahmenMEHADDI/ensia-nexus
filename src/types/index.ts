@@ -1,4 +1,4 @@
-export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'PARTNER';
+export type UserRole = 'STUDENT' | 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'ADMIN' | 'RESEARCHER' | 'TEACHER' | 'PARTNER';
 export type Visibility = 'PUBLIC' | 'PRIVATE';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';

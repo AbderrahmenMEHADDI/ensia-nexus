@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
-import type { User } from '@/types';
-import { authRepository } from '@/repositories/authRepository';
+import type { User, UserRole } from '@/types';
+import { authProvider } from '@/lib/auth';
 
 interface AuthState {
   user: User | null;
@@ -8,14 +8,13 @@ interface AuthState {
   isLoading: boolean;
 }
 
+export const TEACHER_ROLES: UserRole[] = ['MCA', 'PROFESSOR', 'DOCTOR', 'TEACHER'];
+
 interface AuthContextType extends AuthState {
   signInWithGoogle: (userId?: number) => Promise<void>;
   signOut: () => Promise<void>;
-  isAdmin: boolean;
-  isTeacher: boolean;
-  isStudent: boolean;
-  isPartner: boolean;
-  hasRole: (role: string | string[]) => boolean;
+  role: UserRole | null;
+  hasRole: (role: UserRole | UserRole[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkAuth = useCallback(async () => {
     try {
-      const user = await authRepository.getCurrentUser();
+      const user = await authProvider.getCurrentUser();
       setState({
         user,
         isAuthenticated: !!user,
@@ -54,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithGoogle = useCallback(async (userId?: number) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
-      const user = await authRepository.signInWithGoogle(userId);
+      const user = await authProvider.signInWithGoogle(userId);
       setState({ user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       console.error('Sign in failed:', error);
@@ -65,22 +64,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = useCallback(async () => {
     setState(s => ({ ...s, isLoading: true }));
     try {
-      await authRepository.signOut();
+      await authProvider.signOut();
       setState({ user: null, isAuthenticated: false, isLoading: false });
     } catch (error) {
-       console.error('Sign out failed:', error);
-       setState(s => ({ ...s, isLoading: false }));
+      console.error('Sign out failed:', error);
+      setState(s => ({ ...s, isLoading: false }));
     }
   }, []);
 
-  const isAdmin = state.user?.role === 'ADMIN';
-  const isTeacher = state.user?.role === 'TEACHER';
-  const isStudent = state.user?.role === 'STUDENT';
-  const isPartner = state.user?.role === 'PARTNER';
+  const role = state.user?.role || null;
 
-  const hasRole = useCallback((role: string | string[]) => {
+  const hasRole = useCallback((role: UserRole | UserRole[]) => {
     if (!state.user) return false;
     const roles = Array.isArray(role) ? role : [role];
+
+    // Support virtual 'TEACHER' role which includes MCA, PROFESSOR, DOCTOR
+    if (roles.includes('TEACHER')) {
+      if (TEACHER_ROLES.includes(state.user.role)) return true;
+    }
+
     return roles.includes(state.user.role);
   }, [state.user]);
 
@@ -88,10 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     ...state,
     signInWithGoogle,
     signOut,
-    isAdmin,
-    isTeacher,
-    isStudent,
-    isPartner,
+    role,
     hasRole,
   };
 

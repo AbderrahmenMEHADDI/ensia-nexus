@@ -23,6 +23,6 @@ export const apiRepository = {
   createTask: (projectId: number, data: Partial<Task>) => api.post<Task>(`/projects/${projectId}/tasks`, data),
 
   // Applications
-  getApplications: () => api.get<ProjectApplication[]>('/applications'),
-  submitApplication: (data: Partial<ProjectApplication>) => api.post<ProjectApplication>('/applications', data),
+  getApplications: () => api.get<ProjectApplication[]>('/project-applications'),
+  submitApplication: (data: Partial<ProjectApplication>) => api.post<ProjectApplication>('/project-applications', data),
 };

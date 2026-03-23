@@ -55,7 +55,7 @@ const AppRoutes = () => (
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/labs" element={<ProtectedRoute><LabExplorer /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
-      <Route path="/applications" element={<RoleProtectedRoute allowedRoles={['TEACHER', 'ADMIN', 'PARTNER']}><Applications /></RoleProtectedRoute>} />
+      <Route path="/applications" element={<RoleProtectedRoute allowedRoles={['MCA', 'PROFESSOR', 'DOCTOR', 'TEACHER', 'ADMIN', 'PARTNER']}><Applications /></RoleProtectedRoute>} />
       <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
