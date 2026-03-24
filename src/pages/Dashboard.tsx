@@ -8,7 +8,7 @@ import { ArrowRight, Calendar, Users } from 'lucide-react';
 import type { Project, Task, ProjectParticipant, GroupMember, ResearchGroup, ResearchLab, ProjectApplication } from '@/types';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isTeacher, isAdmin } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
@@ -62,7 +62,7 @@ const Dashboard = () => {
 
   const pendingApplications = applications.filter(a => a.status === 'PENDING');
   const pendingGroups = groups.filter(g => !g.is_validated);
-  const isTeacherOrAdmin = ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(user.role);
+  const isTeacherOrAdmin = isTeacher || isAdmin;
 
   const myGroupIds = groupMembers
     .filter(m => m.user_id === user.id && m.is_active)
@@ -95,7 +95,7 @@ const Dashboard = () => {
         </div>
 
         {/* Pending reviews for teachers */}
-        {isTeacherOrAdmin && (pendingApplications.length > 0 || (user.role === 'ADMIN' && pendingGroups.length > 0)) && (
+        {isTeacherOrAdmin && (pendingApplications.length > 0 || (isAdmin && pendingGroups.length > 0)) && (
           <div className="mb-8 space-y-2">
             {pendingApplications.length > 0 && (
               <Link to="/applications" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
@@ -103,7 +103,7 @@ const Dashboard = () => {
                 <ArrowRight className="h-4 w-4 text-primary" />
               </Link>
             )}
-            {user.role === 'ADMIN' && pendingGroups.length > 0 && (
+            {isAdmin && pendingGroups.length > 0 && (
               <Link to="/admin" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
                 <span className="text-sm font-medium text-foreground">{pendingGroups.length} group(s) awaiting validation</span>
                 <ArrowRight className="h-4 w-4 text-primary" />

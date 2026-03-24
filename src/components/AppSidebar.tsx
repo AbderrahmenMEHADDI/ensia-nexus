@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRole[] }[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/projects/1', label: 'Project Board', icon: Kanban },
-  { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['MCA', 'PROFESSOR', 'DOCTOR', 'TEACHER', 'ADMIN', 'PARTNER'] },
+  { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
   { path: '/chat', label: 'Chat', icon: MessageCircle },
   { path: '/profile', label: 'Profile', icon: User },
   { path: '/admin', label: 'Admin', icon: Shield, allowedRoles: ['ADMIN'] },
@@ -39,7 +39,7 @@ const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRol
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasRole } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -63,7 +63,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                if (item.allowedRoles && user && !item.allowedRoles.includes(user.role)) return null;
+                if (item.allowedRoles && !hasRole(item.allowedRoles)) return null;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild>

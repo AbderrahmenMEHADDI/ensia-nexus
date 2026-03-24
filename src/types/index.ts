@@ -1,10 +1,10 @@
-export type UserRole = 'STUDENT' | 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'ADMIN' | 'RESEARCHER' | 'TEACHER' | 'PARTNER';
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'PARTNER';
 export type Visibility = 'PUBLIC' | 'PRIVATE';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
-export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR';
+export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'RESEARCHER';
 export type ResourceType = 'PAPER_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
 
 export interface User {

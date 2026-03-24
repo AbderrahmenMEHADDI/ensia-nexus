@@ -3,16 +3,18 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { ApplicationStatusBadge, RoleBadge } from '@/components/Badges';
-import type { ProjectApplication, User, Project } from '@/types';
-import { FileText, CheckCircle2, XCircle, Clock, MessageSquare, Loader2 } from 'lucide-react';
+import type { ProjectApplication, User, Project, ResearchGroup, GroupMember } from '@/types';
+import { FileText, CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Applications = () => {
-  const { user } = useAuth();
+  const { user, isTeacher, isAdmin } = useAuth();
   const { toast } = useToast();
   const [apps, setApps] = useState<ProjectApplication[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<number | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
@@ -21,7 +23,28 @@ const Applications = () => {
   const [showApplyForm, setShowApplyForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const isTeacher = user && ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(user.role);
+  const isGroupOwner = (projectId: number) => {
+    if (!user) return false;
+    if (isAdmin) return true;
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return false;
+    if (project.created_by === user.id) return true;
+    const group = groups.find(g => g.id === project.group_id);
+    return group?.leader_user_id === user.id;
+  };
+
+  const isGroupMember = (groupId: number) => {
+    if (!user) return false;
+    return groupMembers.some(gm => gm.group_id === groupId && gm.user_id === user.id && gm.is_active);
+  };
+
+  const canSeeApp = (app: ProjectApplication) => {
+    if (!user) return false;
+    if (app.student_user_id === user.id) return true;
+    const project = projects.find(p => p.id === app.project_id);
+    if (project && isGroupMember(project.group_id)) return true;
+    return false;
+  };
 
   const getUserById = (id: number) => users.find(u => u.id === id);
   const getProjectById = (id: number) => projects.find(p => p.id === id);
@@ -29,14 +52,18 @@ const Applications = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [a, u, p] = await Promise.all([
+        const [a, u, p, g, gm] = await Promise.all([
           apiRepository.getApplications(),
           apiRepository.getUsers(),
           apiRepository.getProjects(),
+          apiRepository.getGroups(),
+          apiRepository.getGroupMembers(),
         ]);
         setApps(a);
         setUsers(u);
         setProjects(p);
+        setGroups(g);
+        setGroupMembers(gm);
       } catch (e) {
         console.error('Applications load error:', e);
         toast({ title: 'Error loading applications', variant: 'destructive' });
@@ -158,7 +185,7 @@ const Applications = () => {
 
         {/* Applications list */}
         <div className="space-y-4">
-          {apps.map((app, i) => {
+          {apps.filter(canSeeApp).map((app, i) => {
             const student = getUserById(app.student_user_id);
             const project = getProjectById(app.project_id);
             const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
@@ -201,7 +228,7 @@ const Applications = () => {
                     </div>
                   )}
 
-                  {isTeacher && app.status === 'PENDING' && (
+                  {isGroupOwner(app.project_id) && app.status === 'PENDING' && (
                     <div>
                       {!isSelected ? (
                         <button
@@ -247,7 +274,7 @@ const Applications = () => {
               </motion.div>
             );
           })}
-          {apps.length === 0 && (
+          {apps.filter(canSeeApp).length === 0 && (
             <p className="text-muted-foreground text-center py-16">No applications found.</p>
           )}
         </div>

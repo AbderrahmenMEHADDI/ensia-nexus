@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import type { Student, Teacher, Project, Task, ProjectParticipant, User } from '@/types';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, isTeacher } = useAuth();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -30,7 +30,7 @@ const Profile = () => {
         setTasks(t);
         setParticipants(part);
         // Fetch role-specific profile
-        if (['DOCTOR', 'PROFESSOR', 'MCA'].includes(user.role)) {
+        if (isTeacher) {
           try {
             setTeacher(await apiRepository.getTeacherProfile(user.id));
           } catch { /* not a teacher */ }
