@@ -5,7 +5,6 @@ import { RoleBadge } from '@/components/Badges';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard,
-  FlaskConical,
   Kanban,
   FileText,
   User,
@@ -49,8 +48,8 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="p-4 flex items-center gap-3">
           <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
-            <div className="h-8 w-8 shrink-0 rounded-lg bg-primary flex items-center justify-center">
-              <FlaskConical className="h-4 w-4 text-primary-foreground" />
+            <div className="h-8 w-8 shrink-0 flex items-center justify-center">
+              <img src="/logo_small.svg" alt="Logo" className="h-full w-full object-contain" />
             </div>
             {!collapsed && (
               <span className="text-sm font-display font-semibold text-foreground truncate">

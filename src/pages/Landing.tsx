@@ -62,6 +62,9 @@ const Landing = () => {
             <span className="inline-block mb-4 px-3 py-1 rounded-full border border-border bg-muted text-muted-foreground text-xs font-medium tracking-wide">
               École Nationale Supérieure d'Intelligence Artificielle
             </span>
+            <div className="mb-6">
+              <img src="/logo.svg" alt="ENSIA Logo" className="h-16 w-auto" />
+            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground leading-[1.1] mb-6">
               ENSIA Research Hub
             </h1>
@@ -173,8 +176,8 @@ const Landing = () => {
       <footer className="border-t border-border py-8">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
-              <FlaskConical className="h-3 w-3 text-primary-foreground" />
+            <div className="h-8 w-8 flex items-center justify-center">
+              <img src="/logo_small.svg" alt="Logo" className="h-full w-full object-contain" />
             </div>
             <span className="text-sm text-muted-foreground">ENSIA Research Hub © 2026</span>
           </div>

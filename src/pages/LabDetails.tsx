@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { apiRepository } from '@/repositories/apiRepository';
 import type { ResearchLab, ResearchGroup, User } from '@/types';
-import { FlaskConical, User as UserIcon, Building2, ChevronRight, Loader2, Mail, ExternalLink } from 'lucide-react';
+import { User as UserIcon, Building2, ChevronRight, Loader2, Mail, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const LabDetails = () => {
@@ -59,12 +59,12 @@ const LabDetails = () => {
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-primary/10 via-background to-background rounded-3xl border border-border p-8 md:p-12 mb-10 overflow-hidden relative">
           <div className="absolute top-0 right-0 p-8 opacity-5">
-            <FlaskConical size={200} />
+            <img src="/logo_small.svg" alt="" className="w-[200px] h-[200px] object-contain" />
           </div>
           
           <div className="relative z-10 max-w-2xl">
-            <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
-              <FlaskConical className="h-8 w-8 text-primary-foreground" />
+            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-lg shadow-primary/5">
+              <img src="/logo_small.svg" alt="Lab" className="h-8 w-8 object-contain" />
             </div>
             <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4 leading-tight">
               {lab.name}
