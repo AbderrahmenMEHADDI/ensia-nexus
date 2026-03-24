@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
-import { FlaskConical, Users, ChevronDown, ChevronRight, CheckCircle2, Clock, FolderOpen } from 'lucide-react';
+import { FlaskConical, Users, ChevronDown, ChevronRight, CheckCircle2, Clock, FolderOpen, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { ResearchLab, ResearchGroup, GroupMember, Project, User } from '@/types';
 
 const LabExplorer = () => {
@@ -88,12 +89,12 @@ const LabExplorer = () => {
                       {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{lab.description}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs font-mono text-muted-foreground">
-                      <span>Head: {head?.full_name}</span>
-                      <span>·</span>
-                      <span>{labGroups.length} group{labGroups.length !== 1 ? 's' : ''}</span>
-                    </div>
                   </div>
+                  <Link to={`/labs/${lab.id}`} onClick={(e) => e.stopPropagation()}>
+                    <Button variant="outline" size="sm" className="rounded-xl gap-2 font-mono text-[10px] uppercase tracking-wider">
+                      Full Details <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  </Link>
                 </button>
 
                 {isExpanded && (
@@ -115,16 +116,21 @@ const LabExplorer = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <h3 className="font-medium text-foreground">{group.name}</h3>
+                              <h3 className="font-medium text-foreground">{group.name}</h3>
                                 {group.is_validated ? (
                                   <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                                 ) : (
                                   <Clock className="h-4 w-4 text-primary shrink-0" />
                                 )}
-                                {isGroupExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground ml-auto" /> : <ChevronRight className="h-3 w-3 text-muted-foreground ml-auto" />}
                               </div>
                               <p className="text-xs text-muted-foreground mt-0.5">{group.description}</p>
                             </div>
+                            <Link to={`/groups/${group.id}`} onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </Button>
+                            </Link>
+                            {isGroupExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
                           </button>
 
                           {isGroupExpanded && (

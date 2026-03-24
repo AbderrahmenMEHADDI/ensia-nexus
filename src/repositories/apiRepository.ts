@@ -3,7 +3,7 @@ import type {
   User, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember,
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
-  Task, TaskUpdate,
+  Task, TaskUpdate, Announcement,
 } from '@/types';
 
 /**
@@ -72,4 +72,8 @@ export const apiRepository = {
     api.post<ProjectApplication>('/project-applications/', data),
   reviewApplication: (id: number, data: Partial<ProjectApplication>) =>
     api.put<ProjectApplication>(`/project-applications/${id}`, data),
+
+  // ── Announcements ────────────────────────────────────────────────────────
+  getAnnouncements: () => api.get<Announcement[]>('/announcements/'),
+  createAnnouncement: (data: Partial<Announcement>) => api.post<Announcement>('/announcements/', data),
 };

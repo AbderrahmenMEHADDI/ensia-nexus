@@ -17,6 +17,9 @@ import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AdminPanel from "./pages/AdminPanel";
+import Announcements from "./pages/Announcements";
+import LabDetails from "./pages/LabDetails";
+import GroupDetails from "./pages/GroupDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +62,9 @@ const AppRoutes = () => (
       <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
+      <Route path="/labs/:labId" element={<ProtectedRoute><LabDetails /></ProtectedRoute>} />
+      <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

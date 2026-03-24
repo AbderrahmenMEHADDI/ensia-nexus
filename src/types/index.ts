@@ -7,6 +7,16 @@ export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
 export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'RESEARCHER';
 export type ResourceType = 'PAPER_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
 
+export interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  author_user_id: number;
+  created_at: string;
+  category: 'RESEARCH' | 'ADMIN' | 'EVENT';
+  tags?: string[];
+}
+
 export interface User {
   id: number;
   full_name: string;
