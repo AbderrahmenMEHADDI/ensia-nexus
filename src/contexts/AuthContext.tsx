@@ -8,13 +8,16 @@ interface AuthState {
   isLoading: boolean;
 }
 
-export const TEACHER_ROLES: UserRole[] = ['MCA', 'PROFESSOR', 'DOCTOR', 'TEACHER'];
+export const TEACHER_ROLES: UserRole[] = ['TEACHER'];
 
 interface AuthContextType extends AuthState {
   signInWithGoogle: (userId?: number) => Promise<void>;
   signOut: () => Promise<void>;
+  checkAuth: () => Promise<void>;
   role: UserRole | null;
   hasRole: (role: UserRole | UserRole[]) => boolean;
+  isTeacher: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -78,20 +81,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!state.user) return false;
     const roles = Array.isArray(role) ? role : [role];
 
-    // Support virtual 'TEACHER' role which includes MCA, PROFESSOR, DOCTOR
-    if (roles.includes('TEACHER')) {
-      if (TEACHER_ROLES.includes(state.user.role)) return true;
-    }
+    // For backward compatibility during transition, treat legacy degree roles as TEACHER
+    const userRole = state.user.role as string;
+    const isLegacyTeacher = ['MCA', 'PROFESSOR', 'DOCTOR', 'RESEARCHER'].includes(userRole);
+    
+    if (roles.includes('TEACHER') && (state.user.role === 'TEACHER' || isLegacyTeacher)) return true;
+    if (roles.includes('ADMIN') && state.user.role === 'ADMIN') return true;
+    if (roles.includes('STUDENT') && state.user.role === 'STUDENT') return true;
 
-    return roles.includes(state.user.role);
+    return roles.includes(state.user.role as UserRole);
   }, [state.user]);
+
+  const isTeacher = hasRole('TEACHER');
+  const isAdmin = hasRole('ADMIN');
 
   const value = {
     ...state,
     signInWithGoogle,
     signOut,
+    checkAuth,
     role,
     hasRole,
+    isTeacher,
+    isAdmin,
   };
 
   return (

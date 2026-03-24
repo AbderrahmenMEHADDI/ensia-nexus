@@ -1,16 +1,49 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { projects, getUserById, getGroupById, getLabById, researchLabs, researchGroups, tasks } from '@/data/mockData';
+import { apiRepository } from '@/repositories/apiRepository';
 import { ArrowRight, FlaskConical, Users, FolderOpen, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { ResearchLab, ResearchGroup, Project, Task, User } from '@/types';
 
 const Landing = () => {
+  const [labs, setLabs] = useState<ResearchLab[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [l, g, p, t, u] = await Promise.all([
+          apiRepository.getLabs(),
+          apiRepository.getGroups(),
+          apiRepository.getProjects(),
+          apiRepository.getTasks(),
+          apiRepository.getUsers(),
+        ]);
+        setLabs(l);
+        setGroups(g);
+        setProjects(p);
+        setTasks(t);
+        setUsers(u);
+      } catch {
+        // Landing still renders without data
+      }
+    };
+    load();
+  }, []);
+
+  const getUserById = (id: number) => users.find(u => u.id === id);
+  const getGroupById = (id: number) => groups.find(g => g.id === id);
+
   const publicProjects = projects.filter(p => p.visibility === 'PUBLIC');
   const completedTasks = tasks.filter(t => t.status === 'DONE').length;
 
   const stats = [
-    { label: 'Research Labs', value: researchLabs.length, icon: FlaskConical },
-    { label: 'Research Groups', value: researchGroups.length, icon: Users },
+    { label: 'Research Labs', value: labs.length, icon: FlaskConical },
+    { label: 'Research Groups', value: groups.length, icon: Users },
     { label: 'Active Projects', value: projects.length, icon: FolderOpen },
     { label: 'Tasks Completed', value: completedTasks, icon: CheckCircle2 },
   ];
@@ -80,9 +113,9 @@ const Landing = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {publicProjects.map((project) => {
+            {publicProjects.map(project => {
               const group = getGroupById(project.group_id);
-              const lab = group ? getLabById(group.lab_id) : null;
+              const lab = group ? labs.find(l => l.id === group.lab_id) : null;
               const creator = getUserById(project.created_by);
               const projectTasks = tasks.filter(t => t.project_id === project.id);
               const doneTasks = projectTasks.filter(t => t.status === 'DONE').length;
@@ -103,6 +136,9 @@ const Landing = () => {
                 </div>
               );
             })}
+            {publicProjects.length === 0 && (
+              <p className="text-sm text-muted-foreground col-span-2 text-center py-8">No public projects yet.</p>
+            )}
           </div>
         </motion.div>
       </section>
@@ -112,9 +148,9 @@ const Landing = () => {
         <div className="container py-20">
           <h2 className="text-2xl font-display font-semibold text-foreground mb-8">Research Labs</h2>
           <div className="grid md:grid-cols-3 gap-4">
-            {researchLabs.map((lab) => {
+            {labs.map(lab => {
               const head = getUserById(lab.head_teacher_id);
-              const groups = researchGroups.filter(g => g.lab_id === lab.id);
+              const labGroups = groups.filter(g => g.lab_id === lab.id);
               return (
                 <div key={lab.id} className="p-5 rounded-xl border border-border bg-card">
                   <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
@@ -124,7 +160,7 @@ const Landing = () => {
                   <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{lab.description}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>Head: {head?.full_name}</span>
-                    <span>{groups.length} groups</span>
+                    <span>{labGroups.length} groups</span>
                   </div>
                 </div>
               );
@@ -143,7 +179,7 @@ const Landing = () => {
             <span className="text-sm text-muted-foreground">ENSIA Research Hub © 2026</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Built for advancing AI, cybersecurity & data science research.
+            Built for advancing AI, cybersecurity &amp; data science research.
           </p>
         </div>
       </footer>

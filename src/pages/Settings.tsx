@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { currentUser } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { LogOut, Moon, Sun } from 'lucide-react';
 
 const Settings = () => {
-  const { signOut } = useAuth();
-  const [fullName, setFullName] = useState(currentUser.full_name);
+  const { user, signOut } = useAuth();
+  const [fullName, setFullName] = useState(user?.full_name || '');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [applicationUpdates, setApplicationUpdates] = useState(true);
@@ -44,8 +43,8 @@ const Settings = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" value={currentUser.email} disabled className="opacity-60" />
-              <p className="text-xs text-muted-foreground">Managed by your Google account.</p>
+              <Input id="email" value={user?.email || ''} disabled className="opacity-60" />
+              <p className="text-xs text-muted-foreground">Managed by your institution.</p>
             </div>
             <Button size="sm" className="mt-2">Save Changes</Button>
           </div>
@@ -98,7 +97,7 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* Danger zone */}
+        {/* Account */}
         <section>
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Account</h2>
           <div className="rounded-xl border border-destructive/20 bg-card p-5">
