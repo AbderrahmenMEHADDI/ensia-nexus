@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FlaskConical, Loader2, User as UserIcon, Mail, Lock, UserCircle } from 'lucide-react';
+import { Loader2, User as UserIcon, Mail, Lock, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,8 +78,8 @@ const SignUp = () => {
         className="w-full max-w-md"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <FlaskConical className="h-6 w-6 text-primary-foreground" />
+          <div className="h-20 w-auto mb-4">
+            <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
           </div>
           <h1 className="text-xl font-display font-semibold text-foreground">Create your account</h1>
           <p className="text-sm text-muted-foreground mt-1">Join ENSIA Research Hub</p>
