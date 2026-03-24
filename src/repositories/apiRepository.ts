@@ -3,7 +3,7 @@ import type {
   User, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember,
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
-  Task, TaskUpdate, Announcement,
+  Task, TaskUpdate, Announcement, Comment, Reaction,
 } from '@/types';
 
 /**
@@ -76,4 +76,8 @@ export const apiRepository = {
   // ── Announcements ────────────────────────────────────────────────────────
   getAnnouncements: () => api.get<Announcement[]>('/announcements/'),
   createAnnouncement: (data: Partial<Announcement>) => api.post<Announcement>('/announcements/', data),
+  getInteractions: (id: number) => api.get<Announcement['interactions']>(`/announcements/${id}/interactions`),
+  getComments: (id: number) => api.get<Comment[]>(`/announcements/${id}/comments`),
+  createComment: (id: number, data: Partial<Comment>) => api.post<Comment>(`/announcements/${id}/comments`, data),
+  reactToAnnouncement: (id: number, data: Partial<Reaction>) => api.post<{status: string, reaction: string | null}>(`/announcements/${id}/react`, data),
 };

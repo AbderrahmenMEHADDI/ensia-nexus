@@ -15,6 +15,26 @@ export interface Announcement {
   created_at: string;
   category: 'RESEARCH' | 'ADMIN' | 'EVENT';
   tags?: string[];
+  interactions?: {
+    comments_count: number;
+    reactions_count: number;
+    reactions_by_type: Record<string, number>;
+    user_reacted?: string;
+  };
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  announcement_id: number;
+  author_user_id: number;
+  created_at: string;
+}
+
+export interface Reaction {
+  announcement_id: number;
+  user_id: number;
+  reaction_type: string;
 }
 
 export interface User {
