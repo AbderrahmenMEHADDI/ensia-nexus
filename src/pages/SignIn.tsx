@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useEffect, useState } from 'react';
-import { authProvider } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { hashPassword } from '@/lib/passwordUtils';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address').endsWith('@ensia.edu.dz', 'Must be an ENSIA email'),
@@ -21,7 +19,7 @@ const signInSchema = z.object({
 type SignInValues = z.infer<typeof signInSchema>;
 
 const SignIn = () => {
-  const { signInWithGoogle, isLoading, isAuthenticated, checkAuth } = useAuth();
+  const { signIn, signInWithGoogle, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -41,9 +39,8 @@ const SignIn = () => {
   const onFormSubmit = async (data: SignInValues) => {
     setSubmitting(true);
     try {
-      const hashedPassword = await hashPassword(data.password);
-      await authProvider.login({ email: data.email, password: hashedPassword });
-      await checkAuth(); // refresh auth context from the new session cookie
+      // const hashedPassword = await hashPassword(data.password);
+      await signIn({ email: data.email, password: data.password });
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
       toast({

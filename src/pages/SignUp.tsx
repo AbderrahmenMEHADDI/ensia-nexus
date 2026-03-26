@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { hashPassword } from '@/lib/passwordUtils';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -50,11 +49,10 @@ const SignUp = () => {
   const onFormSubmit = async (data: SignUpValues) => {
     setSubmitting(true);
     try {
-      const hashedPassword = await hashPassword(data.password);
       await signUp({
         email: data.email,
-        password: hashedPassword,
         full_name: data.fullName,
+        password: data.password,
         role: data.role
       });
       toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
@@ -62,7 +60,7 @@ const SignUp = () => {
     } catch (err: any) {
       toast({
         title: 'Sign up failed',
-        description: err.response?.data?.detail || 'Something went wrong. Please try again.',
+        description: err?.response?.data?.detail || err?.message || 'Something went wrong. Please try again.',
         variant: 'destructive'
       });
     } finally {
