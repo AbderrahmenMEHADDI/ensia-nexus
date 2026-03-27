@@ -213,11 +213,9 @@ const Landing = () => {
   return (
     <div className="landing-root min-h-screen bg-background text-foreground">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap');
-
-        .font-lora    { font-family: 'Lora', Georgia, serif; }
-        .font-mono-dm { font-family: 'DM Mono', 'Courier New', monospace; }
-        .landing-root { font-family: 'Lora', Georgia, serif; }
+        .font-lora    { font-family: inherit; }
+        .font-mono-dm { font-family: inherit; }
+        .landing-root { font-family: inherit; }
 
         /* ── Grain ───────────────────────────────────────── */
         .grain::after {
