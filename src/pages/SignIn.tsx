@@ -94,6 +94,10 @@ const SignIn = () => {
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
 
+          <p className="text-xs text-right -mt-1">
+            <a href="/forgot-password" className="text-primary hover:underline">Forgot password?</a>
+          </p>
+
           <Button
             type="submit"
             className="w-full h-11 mt-1"
