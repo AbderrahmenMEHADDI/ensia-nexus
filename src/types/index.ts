@@ -1,11 +1,41 @@
-export type UserRole = 'STUDENT' | 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'ADMIN' | 'RESEARCHER' | 'TEACHER' | 'PARTNER';
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'PARTNER';
 export type Visibility = 'PUBLIC' | 'PRIVATE';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
-export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR';
+export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'RESEARCHER';
 export type ResourceType = 'PAPER_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
+
+export interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  author_user_id: number;
+  created_at: string;
+  category: 'RESEARCH' | 'ADMIN' | 'EVENT';
+  tags?: string[];
+  interactions?: {
+    comments_count: number;
+    reactions_count: number;
+    reactions_by_type: Record<string, number>;
+    user_reacted?: string;
+  };
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  announcement_id: number;
+  author_user_id: number;
+  created_at: string;
+}
+
+export interface Reaction {
+  announcement_id: number;
+  user_id: number;
+  reaction_type: string;
+}
 
 export interface User {
   id: number;

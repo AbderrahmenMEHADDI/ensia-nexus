@@ -1,15 +1,17 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { projects, getTasksByProject, getUserById, getParticipantsByProject, getResourcesByProject, getGroupById, getLabById } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRepository } from '@/repositories/apiRepository';
 import { PriorityBadge, getPriorityBorderClass } from '@/components/Badges';
-import type { Task, TaskStatus, TaskPriority } from '@/types';
-import { Calendar, ExternalLink, GitBranch, FileText, Database, Plus, GripVertical } from 'lucide-react';
+import type { Task, TaskStatus, TaskPriority, Project, ProjectParticipant, ProjectResource, ResearchGroup, ResearchLab, User } from '@/types';
+import { Calendar, ExternalLink, GitBranch, FileText, Database, Plus, GripVertical, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const statusColumns: { status: TaskStatus; label: string; color: string }[] = [
   { status: 'TODO', label: 'To Do', color: 'bg-status-todo' },
@@ -26,62 +28,109 @@ const resourceIcons: Record<string, React.ElementType> = {
 };
 
 const ProjectBoard = () => {
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(projects[0]?.id || 1);
-  const project = projects.find(p => p.id === selectedProjectId);
-
-  const [localTasks, setLocalTasks] = useState<Task[]>(() =>
-    getTasksByProject(selectedProjectId)
-  );
-
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [localTasks, setLocalTasks] = useState<Task[]>([]);
+  const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
+  const [resources, setResources] = useState<ProjectResource[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [labs, setLabs] = useState<ResearchLab[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
-
-  // Create task dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createStatus, setCreateStatus] = useState<TaskStatus>('TODO');
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState<TaskPriority>('MEDIUM');
 
-  const handleProjectChange = (val: string) => {
-    const id = Number(val);
-    setSelectedProjectId(id);
-    setLocalTasks(getTasksByProject(id));
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [p, g, l, u] = await Promise.all([
+          apiRepository.getProjects(),
+          apiRepository.getGroups(),
+          apiRepository.getLabs(),
+          apiRepository.getUsers(),
+        ]);
+        setProjects(p);
+        setGroups(g);
+        setLabs(l);
+        setAllUsers(u);
+        if (p.length > 0) {
+          const firstId = p[0].id;
+          setSelectedProjectId(firstId);
+          await loadProjectData(firstId);
+        }
+      } catch (e) {
+        console.error('ProjectBoard load error:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const loadProjectData = async (projectId: number) => {
+    const [t, part, res] = await Promise.all([
+      apiRepository.getTasks(projectId),
+      apiRepository.getProjectParticipants(projectId),
+      apiRepository.getProjectResources(projectId),
+    ]);
+    setLocalTasks(t);
+    setParticipants(part);
+    setResources(res);
   };
 
-  if (!project) {
-    return <div className="container py-10 text-center text-muted-foreground">Project not found.</div>;
-  }
+  const handleProjectChange = async (val: string) => {
+    const id = Number(val);
+    setSelectedProjectId(id);
+    setLoading(true);
+    try {
+      await loadProjectData(id);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const group = getGroupById(project.group_id);
+  const getUserById = (id: number) => allUsers.find(u => u.id === id);
+  const getGroupById = (id: number) => groups.find(g => g.id === id);
+  const getLabById = (id: number) => labs.find(l => l.id === id);
+
+  const project = projects.find(p => p.id === selectedProjectId);
+  const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
-  const participants = getParticipantsByProject(project.id);
-  const resources = getResourcesByProject(project.id);
 
-  // Drag handlers
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', String(taskId));
   };
-
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverColumn(status);
   };
+  const handleDragLeave = () => setDragOverColumn(null);
 
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
+  const handleDrop = async (e: React.DragEvent, newStatus: TaskStatus) => {
     e.preventDefault();
     const taskId = Number(e.dataTransfer.getData('text/plain'));
     if (taskId) {
+      // Optimistic update
       setLocalTasks(prev =>
-        prev.map(t => t.id === taskId ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t)
+        prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
       );
+      try {
+        await apiRepository.updateTask(taskId, { status: newStatus });
+      } catch {
+        toast({ title: 'Failed to update task', variant: 'destructive' });
+        // Revert
+        await loadProjectData(selectedProjectId!);
+      }
     }
     setDraggedTaskId(null);
     setDragOverColumn(null);
@@ -92,30 +141,38 @@ const ProjectBoard = () => {
     setDragOverColumn(null);
   };
 
-  const handleCreateTask = () => {
-    if (!newTitle.trim()) return;
-    const newTask: Task = {
-      id: Date.now(),
+  const handleCreateTask = async () => {
+    if (!newTitle.trim() || !selectedProjectId || !user) return;
+    const data = {
       project_id: selectedProjectId,
       title: newTitle.trim(),
       description: newDesc.trim(),
       status: createStatus,
       priority: newPriority,
-      created_by: 1,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      created_by: user.id,
     };
-    setLocalTasks(prev => [...prev, newTask]);
-    setNewTitle('');
-    setNewDesc('');
-    setNewPriority('MEDIUM');
+    try {
+      const created = await apiRepository.createTask(data);
+      setLocalTasks(prev => [...prev, created]);
+      toast({ title: 'Task created' });
+    } catch {
+      toast({ title: 'Failed to create task', variant: 'destructive' });
+    }
+    setNewTitle(''); setNewDesc(''); setNewPriority('MEDIUM');
     setCreateOpen(false);
   };
 
-  const openCreateForColumn = (status: TaskStatus) => {
-    setCreateStatus(status);
-    setCreateOpen(true);
-  };
+  if (loading && projects.length === 0) {
+    return (
+      <div className="container py-10 flex justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!project) {
+    return <div className="container py-10 text-center text-muted-foreground">No projects found.</div>;
+  }
 
   return (
     <div className="container py-10">
@@ -135,13 +192,10 @@ const ProjectBoard = () => {
               </SelectTrigger>
               <SelectContent>
                 {projects.map(p => (
-                  <SelectItem key={p.id} value={String(p.id)}>
-                    {p.title}
-                  </SelectItem>
+                  <SelectItem key={p.id} value={String(p.id)}>{p.title}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
             <span className={`text-xs font-mono px-2 py-0.5 rounded ${project.visibility === 'PUBLIC' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
               {project.visibility}
             </span>
@@ -152,11 +206,11 @@ const ProjectBoard = () => {
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-muted-foreground">Team:</span>
             {participants.map(p => {
-              const user = getUserById(p.user_id);
-              if (!user) return null;
+              const u = getUserById(p.user_id);
+              if (!u) return null;
               return (
-                <div key={p.user_id} className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground" title={user.full_name}>
-                  {user.full_name.split(' ').map(n => n[0]).join('')}
+                <div key={p.user_id} className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground" title={u.full_name}>
+                  {u.full_name.split(' ').map(n => n[0]).join('')}
                 </div>
               );
             })}
@@ -172,9 +226,9 @@ const ProjectBoard = () => {
               <div
                 key={col.status}
                 className={`rounded-xl border border-border bg-card/50 p-3 transition-colors min-h-[200px] ${isOver ? 'border-primary/40 bg-primary/5' : ''}`}
-                onDragOver={(e) => handleDragOver(e, col.status)}
+                onDragOver={e => handleDragOver(e, col.status)}
                 onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, col.status)}
+                onDrop={e => handleDrop(e, col.status)}
               >
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className={`h-2.5 w-2.5 rounded-full ${col.color}`} />
@@ -212,8 +266,7 @@ const ProjectBoard = () => {
                         </div>
                         {task.due_date && (
                           <div className="flex items-center gap-1 mt-2 text-xs font-mono text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {task.due_date}
+                            <Calendar className="h-3 w-3" /> {task.due_date}
                           </div>
                         )}
                       </motion.div>
@@ -221,13 +274,11 @@ const ProjectBoard = () => {
                   })}
                 </div>
 
-                {/* Add task button per column */}
                 <button
-                  onClick={() => openCreateForColumn(col.status)}
+                  onClick={() => { setCreateStatus(col.status); setCreateOpen(true); }}
                   className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border text-xs font-mono text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
                 >
-                  <Plus className="h-3 w-3" />
-                  Add task
+                  <Plus className="h-3 w-3" /> Add task
                 </button>
               </div>
             );
@@ -276,43 +327,26 @@ const ProjectBoard = () => {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="task-title">Title</Label>
-              <Input
-                id="task-title"
-                placeholder="Task title..."
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-              />
+              <Input id="task-title" placeholder="Task title..." value={newTitle} onChange={e => setNewTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="task-desc">Description</Label>
-              <Textarea
-                id="task-desc"
-                placeholder="Describe the task..."
-                value={newDesc}
-                onChange={e => setNewDesc(e.target.value)}
-                rows={3}
-              />
+              <Textarea id="task-desc" placeholder="Describe the task..." value={newDesc} onChange={e => setNewDesc(e.target.value)} rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={createStatus} onValueChange={(v) => setCreateStatus(v as TaskStatus)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={createStatus} onValueChange={v => setCreateStatus(v as TaskStatus)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {statusColumns.map(s => (
-                      <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>
-                    ))}
+                    {statusColumns.map(s => <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Priority</Label>
-                <Select value={newPriority} onValueChange={(v) => setNewPriority(v as TaskPriority)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={newPriority} onValueChange={v => setNewPriority(v as TaskPriority)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="LOW">Low</SelectItem>
                     <SelectItem value="MEDIUM">Medium</SelectItem>
