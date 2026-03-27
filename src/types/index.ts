@@ -42,6 +42,12 @@ export interface User {
   full_name: string;
   email: string;
   role: UserRole;
+  institution?: string;
+  department?: string;
+  contact_email?: string;
+  phone_number?: string;
+  address?: string;
+  website?: string;
   created_at: string;
 }
 
@@ -50,6 +56,35 @@ export interface Student {
   university: string;
   level: string;
   major: string;
+  bio?: string;
+  experience?: string;
+  research_interests?: string;
+  skills?: string;
+  cv_url?: string;
+  created_at: string;
+}
+
+export interface StudentCVEntry {
+  id: number;
+  student_user_id: number;
+  title: string;
+  university?: string;
+  level?: 'PHD' | 'UNDERGRADUATE' | 'GRADUATE';
+  major?: string;
+  bio?: string;
+  experience?: string;
+  research_interests?: string;
+  skills?: string;
+  cv_url?: string;
+  created_at: string;
+}
+
+export interface StudentPreviousProject {
+  id: number;
+  student_user_id: number;
+  title: string;
+  project_link?: string;
+  description?: string;
   created_at: string;
 }
 
@@ -178,6 +213,7 @@ export interface ChatMessage {
   id: number;
   room_id: number;
   sender_user_id: number;
+  sender_name?: string;
   content: string;
   created_at: string;
 }

@@ -3,7 +3,20 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { PriorityBadge, getPriorityBorderClass } from '@/components/Badges';
-import type { Task, TaskStatus, TaskPriority, Project, ProjectParticipant, ProjectResource, ResearchGroup, ResearchLab, User } from '@/types';
+import type {
+  Task,
+  TaskStatus,
+  TaskPriority,
+  Project,
+  ProjectParticipant,
+  ProjectResource,
+  ResearchGroup,
+  ResearchLab,
+  User,
+  ProjectApplication,
+  ParticipantRole,
+  Visibility,
+} from '@/types';
 import { Calendar, ExternalLink, GitBranch, FileText, Database, Plus, GripVertical, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
@@ -29,8 +42,11 @@ const resourceIcons: Record<string, React.ElementType> = {
 
 const ProjectBoard = () => {
   const { user } = useAuth();
+  const isStudent = user?.role === 'STUDENT';
+  const canManageProjects = !!user && user.role !== 'STUDENT';
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [applications, setApplications] = useState<ProjectApplication[]>([]);
   const [localTasks, setLocalTasks] = useState<Task[]>([]);
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
   const [resources, setResources] = useState<ProjectResource[]>([]);
@@ -46,20 +62,37 @@ const ProjectBoard = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState<TaskPriority>('MEDIUM');
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [applyProjectId, setApplyProjectId] = useState<number | null>(null);
+  const [applyMotivation, setApplyMotivation] = useState('');
+  const [applySubmitting, setApplySubmitting] = useState(false);
+  const [projectFormOpen, setProjectFormOpen] = useState(false);
+  const [memberFormOpen, setMemberFormOpen] = useState(false);
+  const [formProjectTitle, setFormProjectTitle] = useState('');
+  const [formProjectDescription, setFormProjectDescription] = useState('');
+  const [formGroupId, setFormGroupId] = useState('');
+  const [formVisibility, setFormVisibility] = useState<Visibility>('PRIVATE');
+  const [formCreateProjectLoading, setFormCreateProjectLoading] = useState(false);
+  const [formMemberProjectId, setFormMemberProjectId] = useState('');
+  const [formMemberUserId, setFormMemberUserId] = useState('');
+  const [formMemberRole, setFormMemberRole] = useState<ParticipantRole>('MEMBER');
+  const [formAddMemberLoading, setFormAddMemberLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [p, g, l, u] = await Promise.all([
+        const [p, g, l, u, a] = await Promise.all([
           apiRepository.getProjects(),
           apiRepository.getGroups(),
           apiRepository.getLabs(),
           apiRepository.getUsers(),
+          isStudent ? apiRepository.getApplications() : Promise.resolve([] as ProjectApplication[]),
         ]);
         setProjects(p);
         setGroups(g);
         setLabs(l);
         setAllUsers(u);
+        setApplications(a);
         if (p.length > 0) {
           const firstId = p[0].id;
           setSelectedProjectId(firstId);
@@ -72,7 +105,7 @@ const ProjectBoard = () => {
       }
     };
     load();
-  }, []);
+  }, [isStudent]);
 
   const loadProjectData = async (projectId: number) => {
     const [t, part, res] = await Promise.all([
@@ -103,6 +136,9 @@ const ProjectBoard = () => {
   const project = projects.find(p => p.id === selectedProjectId);
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
+  const publicProjects = projects.filter(p => p.visibility === 'PUBLIC');
+  const hasApplied = (projectId: number) =>
+    applications.some(a => a.project_id === projectId && a.student_user_id === user?.id);
 
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
@@ -162,6 +198,83 @@ const ProjectBoard = () => {
     setCreateOpen(false);
   };
 
+  const handleOpenApply = (projectId: number) => {
+    setApplyProjectId(projectId);
+    setApplyMotivation('');
+    setApplyOpen(true);
+  };
+
+  const handleApplyToProject = async () => {
+    if (!user || !applyProjectId || !applyMotivation.trim()) return;
+    setApplySubmitting(true);
+    try {
+      const created = await apiRepository.createApplication({
+        project_id: applyProjectId,
+        student_user_id: user.id,
+        motivation: applyMotivation.trim(),
+        status: 'PENDING',
+      });
+      setApplications(prev => [created, ...prev]);
+      setApplyOpen(false);
+      toast({ title: 'Application submitted' });
+    } catch {
+      toast({ title: 'Failed to submit application', variant: 'destructive' });
+    } finally {
+      setApplySubmitting(false);
+    }
+  };
+
+  const handleCreateProjectFromForm = async () => {
+    if (!user || !formProjectTitle.trim() || !formGroupId) return;
+    setFormCreateProjectLoading(true);
+    try {
+      const created = await apiRepository.createProject({
+        group_id: Number(formGroupId),
+        title: formProjectTitle.trim(),
+        description: formProjectDescription.trim(),
+        visibility: formVisibility,
+        created_by: user.id,
+      });
+      setProjects(prev => [created, ...prev]);
+      setSelectedProjectId(created.id);
+      await loadProjectData(created.id);
+      setProjectFormOpen(false);
+      setFormProjectTitle('');
+      setFormProjectDescription('');
+      setFormGroupId('');
+      setFormVisibility('PRIVATE');
+      toast({ title: 'Project created' });
+    } catch {
+      toast({ title: 'Failed to create project', variant: 'destructive' });
+    } finally {
+      setFormCreateProjectLoading(false);
+    }
+  };
+
+  const handleAddMemberFromForm = async () => {
+    if (!formMemberProjectId || !formMemberUserId) return;
+    setFormAddMemberLoading(true);
+    try {
+      await apiRepository.createProjectParticipant({
+        project_id: Number(formMemberProjectId),
+        user_id: Number(formMemberUserId),
+        participant_role: formMemberRole,
+      });
+      if (Number(formMemberProjectId) === selectedProjectId) {
+        await loadProjectData(Number(formMemberProjectId));
+      }
+      setMemberFormOpen(false);
+      setFormMemberProjectId('');
+      setFormMemberUserId('');
+      setFormMemberRole('MEMBER');
+      toast({ title: 'Member added to project' });
+    } catch {
+      toast({ title: 'Failed to add member', variant: 'destructive' });
+    } finally {
+      setFormAddMemberLoading(false);
+    }
+  };
+
   if (loading && projects.length === 0) {
     return (
       <div className="container py-10 flex justify-center">
@@ -179,6 +292,48 @@ const ProjectBoard = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         {/* Project header */}
         <div className="mb-8">
+          {canManageProjects && (
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Button size="sm" onClick={() => setProjectFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Project Details Form
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Member Details Form
+              </Button>
+            </div>
+          )}
+
+          {isStudent && (
+            <div className="mb-6 rounded-xl border border-border bg-card p-4">
+              <h2 className="text-lg font-semibold text-foreground mb-3">Public Projects</h2>
+              <div className="grid md:grid-cols-2 gap-3">
+                {publicProjects.map(pubProject => {
+                  const pubGroup = getGroupById(pubProject.group_id);
+                  return (
+                    <div key={pubProject.id} className="rounded-lg border border-border p-3">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
+                      <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
+                      <Button
+                        size="sm"
+                        onClick={() => handleOpenApply(pubProject.id)}
+                        disabled={hasApplied(pubProject.id)}
+                      >
+                        {hasApplied(pubProject.id) ? 'Already Applied' : 'Apply'}
+                      </Button>
+                    </div>
+                  );
+                })}
+                {publicProjects.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No public projects available right now.</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mb-2">
             <span>{lab?.name.split('—')[0]?.trim()}</span>
             <span>/</span>
@@ -360,6 +515,143 @@ const ProjectBoard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateTask} disabled={!newTitle.trim()}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student Apply Dialog */}
+      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Application for Join Project</DialogTitle>
+            <DialogDescription>Provide your motivation to apply for this public project.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-2">
+              <Label>Motivation</Label>
+              <Textarea
+                rows={4}
+                value={applyMotivation}
+                onChange={e => setApplyMotivation(e.target.value)}
+                placeholder="Tell why you are a good fit and what you can contribute."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApplyOpen(false)}>Cancel</Button>
+            <Button onClick={handleApplyToProject} disabled={applySubmitting || !applyMotivation.trim()}>
+              {applySubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Submit Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Group Admin: Project Details Form */}
+      <Dialog open={projectFormOpen} onOpenChange={setProjectFormOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Project Details Form</DialogTitle>
+            <DialogDescription>Fill this form to create a new project.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Project Title</Label>
+              <Input value={formProjectTitle} onChange={e => setFormProjectTitle(e.target.value)} placeholder="Project title" />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea value={formProjectDescription} onChange={e => setFormProjectDescription(e.target.value)} rows={4} placeholder="Project description" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Research Group</Label>
+                <Select value={formGroupId} onValueChange={setFormGroupId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select value={formVisibility} onValueChange={v => setFormVisibility(v as Visibility)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PRIVATE">Private</SelectItem>
+                    <SelectItem value="PUBLIC">Public</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProjectFormOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateProjectFromForm} disabled={formCreateProjectLoading || !formProjectTitle.trim() || !formGroupId}>
+              {formCreateProjectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Group Admin: Member Details Form */}
+      <Dialog open={memberFormOpen} onOpenChange={setMemberFormOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Member Details Form</DialogTitle>
+            <DialogDescription>Add a member to a project and choose membership role.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label>Project</Label>
+                <Select value={formMemberProjectId} onValueChange={setFormMemberProjectId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.title}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Member</Label>
+                <Select value={formMemberUserId} onValueChange={setFormMemberUserId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allUsers.map(u => <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select value={formMemberRole} onValueChange={v => setFormMemberRole(v as ParticipantRole)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MEMBER">Member</SelectItem>
+                    <SelectItem value="REVIEWER">Reviewer</SelectItem>
+                    <SelectItem value="OBSERVER">Observer</SelectItem>
+                    <SelectItem value="LEAD">Lead</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMemberFormOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddMemberFromForm} disabled={formAddMemberLoading || !formMemberProjectId || !formMemberUserId}>
+              {formAddMemberLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Add Member
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -22,32 +22,31 @@ import AdminPanel from "./pages/AdminPanel";
 import Announcements from "./pages/Announcements";
 import LabDetails from "./pages/LabDetails";
 import GroupDetails from "./pages/GroupDetails";
+import StudentCV from "./pages/StudentCV";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>; // TODO: Better loader
+  const { isAuthenticated, isInitialLoading } = useAuth();
+  if (isInitialLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>; // TODO: Better loader
   if (!isAuthenticated) return <Navigate to="/signin" replace />;
   return <>{children}</>;
 };
 
 const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return null; // Or a loader
+  const { isAuthenticated, isInitialLoading } = useAuth();
+  if (isInitialLoading) return null; // Or a loader
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
 
 const RoleProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: UserRole[] }) => {
-  const { isAuthenticated, isLoading, hasRole } = useAuth();
+  const { isAuthenticated, isInitialLoading, hasRole } = useAuth();
   const location = useLocation();
-
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (isInitialLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/signin" replace state={{ from: location }} />;
   if (!hasRole(allowedRoles)) return <Navigate to="/dashboard" replace />;
-
   return <>{children}</>;
 };
 
@@ -69,6 +68,7 @@ const AppRoutes = () => (
       <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
       <Route path="/labs/:labId" element={<ProtectedRoute><LabDetails /></ProtectedRoute>} />
       <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
+      <Route path="/student-cv" element={<RoleProtectedRoute allowedRoles={['STUDENT']}><StudentCV /></RoleProtectedRoute>} />
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>

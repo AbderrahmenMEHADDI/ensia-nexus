@@ -13,6 +13,7 @@ import {
   LogOut,
   MessageCircle,
   Megaphone,
+  FileUser,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRol
   { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
   { path: '/projects/1', label: 'Project Board', icon: Kanban },
   { path: '/announcements', label: 'Announcements', icon: Megaphone },
+  { path: '/student-cv', label: 'Student CV', icon: FileUser, allowedRoles: ['STUDENT'] },
   { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
   { path: '/chat', label: 'Chat', icon: MessageCircle },
   { path: '/profile', label: 'Profile', icon: User },
