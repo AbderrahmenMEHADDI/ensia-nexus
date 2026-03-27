@@ -148,6 +148,7 @@ export interface ChatMessage {
   id: number;
   room_id: number;
   sender_user_id: number;
+  sender_name?: string;
   content: string;
   created_at: string;
 }
