@@ -3,7 +3,7 @@ import type {
   User, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember,
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
-  Task, TaskUpdate, Announcement, Comment, Reaction,
+  Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
 } from '@/types';
 
 /**
@@ -13,10 +13,33 @@ export const apiRepository = {
   // ── Users ────────────────────────────────────────────────────────────────
   getUsers: () => api.get<User[]>('/users'),
   getUser: (id: number) => api.get<User>(`/users/${id}`),
+  updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
   getStudentProfile: (userId: number) => api.get<Student>(`/students/${userId}`),
+  createStudentProfile: (data: Partial<Student> & { user_id: number }) =>
+    api.post<Student>('/students/', data),
+  updateStudentProfile: (userId: number, data: Partial<Student>) =>
+    api.put<Student>(`/students/${userId}`, data),
   getTeacherProfile: (userId: number) => api.get<Teacher>(`/teachers/${userId}`),
+  getStudentCVs: (studentUserId?: number) =>
+    api.get<StudentCVEntry[]>(
+      studentUserId ? `/student-cvs/?student_user_id=${studentUserId}` : '/student-cvs/'
+    ),
+  createStudentCV: (data: Partial<StudentCVEntry> & { student_user_id: number; title: string }) =>
+    api.post<StudentCVEntry>('/student-cvs/', data),
+  deleteStudentCV: (id: number) => api.delete<void>(`/student-cvs/${id}`),
+  getStudentPreviousProjects: (studentUserId?: number) =>
+    api.get<StudentPreviousProject[]>(
+      studentUserId
+        ? `/student-previous-projects/?student_user_id=${studentUserId}`
+        : '/student-previous-projects/'
+    ),
+  createStudentPreviousProject: (
+    data: Partial<StudentPreviousProject> & { student_user_id: number; title: string }
+  ) => api.post<StudentPreviousProject>('/student-previous-projects/', data),
+  deleteStudentPreviousProject: (id: number) =>
+    api.delete<void>(`/student-previous-projects/${id}`),
 
   // ── Labs ─────────────────────────────────────────────────────────────────
   getLabs: () => api.get<ResearchLab[]>('/labs/'),
@@ -47,6 +70,8 @@ export const apiRepository = {
     api.get<ProjectParticipant[]>(
       projectId ? `/project-participants/?project_id=${projectId}` : '/project-participants/'
     ),
+  createProjectParticipant: (data: Partial<ProjectParticipant>) =>
+    api.post<ProjectParticipant>('/project-participants/', data),
 
   // ── Project resources ─────────────────────────────────────────────────────
   getProjectResources: (projectId?: number) =>

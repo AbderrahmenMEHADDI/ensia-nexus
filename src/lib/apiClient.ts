@@ -24,7 +24,13 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
+    const detail =
+      typeof errorData?.detail === 'string'
+        ? errorData.detail
+        : Array.isArray(errorData?.detail)
+          ? errorData.detail.map((d: any) => d?.msg).filter(Boolean).join(', ')
+          : errorData?.message;
+    throw new Error(detail || `API error: ${response.status} ${response.statusText}`);
   }
 
   // Handle empty responses (like 204 No Content or success with no body)
