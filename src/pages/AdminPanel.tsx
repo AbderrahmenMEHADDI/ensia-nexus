@@ -60,7 +60,7 @@ const AdminPanel = () => {
   const getUserById = (id: number) => users.find(u => u.id === id);
   const pendingGroups = groups.filter(g => !g.is_validated);
   const validatedGroups = groups.filter(g => g.is_validated);
-  const teacherUsers = users.filter(u => u.role === 'TEACHER' || ['DOCTOR', 'PROFESSOR', 'MCA', 'RESEARCHER'].includes(u.role as string));
+  const teacherUsers = users.filter(u => u.role === 'TEACHER');
   const filteredUsers = userSearch
     ? users.filter(u => u.full_name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()))
     : users;

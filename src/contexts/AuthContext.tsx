@@ -6,6 +6,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialLoading: boolean;
 }
 
 export const TEACHER_ROLES: UserRole[] = ['TEACHER'];
@@ -33,7 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
-    isLoading: true, // Start with loading while we check the session
+    isLoading: true, // For individual actions
+    isInitialLoading: true, // For the very first check
   });
 
   const checkAuth = useCallback(async () => {
@@ -43,10 +45,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         isAuthenticated: !!user,
         isLoading: false,
+        isInitialLoading: false,
       });
     } catch (error) {
       console.error('Auth check failed:', error);
-      setState({ user: null, isAuthenticated: false, isLoading: false });
+      setState({ user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false });
     }
   }, []);
 
@@ -58,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
       const user = await authProvider.signInWithGoogle(userId);
-      setState({ user, isAuthenticated: true, isLoading: false });
+      setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
       console.error('Sign in failed:', error);
       setState(s => ({ ...s, isLoading: false }));
@@ -69,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
       const user = await authProvider.signup(data);
-      setState({ user, isAuthenticated: true, isLoading: false });
+      setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
       console.error('Sign up failed:', error);
       setState(s => ({ ...s, isLoading: false }));
@@ -81,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
       await authProvider.signOut();
-      setState({ user: null, isAuthenticated: false, isLoading: false });
+      setState(s => ({ ...s, user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false }));
     } catch (error) {
       console.error('Sign out failed:', error);
       setState(s => ({ ...s, isLoading: false }));
@@ -95,11 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!state.user) return false;
       const roles = Array.isArray(role) ? role : [role];
 
-      // For backward compatibility during transition, treat legacy degree roles as TEACHER
-      const userRole = state.user.role as string;
-      const isLegacyTeacher = ['MCA', 'PROFESSOR', 'DOCTOR', 'RESEARCHER'].includes(userRole);
-
-      if (roles.includes('TEACHER') && (state.user.role === 'TEACHER' || isLegacyTeacher)) return true;
+      if (roles.includes('TEACHER') && state.user.role === 'TEACHER') return true;
       if (roles.includes('ADMIN') && state.user.role === 'ADMIN') return true;
       if (roles.includes('STUDENT') && state.user.role === 'STUDENT') return true;
 
