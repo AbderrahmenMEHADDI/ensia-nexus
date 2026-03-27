@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, type Transition, useInView } from 'framer-motion';
+import { motion, type Transition } from 'framer-motion';
 import {
   projects,
   getUserById,
@@ -17,9 +17,6 @@ import {
   CheckCircle2,
   Sun,
   Moon,
-  BookOpen,
-  Cpu,
-  Shield,
   GitFork,
   Layers,
   SlidersHorizontal,
@@ -35,12 +32,6 @@ const fadeUp = (delay = 0) => ({
   animate: { opacity: 1, y: 0 },
   transition: { ...EASE, delay } satisfies Transition,
 });
-
-const domainIcon = (name = '') => {
-  if (/cyber|security/i.test(name)) return Shield;
-  if (/data|science|ml|ai/i.test(name)) return Cpu;
-  return BookOpen;
-};
 
 const PROBLEMS = [
   {
@@ -93,67 +84,12 @@ const PROBLEMS = [
   },
 ];
 
-/* ── Animated filmstrip card ──────────────────────────── */
-const FilmCard = ({ item, i }: { item: typeof PROBLEMS[0]; i: number }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '0px -15% 0px 0px' });
-  const Icon = item.icon;
-
-  return (
-    <motion.div
-      ref={ref}
-      className="filmstrip-unit"
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={inView ? { opacity: 1, scale: 1 } : {}}
-      transition={{ duration: 0.5, ease: 'easeOut', delay: 0.05 }}
-    >
-      {/* Index marker */}
-      <div className="film-index">
-        <span className="font-mono-dm">{item.index}</span>
-        <span className="film-index-line" />
-        <span className="font-mono-dm film-total">/ {String(PROBLEMS.length).padStart(2, '0')}</span>
-      </div>
-
-      <div className="card-pair">
-        {/* ── Problem card ── */}
-        <div className="film-card film-card-problem grain-card">
-          <div className="film-card-inner">
-            <div className="film-card-header">
-              <span className="film-label film-label-problem">The friction</span>
-              <div className="film-icon-wrap film-icon-problem">
-                <Icon className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <h3 className="film-card-title font-lora">{item.problem}</h3>
-            <p className="film-card-body font-lora">{item.detail}</p>
-          </div>
-        </div>
-
-        {/* ── Divider arrow ── */}
-        <div className="film-divider">
-          <div className="film-divider-line film-divider-line-top" />
-          <div className="film-divider-circle">
-            <ArrowRight className="h-3 w-3" />
-          </div>
-          <div className="film-divider-line film-divider-line-bottom" />
-        </div>
-
-        {/* ── Solution card ── */}
-        <div className="film-card film-card-solution grain-card">
-          <div className="film-card-inner">
-            <div className="film-card-header">
-              <span className="film-label film-label-solution">The ENSIA way</span>
-              <div className="film-icon-wrap film-icon-solution">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              </div>
-            </div>
-            <h3 className="film-card-title font-lora">{item.solution}</h3>
-            <p className="film-card-body font-lora">{item.fix}</p>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
+const getInitialTheme = () => {
+  if (typeof window === 'undefined') return false;
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') return true;
+  if (saved === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -161,12 +97,19 @@ const FilmCard = ({ item, i }: { item: typeof PROBLEMS[0]; i: number }) => {
 ═══════════════════════════════════════════════════════════ */
 const Landing = () => {
   const completedTasks = tasks.filter((t) => t.status === 'DONE').length;
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const [dark, setDark] = useState(() => getInitialTheme());
   const [activeIdx, setActiveIdx] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
+    const root = document.documentElement;
+    if (dark) {
+      root.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   }, [dark]);
 
   /* ── Scroll tracking ─────────────────────────────────── */
@@ -303,14 +246,14 @@ const Landing = () => {
 
         .nav-flat-btn {
           border: 1px solid #2b1b06;
-          border-radius: 6px;
+          border-radius: 12px;
           background: #ffffff;
           padding: 8px 12px;
           color: #2b1b06 !important;
         }
         .nav-flat-btn:hover { background: #ffffff; border-color: #2b1b06; }
         .nav-join-btn {
-          border-radius: 6px;
+          border-radius: 12px;
           background: hsl(var(--primary));
           color: hsl(var(--primary-foreground));
           border: 1px solid #2b1b06;
@@ -393,8 +336,17 @@ const Landing = () => {
           background: hsl(var(--card));
           transition: border-color 0.2s ease;
           min-height: 380px;
+          overflow: hidden;
         }
         .film-card:hover { border-color: hsl(var(--border) / 0.9); }
+        .film-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+        }
+        .film-card-friction::before { background: hsl(var(--destructive)); }
+        .film-card-solution::before { background: hsl(var(--primary)); }
         .film-card-inner {
           padding: 28px 26px;
           display: flex;
@@ -413,48 +365,36 @@ const Landing = () => {
         .film-card-header {
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          gap: 10px;
         }
-
-        /* Labels */
-        .film-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 9.5px;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
+        .film-icon-chip {
+          width: 32px;
+          height: 32px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          border: 1px solid transparent;
         }
-        .film-label-problem { color: hsl(0 40% 30% / 0.55); }
-        .dark .film-label-problem { color: hsl(0 50% 75% / 0.45); }
-        .film-label-solution { color: hsl(210 50% 35% / 0.6); }
-        .dark .film-label-solution { color: hsl(210 60% 72% / 0.45); }
-
-        /* Icon wraps */
-        .film-icon-wrap {
-          width: 30px; height: 30px;
-          border-radius: 8px;
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-        .film-icon-problem {
-          background: hsl(0 50% 50% / 0.07);
-          border: 0.5px solid hsl(0 50% 50% / 0.15);
-          color: hsl(0 50% 40% / 0.7);
-        }
-        .dark .film-icon-problem {
-          background: hsl(0 50% 60% / 0.1);
-          border-color: hsl(0 50% 60% / 0.2);
-          color: hsl(0 50% 70% / 0.6);
+        .film-icon-friction {
+          background: hsl(var(--destructive) / 0.12);
+          border-color: hsl(var(--destructive) / 0.35);
+          color: hsl(var(--destructive));
         }
         .film-icon-solution {
-          background: hsl(210 60% 50% / 0.08);
-          border: 0.5px solid hsl(210 60% 50% / 0.18);
-          color: hsl(210 60% 40% / 0.75);
+          background: hsl(var(--primary) / 0.12);
+          border-color: hsl(var(--primary) / 0.35);
+          color: hsl(var(--primary));
         }
-        .dark .film-icon-solution {
-          background: hsl(210 60% 65% / 0.1);
-          border-color: hsl(210 60% 65% / 0.2);
-          color: hsl(210 60% 70% / 0.65);
+        .film-tag {
+          font-family: 'DM Mono', monospace;
+          letter-spacing: 0.14em;
+          font-size: 10px;
+          text-transform: uppercase;
         }
+        .film-tag-friction { color: hsl(var(--destructive)); }
+        .film-tag-solution { color: hsl(var(--primary)); }
 
         /* Title & body */
         .film-card-title {
@@ -551,6 +491,29 @@ const Landing = () => {
         }
         .film-next-btn:disabled { opacity: 0.25; cursor: default; transform: none; }
         .film-next-btn svg { width: 18px; height: 18px; stroke-width: 1.25; }
+
+        /* Pills legend */
+        .film-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 8px 10px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          border: 1px solid transparent;
+        }
+        .film-pill-friction {
+          background: hsl(var(--destructive) / 0.12);
+          border-color: hsl(var(--destructive) / 0.3);
+          color: hsl(var(--destructive));
+        }
+        .film-pill-solution {
+          background: hsl(var(--primary) / 0.12);
+          border-color: hsl(var(--primary) / 0.3);
+          color: hsl(var(--primary));
+        }
       `}</style>
 
       {/* ══════════════════════════════════════════════════════
@@ -604,10 +567,10 @@ const Landing = () => {
               </motion.p>
               <motion.div {...fadeUp(0.22)} className="flex flex-wrap gap-3">
                 <Link to="/signin">
-                  <Button size="lg" className="gap-2 rounded-full px-6 border hero-border-solid">Sign in <ArrowRight className="h-4 w-4" /></Button>
+                  <Button size="lg" className="gap-2 rounded-lg px-6 border hero-border-solid">Sign in <ArrowRight className="h-4 w-4" /></Button>
                 </Link>
                 <Link to="/signup">
-                  <Button variant="outline" size="lg" className="rounded-full px-6 border hero-border-outline">Create account</Button>
+                  <Button variant="outline" size="lg" className="rounded-lg px-6 border hero-border-outline">Create account</Button>
                 </Link>
               </motion.div>
             </div>
@@ -688,38 +651,44 @@ const Landing = () => {
 
   {/* Full Width Filmstrip Track */}
   <div className="full-width-section">
+    <div className="container px-6 mb-6 flex items-center gap-3">
+      <span className="film-pill film-pill-friction">Current friction</span>
+      <span className="film-pill film-pill-solution">Our resolution</span>
+    </div>
     <div ref={trackRef} className="filmstrip-track hide-scrollbar">
       {PROBLEMS.map((item, i) => (
         <div key={item.problem} className="filmstrip-unit group">
           {/* Technical Header */}
           <div className="flex items-center gap-4 px-6 py-3 border-t border-border/40">
             <span className="font-mono-dm text-[10px] text-muted-foreground/60">
-              {item.index} — 06
+              {item.index} — {PROBLEMS.length.toString().padStart(2, '0')}
             </span>
             <div className="h-[0.5px] flex-1 bg-border/30" />
           </div>
 
           <div className="card-pair">
             {/* Problem Side */}
-            <div className="film-card problem-side grain-card p-8 lg:p-12">
-              <span className="font-mono-dm text-[9px] uppercase tracking-widest text-destructive/50 mb-6 block">
-                [ Friction_Point ]
-              </span>
-              <h3 className="font-lora text-[26px] md:text-[28px] mb-4 text-foreground/90">{item.problem}</h3>
-              <p className="font-lora italic text-muted-foreground text-sm leading-relaxed">
-                {item.detail}
-              </p>
+            <div className="film-card film-card-friction problem-side grain-card p-8 lg:p-12">
+              <div className="film-card-header">
+                <div className="film-icon-chip film-icon-friction">
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+                <span className="film-tag film-tag-friction">Current friction</span>
+              </div>
+              <h3 className="font-lora text-[26px] md:text-[28px] mt-5 mb-3 text-foreground/90">{item.problem}</h3>
+              <p className="font-lora italic text-muted-foreground text-sm leading-relaxed">{item.detail}</p>
             </div>
 
             {/* Solution Side */}
-            <div className="film-card grain-card p-8 lg:p-12 bg-primary/[0.01]">
-              <span className="font-mono-dm text-[9px] uppercase tracking-widest text-primary/60 mb-6 block">
-                [ ENSIA_Resolution ]
-              </span>
-              <h3 className="font-lora text-[26px] md:text-[28px] mb-4 text-primary/80">{item.solution}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {item.fix}
-              </p>
+            <div className="film-card film-card-solution grain-card p-8 lg:p-12 bg-primary/[0.01]">
+              <div className="film-card-header">
+                <div className="film-icon-chip film-icon-solution">
+                  <CheckCircle2 className="h-4 w-4" />
+                </div>
+                <span className="film-tag film-tag-solution">Our resolution</span>
+              </div>
+              <h3 className="font-lora text-[26px] md:text-[28px] mt-5 mb-3 text-primary/80">{item.solution}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{item.fix}</p>
             </div>
           </div>
         </div>
@@ -815,7 +784,7 @@ const Landing = () => {
   title: 'Balanced workload',
   body: 'AI-assisted task assignment ensures fair distribution based on skills and availability.'
 }].map((item) => (
-                <div key={item.title} className="p-4 rounded-none border border-border bg-background/80 shadow-sm">
+                <div key={item.title} className="p-4 rounded-md border border-border bg-background/80 shadow-sm">
                   <h3 className="font-lora text-lg font-semibold text-foreground mb-1.5">{item.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.body}</p>
                 </div>
@@ -837,15 +806,15 @@ const Landing = () => {
               label: 'Research Applications',
               value: completedTasks + 160
             }].map((item, idx) => (
-              <div key={item.label} className="p-5 rounded-none border border-border bg-background/85 flex items-center justify-between">
+              <div key={item.label} className="p-5 rounded-md border border-border bg-background/85 flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="font-mono-dm text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{item.label}</p>
                   <p className="font-lora text-2xl font-semibold text-foreground">{item.value}</p>
                 </div>
-                <span className="text-xs text-muted-foreground/70">{idx % 2 ? 'Live sync' : 'Snapshot'}</span>
+                <span className="text-xs text-primary/70">{idx % 2 ? 'Live sync' : 'Snapshot'}</span>
               </div>
             ))}
-            <div className="p-4 rounded-none border border-border bg-background/80">
+            <div className="p-4 rounded-md border border-border bg-background/80">
               <p className="font-mono-dm text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">Cadence</p>
               <p className="font-lora text-base text-foreground leading-snug">Weekly standups, monthly checkpoints, and structured handoffs tuned for academic pace.</p>
             </div>
@@ -865,7 +834,12 @@ const Landing = () => {
       </p>
       <div className="flex flex-wrap gap-2">
         {['Lab directories','Paper workflow','AI assistance','Dependency tracking'].map(item => (
-          <span key={item} className="text-[11px] px-2.5 py-1 rounded-full border border-border text-muted-foreground bg-background/80">{item}</span>
+          <span
+            key={item}
+            className="text-[11px] px-2.5 py-1 rounded-full border bg-[#2b241f] border-[#c86b2b] text-[#e07b2f]"
+          >
+            {item}
+          </span>
         ))}
       </div>
     </div>
@@ -875,13 +849,13 @@ const Landing = () => {
         <Button
           variant="default"
           size="lg"
-          className="rounded-full px-6 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 border hero-border-solid"
+          className="rounded-lg px-6 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 border hero-border-solid"
         >
           Create account <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>
       <Link to="/signin">
-        <Button variant="outline" size="lg" className="rounded-full px-6 border hero-border-outline">
+        <Button variant="outline" size="lg" className="rounded-lg px-6 border hero-border-outline">
           Sign in
         </Button>
       </Link>
