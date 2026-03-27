@@ -5,13 +5,13 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useEffect, useState } from 'react';
-import { authProvider } from '@/lib/auth';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { hashPassword } from '@/lib/passwordUtils';
+import { GoogleLogin } from '@react-oauth/google';
+import { GOOGLE_CLIENT_ID } from '@/lib/googleAuth';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address').endsWith('@ensia.edu.dz', 'Must be an ENSIA email'),
@@ -21,16 +21,13 @@ const signInSchema = z.object({
 type SignInValues = z.infer<typeof signInSchema>;
 
 const SignIn = () => {
-  const { signInWithGoogle, isLoading, isAuthenticated, checkAuth } = useAuth();
+  const { signIn, signInWithGoogle, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const googleLoginContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = useForm<SignInValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
   });
 
@@ -41,9 +38,7 @@ const SignIn = () => {
   const onFormSubmit = async (data: SignInValues) => {
     setSubmitting(true);
     try {
-      const hashedPassword = await hashPassword(data.password);
-      await authProvider.login({ email: data.email, password: hashedPassword });
-      await checkAuth(); // refresh auth context from the new session cookie
+      await signIn({ email: data.email, password: data.password });
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
       toast({
@@ -56,13 +51,58 @@ const SignIn = () => {
     }
   };
 
+  const onGoogleSignInSuccess = async (credentialResponse: { credential?: string }) => {
+    const idToken = credentialResponse.credential;
+    if (!idToken) {
+      toast({
+        title: 'Google login failed',
+        description: 'No Google token received',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await signInWithGoogle(idToken);
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
+      toast({
+        title: 'Google login failed',
+        description: err?.message || 'Unable to sign in with Google',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onGoogleSignInError = () => {
+    toast({
+      title: 'Google login failed',
+      description: 'Unable to sign in with Google',
+      variant: 'destructive',
+    });
+  };
+
+  const triggerGoogleLogin = () => {
+    const googleButton = googleLoginContainerRef.current?.querySelector('div[role="button"]') as HTMLElement | null;
+
+    if (!googleButton) {
+      toast({
+        title: 'Google login unavailable',
+        description: 'Please try again in a moment.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    googleButton.click();
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
-      >
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="h-20 w-auto mb-4">
             <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
@@ -74,28 +114,19 @@ const SignIn = () => {
         <form onSubmit={handleSubmit(onFormSubmit)} className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@ensia.edu.dz"
-              className={errors.email ? 'border-destructive' : ''}
-              {...register('email')}
-              autoComplete="email"
-            />
+            <Input id="email" type="email" placeholder="you@ensia.edu.dz" className={errors.email ? 'border-destructive' : ''} {...register('email')} autoComplete="email" />
             {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              className={errors.password ? 'border-destructive' : ''}
-              {...register('password')}
-              autoComplete="current-password"
-            />
+            <Input id="password" type="password" placeholder="••••••••" className={errors.password ? 'border-destructive' : ''} {...register('password')} autoComplete="current-password" />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
+
+          <p className="text-xs text-right -mt-1">
+            <a href="/forgot-password" className="text-primary hover:underline">Forgot password?</a>
+          </p>
 
           <Button
             type="submit"
@@ -115,19 +146,50 @@ const SignIn = () => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full h-11"
-            onClick={() => signInWithGoogle()}
-            disabled={submitting || isLoading}
-            type="button"
-          >
-            Google
-          </Button>
+          {GOOGLE_CLIENT_ID ? (
+            <>
+              <div
+                ref={googleLoginContainerRef}
+                className="absolute pointer-events-none opacity-0 h-0 overflow-hidden"
+                aria-hidden="true"
+              >
+                <GoogleLogin
+                  onSuccess={onGoogleSignInSuccess}
+                  onError={onGoogleSignInError}
+                  useOneTap={false}
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={triggerGoogleLogin}
+                disabled={submitting || isLoading}
+                type="button"
+              >
+                Google
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full h-11"
+              onClick={() => {
+                toast({
+                  title: 'Google client ID missing',
+                  description: 'Set VITE_GOOGLE_CLIENT_ID before using Google sign-in.',
+                  variant: 'destructive',
+                });
+              }}
+              disabled={submitting || isLoading}
+              type="button"
+            >
+              Google
+            </Button>
+          )}
 
           <p className="text-xs text-muted-foreground text-center">
-            Don't have an account?{' '}
-            <a href="/signup" className="text-primary hover:underline">Sign up</a>
+            Don't have an account? <a href="/signup" className="text-primary hover:underline">Sign up</a>
           </p>
         </form>
       </motion.div>

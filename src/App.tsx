@@ -9,6 +9,8 @@ import { type UserRole } from "@/types";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Feed from "./pages/Feed";
 import LabExplorer from "./pages/LabExplorer";
 import ProjectBoard from "./pages/ProjectBoard";
@@ -54,6 +56,8 @@ const AppRoutes = () => (
       <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
       <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignUp /></PublicOnlyRoute>} />
+      <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
+      <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="/labs" element={<ProtectedRoute><LabExplorer /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />

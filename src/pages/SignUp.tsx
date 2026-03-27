@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import { GOOGLE_CLIENT_ID } from '@/lib/googleAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { hashPassword } from '@/lib/passwordUtils';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -27,6 +28,7 @@ const SignUp = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const googleLoginContainerRef = useRef<HTMLDivElement | null>(null);
 
   const {
     register,
@@ -50,11 +52,10 @@ const SignUp = () => {
   const onFormSubmit = async (data: SignUpValues) => {
     setSubmitting(true);
     try {
-      const hashedPassword = await hashPassword(data.password);
       await signUp({
         email: data.email,
-        password: hashedPassword,
         full_name: data.fullName,
+        password: data.password,
         role: data.role
       });
       toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
@@ -62,12 +63,62 @@ const SignUp = () => {
     } catch (err: any) {
       toast({
         title: 'Sign up failed',
-        description: err.response?.data?.detail || 'Something went wrong. Please try again.',
+        description: err?.response?.data?.detail || err?.message || 'Something went wrong. Please try again.',
         variant: 'destructive'
       });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const onGoogleSignUpSuccess = async (credentialResponse: { credential?: string }) => {
+    const idToken = credentialResponse.credential;
+    if (!idToken) {
+      toast({
+        title: 'Google sign-up failed',
+        description: 'No Google token received',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await signInWithGoogle(idToken);
+      toast({ title: 'Signed in with Google', description: 'Welcome to ENSIA Research Hub!' });
+      navigate('/dashboard', { replace: true });
+    } catch (err: any) {
+      toast({
+        title: 'Google sign-up failed',
+        description: err?.message || 'Unable to continue with Google',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onGoogleSignUpError = () => {
+    toast({
+      title: 'Google sign-up failed',
+      description: 'Unable to continue with Google',
+      variant: 'destructive',
+    });
+  };
+
+  const triggerGoogleSignUp = () => {
+    const googleButton = googleLoginContainerRef.current?.querySelector('div[role="button"]') as HTMLElement | null;
+
+    if (!googleButton) {
+      toast({
+        title: 'Google sign-up unavailable',
+        description: 'Please try again in a moment.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    googleButton.click();
   };
 
   return (
@@ -172,14 +223,47 @@ const SignUp = () => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full h-11"
-            onClick={() => signInWithGoogle()}
-            disabled={submitting || isLoading}
-          >
-            Google
-          </Button>
+          {GOOGLE_CLIENT_ID ? (
+            <>
+              <div
+                ref={googleLoginContainerRef}
+                className="absolute pointer-events-none opacity-0 h-0 overflow-hidden"
+                aria-hidden="true"
+              >
+                <GoogleLogin
+                  onSuccess={onGoogleSignUpSuccess}
+                  onError={onGoogleSignUpError}
+                  useOneTap={false}
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full h-11"
+                onClick={triggerGoogleSignUp}
+                disabled={submitting || isLoading}
+                type="button"
+              >
+                Google
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full h-11"
+              onClick={() => {
+                toast({
+                  title: 'Google client ID missing',
+                  description: 'Set VITE_GOOGLE_CLIENT_ID before using Google sign-up.',
+                  variant: 'destructive',
+                });
+              }}
+              disabled={submitting || isLoading}
+              type="button"
+            >
+              Google
+            </Button>
+          )}
 
           <p className="text-xs text-muted-foreground text-center mt-6">
             Already have an account?{' '}

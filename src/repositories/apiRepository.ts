@@ -105,4 +105,10 @@ export const apiRepository = {
   getComments: (id: number) => api.get<Comment[]>(`/announcements/${id}/comments`),
   createComment: (id: number, data: Partial<Comment>) => api.post<Comment>(`/announcements/${id}/comments`, data),
   reactToAnnouncement: (id: number, data: Partial<Reaction>) => api.post<{status: string, reaction: string | null}>(`/announcements/${id}/react`, data),
+
+  // ── Auth utility endpoints ───────────────────────────────────────────────
+  forgetPassword: (email: string) =>
+    api.post<{ message: string }>('/auth/forget_password', { email }),
+  resetPasswordConfirm: (token: string, newPassword: string) =>
+    api.post('/auth/reset_password_confirm', { token, new_password: newPassword }),
 };
