@@ -3,7 +3,7 @@ import type {
   User, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember,
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
-  Task, TaskUpdate, Announcement, Comment, Reaction,
+  Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry,
 } from '@/types';
 
 /**
@@ -21,6 +21,13 @@ export const apiRepository = {
   updateStudentProfile: (userId: number, data: Partial<Student>) =>
     api.put<Student>(`/students/${userId}`, data),
   getTeacherProfile: (userId: number) => api.get<Teacher>(`/teachers/${userId}`),
+  getStudentCVs: (studentUserId?: number) =>
+    api.get<StudentCVEntry[]>(
+      studentUserId ? `/student-cvs/?student_user_id=${studentUserId}` : '/student-cvs/'
+    ),
+  createStudentCV: (data: Partial<StudentCVEntry> & { student_user_id: number; title: string }) =>
+    api.post<StudentCVEntry>('/student-cvs/', data),
+  deleteStudentCV: (id: number) => api.delete<void>(`/student-cvs/${id}`),
 
   // ── Labs ─────────────────────────────────────────────────────────────────
   getLabs: () => api.get<ResearchLab[]>('/labs/'),

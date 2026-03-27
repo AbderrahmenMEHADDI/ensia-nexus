@@ -58,6 +58,21 @@ export interface Student {
   created_at: string;
 }
 
+export interface StudentCVEntry {
+  id: number;
+  student_user_id: number;
+  title: string;
+  university?: string;
+  level?: 'PHD' | 'UNDERGRADUATE' | 'GRADUATE';
+  major?: string;
+  bio?: string;
+  experience?: string;
+  research_interests?: string;
+  skills?: string;
+  cv_url?: string;
+  created_at: string;
+}
+
 export interface Teacher {
   user_id: number;
   experience_years: number;
