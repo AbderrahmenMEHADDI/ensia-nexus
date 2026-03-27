@@ -13,6 +13,7 @@ export const apiRepository = {
   // ── Users ────────────────────────────────────────────────────────────────
   getUsers: () => api.get<User[]>('/users'),
   getUser: (id: number) => api.get<User>(`/users/${id}`),
+  updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
   getStudentProfile: (userId: number) => api.get<Student>(`/students/${userId}`),

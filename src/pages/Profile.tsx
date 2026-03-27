@@ -6,12 +6,26 @@ import { RoleBadge, StatusBadge, PriorityBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
 import { Mail, Calendar, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import type { Student, Teacher, Project, Task, ProjectParticipant, User } from '@/types';
 
 const Profile = () => {
   const { user, isTeacher } = useAuth();
+  const { toast } = useToast();
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [student, setStudent] = useState<Student | null>(null);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [isEditingProfileDetails, setIsEditingProfileDetails] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [institution, setInstitution] = useState('');
+  const [department, setDepartment] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [website, setWebsite] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
@@ -39,6 +53,15 @@ const Profile = () => {
             setStudent(await apiRepository.getStudentProfile(user.id));
           } catch { /* not a student */ }
         }
+
+        const fullUser = await apiRepository.getUser(user.id);
+        setProfileUser(fullUser);
+        setInstitution(fullUser.institution || '');
+        setDepartment(fullUser.department || '');
+        setContactEmail(fullUser.contact_email || '');
+        setPhoneNumber(fullUser.phone_number || '');
+        setAddress(fullUser.address || '');
+        setWebsite(fullUser.website || '');
       } catch (e) {
         console.error('Profile load error:', e);
       } finally {
@@ -47,6 +70,37 @@ const Profile = () => {
     };
     load();
   }, [user]);
+
+  const handleSaveProfileDetails = async () => {
+    if (!user) return;
+    const normalizedContactEmail = contactEmail.trim();
+    if (normalizedContactEmail && !/^\S+@\S+\.\S+$/.test(normalizedContactEmail)) {
+      toast({ title: 'Contact email is invalid', variant: 'destructive' });
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const updated = await apiRepository.updateUser(user.id, {
+        institution: institution.trim() || null,
+        department: department.trim() || null,
+        contact_email: normalizedContactEmail || null,
+        phone_number: phoneNumber.trim() || null,
+        address: address.trim() || null,
+        website: website.trim() || null,
+      } as Partial<User>);
+      setProfileUser(updated);
+      setIsEditingProfileDetails(false);
+      toast({ title: 'Profile details updated' });
+    } catch (e: any) {
+      toast({
+        title: 'Failed to update profile details',
+        description: e?.message || 'Request failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -166,6 +220,99 @@ const Profile = () => {
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Joined</span><span className="text-foreground">{user.created_at}</span></div>
           </div>
         </section>
+
+        {/* Projects */}
+        {user.role === 'STUDENT' && (
+          <section className="mb-10">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Profile Details</h2>
+            <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+              {!isEditingProfileDetails ? (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Institution</p>
+                      <p className="text-foreground">{profileUser?.institution || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Department</p>
+                      <p className="text-foreground">{profileUser?.department || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Contact Email</p>
+                      <p className="text-foreground">{profileUser?.contact_email || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Phone Number</p>
+                      <p className="text-foreground">{profileUser?.phone_number || '-'}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-muted-foreground mb-1">Website</p>
+                      <p className="text-foreground">{profileUser?.website || '-'}</p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-muted-foreground mb-1">Address</p>
+                      <p className="text-foreground">{profileUser?.address || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <Button onClick={() => setIsEditingProfileDetails(true)}>Update</Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Institution</Label>
+                      <Input value={institution} onChange={e => setInstitution(e.target.value)} placeholder="Institution" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Department</Label>
+                      <Input value={department} onChange={e => setDepartment(e.target.value)} placeholder="Department" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Contact Email</Label>
+                      <Input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="Contact email" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Phone Number</Label>
+                      <Input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="Phone number" />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Website</Label>
+                      <Input value={website} onChange={e => setWebsite(e.target.value)} placeholder="https://..." />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Address</Label>
+                      <Textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} placeholder="Address" />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">These details are separate from Student CV forms.</p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsEditingProfileDetails(false);
+                          setInstitution(profileUser?.institution || '');
+                          setDepartment(profileUser?.department || '');
+                          setContactEmail(profileUser?.contact_email || '');
+                          setPhoneNumber(profileUser?.phone_number || '');
+                          setAddress(profileUser?.address || '');
+                          setWebsite(profileUser?.website || '');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveProfileDetails} disabled={savingProfile}>
+                        {savingProfile ? 'Saving...' : 'Save Details'}
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Projects */}
         <section className="mb-10">
