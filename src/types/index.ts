@@ -79,6 +79,15 @@ export interface StudentCVEntry {
   created_at: string;
 }
 
+export interface StudentPreviousProject {
+  id: number;
+  student_user_id: number;
+  title: string;
+  project_link?: string;
+  description?: string;
+  created_at: string;
+}
+
 export interface Teacher {
   user_id: number;
   experience_years: number;

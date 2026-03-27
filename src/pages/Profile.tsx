@@ -4,13 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge, StatusBadge, PriorityBadge } from '@/components/Badges';
 import { Link } from 'react-router-dom';
-import { Mail, Calendar, Settings } from 'lucide-react';
+import { Mail, Calendar, Settings, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Student, Teacher, Project, Task, ProjectParticipant, User } from '@/types';
+import type { Student, Teacher, Project, Task, ProjectParticipant, User, StudentPreviousProject } from '@/types';
 
 const Profile = () => {
   const { user, isTeacher } = useAuth();
@@ -26,6 +26,12 @@ const Profile = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [website, setWebsite] = useState('');
+  const [previousProjects, setPreviousProjects] = useState<StudentPreviousProject[]>([]);
+  const [showPreviousProjectForm, setShowPreviousProjectForm] = useState(false);
+  const [savingPreviousProject, setSavingPreviousProject] = useState(false);
+  const [newPreviousProjectTitle, setNewPreviousProjectTitle] = useState('');
+  const [newPreviousProjectLink, setNewPreviousProjectLink] = useState('');
+  const [newPreviousProjectDescription, setNewPreviousProjectDescription] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
@@ -62,6 +68,14 @@ const Profile = () => {
         setPhoneNumber(fullUser.phone_number || '');
         setAddress(fullUser.address || '');
         setWebsite(fullUser.website || '');
+
+        if (user.role === 'STUDENT') {
+          try {
+            setPreviousProjects(await apiRepository.getStudentPreviousProjects(user.id));
+          } catch {
+            setPreviousProjects([]);
+          }
+        }
       } catch (e) {
         console.error('Profile load error:', e);
       } finally {
@@ -99,6 +113,47 @@ const Profile = () => {
       });
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleAddPreviousProject = async () => {
+    if (!user || !newPreviousProjectTitle.trim()) return;
+    setSavingPreviousProject(true);
+    try {
+      const created = await apiRepository.createStudentPreviousProject({
+        student_user_id: user.id,
+        title: newPreviousProjectTitle.trim(),
+        project_link: newPreviousProjectLink.trim() || null,
+        description: newPreviousProjectDescription.trim() || null,
+      });
+      setPreviousProjects(prev => [created, ...prev]);
+      setNewPreviousProjectTitle('');
+      setNewPreviousProjectLink('');
+      setNewPreviousProjectDescription('');
+      setShowPreviousProjectForm(false);
+      toast({ title: 'Previous project added' });
+    } catch (e: any) {
+      toast({
+        title: 'Failed to add previous project',
+        description: e?.message || 'Request failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingPreviousProject(false);
+    }
+  };
+
+  const handleDeletePreviousProject = async (projectId: number) => {
+    try {
+      await apiRepository.deleteStudentPreviousProject(projectId);
+      setPreviousProjects(prev => prev.filter(item => item.id !== projectId));
+      toast({ title: 'Previous project removed' });
+    } catch (e: any) {
+      toast({
+        title: 'Failed to remove previous project',
+        description: e?.message || 'Request failed',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -314,49 +369,136 @@ const Profile = () => {
           </section>
         )}
 
-        {/* Projects */}
-        <section className="mb-10">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Projects</h2>
-          <div className="grid sm:grid-cols-2 gap-2">
-            {myProjects.map(p => (
-              <Link key={p.id} to={`/projects/${p.id}`} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
-                <h3 className="text-sm font-medium text-foreground mb-1">{p.title}</h3>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="text-primary">{p.role}</span>
-                  <span>·</span>
-                  <span>{p.visibility}</span>
-                </div>
-              </Link>
-            ))}
-            {myProjects.length === 0 && <p className="text-sm text-muted-foreground">No projects yet.</p>}
-          </div>
-        </section>
+        {user.role === 'STUDENT' && (
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Previous Projects</h2>
+              <Button size="sm" onClick={() => setShowPreviousProjectForm(v => !v)}>
+                <Plus className="h-4 w-4 mr-1" />
+                {showPreviousProjectForm ? 'Close' : 'Add Project'}
+              </Button>
+            </div>
 
-        {/* Recent Tasks */}
-        <section>
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Recent Tasks</h2>
-          <div className="space-y-2">
-            {recentTasks.map(task => {
-              const proj = projects.find(p => p.id === task.project_id);
-              return (
-                <div key={task.id} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-foreground block truncate">{task.title}</span>
-                    <span className="text-xs text-muted-foreground">{proj?.title}</span>
-                  </div>
-                  <PriorityBadge priority={task.priority} />
-                  <StatusBadge status={task.status} />
-                  {task.due_date && (
-                    <span className="text-xs font-mono text-muted-foreground hidden sm:flex items-center gap-1">
-                      <Calendar className="h-3 w-3" /> {task.due_date}
-                    </span>
-                  )}
+            {showPreviousProjectForm && (
+              <div className="rounded-xl border border-border bg-card p-5 space-y-4 mb-4">
+                <div className="space-y-2">
+                  <Label>Project Title</Label>
+                  <Input
+                    value={newPreviousProjectTitle}
+                    onChange={e => setNewPreviousProjectTitle(e.target.value)}
+                    placeholder="My previous AI project"
+                  />
                 </div>
-              );
-            })}
-            {recentTasks.length === 0 && <p className="text-sm text-muted-foreground">No tasks found.</p>}
-          </div>
-        </section>
+                <div className="space-y-2">
+                  <Label>Project Link</Label>
+                  <Input
+                    value={newPreviousProjectLink}
+                    onChange={e => setNewPreviousProjectLink(e.target.value)}
+                    placeholder="https://github.com/..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={newPreviousProjectDescription}
+                    onChange={e => setNewPreviousProjectDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Describe what you did in this project"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleAddPreviousProject} disabled={savingPreviousProject || !newPreviousProjectTitle.trim()}>
+                    {savingPreviousProject ? 'Saving...' : 'Save Project'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {previousProjects.map(item => (
+                <div key={item.id} className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-medium text-foreground">{item.title}</h3>
+                      {item.project_link && (
+                        <a
+                          href={item.project_link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                        >
+                          Open project link <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleDeletePreviousProject(item.id)}
+                      aria-label="Delete previous project"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {previousProjects.length === 0 && (
+                <p className="text-sm text-muted-foreground">No previous projects yet. Add one to show it on your profile.</p>
+              )}
+            </div>
+          </section>
+        )}
+
+        {user.role !== 'STUDENT' && (
+          <>
+            {/* Projects */}
+            <section className="mb-10">
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Projects</h2>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {myProjects.map(p => (
+                  <Link key={p.id} to={`/projects/${p.id}`} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+                    <h3 className="text-sm font-medium text-foreground mb-1">{p.title}</h3>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="text-primary">{p.role}</span>
+                      <span>·</span>
+                      <span>{p.visibility}</span>
+                    </div>
+                  </Link>
+                ))}
+                {myProjects.length === 0 && <p className="text-sm text-muted-foreground">No projects yet.</p>}
+              </div>
+            </section>
+
+            {/* Recent Tasks */}
+            <section>
+              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">Recent Tasks</h2>
+              <div className="space-y-2">
+                {recentTasks.map(task => {
+                  const proj = projects.find(p => p.id === task.project_id);
+                  return (
+                    <div key={task.id} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-foreground block truncate">{task.title}</span>
+                        <span className="text-xs text-muted-foreground">{proj?.title}</span>
+                      </div>
+                      <PriorityBadge priority={task.priority} />
+                      <StatusBadge status={task.status} />
+                      {task.due_date && (
+                        <span className="text-xs font-mono text-muted-foreground hidden sm:flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> {task.due_date}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+                {recentTasks.length === 0 && <p className="text-sm text-muted-foreground">No tasks found.</p>}
+              </div>
+            </section>
+          </>
+        )}
       </motion.div>
     </div>
   );
