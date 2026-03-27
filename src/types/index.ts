@@ -50,6 +50,11 @@ export interface Student {
   university: string;
   level: string;
   major: string;
+  bio?: string;
+  experience?: string;
+  research_interests?: string;
+  skills?: string;
+  cv_url?: string;
   created_at: string;
 }
 

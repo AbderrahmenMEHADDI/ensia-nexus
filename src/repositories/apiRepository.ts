@@ -16,6 +16,10 @@ export const apiRepository = {
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
   getStudentProfile: (userId: number) => api.get<Student>(`/students/${userId}`),
+  createStudentProfile: (data: Partial<Student> & { user_id: number }) =>
+    api.post<Student>('/students/', data),
+  updateStudentProfile: (userId: number, data: Partial<Student>) =>
+    api.put<Student>(`/students/${userId}`, data),
   getTeacherProfile: (userId: number) => api.get<Teacher>(`/teachers/${userId}`),
 
   // ── Labs ─────────────────────────────────────────────────────────────────
@@ -47,6 +51,8 @@ export const apiRepository = {
     api.get<ProjectParticipant[]>(
       projectId ? `/project-participants/?project_id=${projectId}` : '/project-participants/'
     ),
+  createProjectParticipant: (data: Partial<ProjectParticipant>) =>
+    api.post<ProjectParticipant>('/project-participants/', data),
 
   // ── Project resources ─────────────────────────────────────────────────────
   getProjectResources: (projectId?: number) =>

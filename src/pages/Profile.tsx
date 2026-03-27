@@ -91,11 +91,20 @@ const Profile = () => {
               </div>
             </div>
           </div>
-          <Link to="/settings">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Settings className="h-3.5 w-3.5" /> Settings
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {user.role === 'STUDENT' && (
+              <Link to="/student-cv">
+                <Button variant="default" size="sm" className="gap-1.5">
+                  Create CV
+                </Button>
+              </Link>
+            )}
+            <Link to="/settings">
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Settings className="h-3.5 w-3.5" /> Settings
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Info */}
@@ -122,6 +131,36 @@ const Profile = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">University</span><span className="text-foreground">{student.university}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Level</span><span className="text-foreground">{student.level}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Major</span><span className="text-foreground">{student.major}</span></div>
+                {student.cv_url && (
+                  <div className="flex justify-between text-sm gap-3">
+                    <span className="text-muted-foreground">CV</span>
+                    <a className="text-primary hover:underline truncate" href={student.cv_url} target="_blank" rel="noreferrer">{student.cv_url}</a>
+                  </div>
+                )}
+                {student.research_interests && (
+                  <div className="pt-2 border-t border-border">
+                    <span className="text-xs text-muted-foreground block mb-1">Research Interests</span>
+                    <p className="text-sm text-foreground/90">{student.research_interests}</p>
+                  </div>
+                )}
+                {student.experience && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block mb-1">Experience</span>
+                    <p className="text-sm text-foreground/90">{student.experience}</p>
+                  </div>
+                )}
+                {student.skills && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block mb-1">Skills</span>
+                    <p className="text-sm text-foreground/90">{student.skills}</p>
+                  </div>
+                )}
+                {student.bio && (
+                  <div>
+                    <span className="text-xs text-muted-foreground block mb-1">Description</span>
+                    <p className="text-sm text-foreground/90">{student.bio}</p>
+                  </div>
+                )}
               </>
             )}
             <div className="flex justify-between text-sm"><span className="text-muted-foreground">Joined</span><span className="text-foreground">{user.created_at}</span></div>
