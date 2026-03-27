@@ -1,47 +1,123 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { projectApplications, getUserById, getProjectById, currentUser } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRepository } from '@/repositories/apiRepository';
 import { ApplicationStatusBadge, RoleBadge } from '@/components/Badges';
-import type { ProjectApplication } from '@/types';
-import { FileText, CheckCircle2, XCircle, Clock, MessageSquare } from 'lucide-react';
+import type { ProjectApplication, User, Project, ResearchGroup, GroupMember } from '@/types';
+import { FileText, CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Applications = () => {
-  const [apps, setApps] = useState<ProjectApplication[]>([...projectApplications]);
+  const { user, isTeacher, isAdmin } = useAuth();
+  const { toast } = useToast();
+  const [apps, setApps] = useState<ProjectApplication[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<number | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
   const [newMotivation, setNewMotivation] = useState('');
   const [applyProjectId, setApplyProjectId] = useState('');
   const [showApplyForm, setShowApplyForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const isTeacher = ['PROFESSOR', 'DOCTOR', 'MCA', 'ADMIN'].includes(currentUser.role);
+  const isGroupOwner = (projectId: number) => {
+    if (!user) return false;
+    if (isAdmin) return true;
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return false;
+    if (project.created_by === user.id) return true;
+    const group = groups.find(g => g.id === project.group_id);
+    return group?.leader_user_id === user.id;
+  };
 
-  const handleReview = (appId: number, decision: 'ACCEPTED' | 'REJECTED') => {
-    setApps(prev =>
-      prev.map(a =>
-        a.id === appId
-          ? { ...a, status: decision, reviewed_by: currentUser.id, reviewed_at: new Date().toISOString(), decision_note: decisionNote }
-          : a
-      )
-    );
+  const isGroupMember = (groupId: number) => {
+    if (!user) return false;
+    return groupMembers.some(gm => gm.group_id === groupId && gm.user_id === user.id && gm.is_active);
+  };
+
+  const canSeeApp = (app: ProjectApplication) => {
+    if (!user) return false;
+    if (app.student_user_id === user.id) return true;
+    const project = projects.find(p => p.id === app.project_id);
+    if (project && isGroupMember(project.group_id)) return true;
+    return false;
+  };
+
+  const getUserById = (id: number) => users.find(u => u.id === id);
+  const getProjectById = (id: number) => projects.find(p => p.id === id);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [a, u, p, g, gm] = await Promise.all([
+          apiRepository.getApplications(),
+          apiRepository.getUsers(),
+          apiRepository.getProjects(),
+          apiRepository.getGroups(),
+          apiRepository.getGroupMembers(),
+        ]);
+        setApps(a);
+        setUsers(u);
+        setProjects(p);
+        setGroups(g);
+        setGroupMembers(gm);
+      } catch (e) {
+        console.error('Applications load error:', e);
+        toast({ title: 'Error loading applications', variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const handleReview = async (appId: number, decision: 'ACCEPTED' | 'REJECTED') => {
+    try {
+      const updated = await apiRepository.reviewApplication(appId, {
+        status: decision,
+        decision_note: decisionNote,
+        reviewed_at: new Date().toISOString(),
+      });
+      setApps(prev => prev.map(a => a.id === appId ? updated : a));
+      toast({ title: `Application ${decision.toLowerCase()}` });
+    } catch (e) {
+      toast({ title: 'Review failed', variant: 'destructive' });
+    }
     setSelectedApp(null);
     setDecisionNote('');
   };
 
-  const handleApply = () => {
-    if (!newMotivation.trim() || !applyProjectId) return;
-    const newApp: ProjectApplication = {
-      id: apps.length + 10,
-      project_id: Number(applyProjectId),
-      student_user_id: currentUser.id,
-      motivation: newMotivation,
-      status: 'PENDING',
-      created_at: new Date().toISOString(),
-    };
-    setApps(prev => [newApp, ...prev]);
-    setNewMotivation('');
-    setApplyProjectId('');
-    setShowApplyForm(false);
+  const handleApply = async () => {
+    if (!newMotivation.trim() || !applyProjectId || !user) return;
+    setSubmitting(true);
+    try {
+      const newApp = await apiRepository.createApplication({
+        project_id: Number(applyProjectId),
+        student_user_id: user.id,
+        motivation: newMotivation,
+        status: 'PENDING',
+      });
+      setApps(prev => [newApp, ...prev]);
+      setNewMotivation('');
+      setApplyProjectId('');
+      setShowApplyForm(false);
+      toast({ title: 'Application submitted!' });
+    } catch (e) {
+      toast({ title: 'Submission failed', variant: 'destructive' });
+    }
+    setSubmitting(false);
   };
+
+  if (loading) {
+    return (
+      <div className="container py-10 flex justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="container py-10">
@@ -73,14 +149,17 @@ const Applications = () => {
             <h3 className="font-serif font-semibold text-foreground mb-4">Submit Application</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Project ID</label>
-                <input
-                  type="number"
+                <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Project</label>
+                <select
                   value={applyProjectId}
                   onChange={e => setApplyProjectId(e.target.value)}
-                  placeholder="e.g. 1"
                   className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                />
+                >
+                  <option value="">Select a project...</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Motivation Statement</label>
@@ -94,8 +173,10 @@ const Applications = () => {
               </div>
               <button
                 onClick={handleApply}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
+                {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
                 Submit Application
               </button>
             </div>
@@ -104,7 +185,7 @@ const Applications = () => {
 
         {/* Applications list */}
         <div className="space-y-4">
-          {apps.map((app, i) => {
+          {apps.filter(canSeeApp).map((app, i) => {
             const student = getUserById(app.student_user_id);
             const project = getProjectById(app.project_id);
             const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
@@ -140,7 +221,6 @@ const Applications = () => {
                     </div>
                   </div>
 
-                  {/* Decision note */}
                   {app.decision_note && (
                     <div className="p-3 rounded-lg bg-muted/50 mb-3 text-sm">
                       <span className="text-xs font-mono text-muted-foreground">Decision note by {reviewer?.full_name}:</span>
@@ -148,8 +228,7 @@ const Applications = () => {
                     </div>
                   )}
 
-                  {/* Review actions */}
-                  {isTeacher && app.status === 'PENDING' && (
+                  {isGroupOwner(app.project_id) && app.status === 'PENDING' && (
                     <div>
                       {!isSelected ? (
                         <button
@@ -195,6 +274,9 @@ const Applications = () => {
               </motion.div>
             );
           })}
+          {apps.filter(canSeeApp).length === 0 && (
+            <p className="text-muted-foreground text-center py-16">No applications found.</p>
+          )}
         </div>
       </motion.div>
     </div>

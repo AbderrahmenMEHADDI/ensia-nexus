@@ -172,6 +172,36 @@ export const chatMessages: ChatMessage[] = [
   { id: 14, room_id: 7, sender_user_id: 4, content: 'On it. I\'ll implement the basic PPO agent first.', created_at: '2024-04-10T09:30:00' },
 ];
 
+export const announcements: Announcement[] = [
+  {
+    id: 1,
+    title: 'New Paper Accepted at EMNLP 2024',
+    content: 'Our research on Algerian Arabic Dialect sentiment analysis has been accepted at EMNLP 2024. Congratulations to Dr. Amina and the NLP group!',
+    author_user_id: 1,
+    created_at: '2024-11-20T10:00:00',
+    category: 'RESEARCH',
+    tags: ['NLP', 'EMNLP', 'Success'],
+  },
+  {
+    id: 2,
+    title: 'NVIDIA GPU Cluster Upgrade',
+    content: 'The laboratory GPU cluster will be undergoing maintenance and upgrade this weekend. We are adding 4 new A100 nodes.',
+    author_user_id: 5,
+    created_at: '2024-11-22T14:30:00',
+    category: 'ADMIN',
+    tags: ['Infrastructure', 'Maintenance'],
+  },
+  {
+    id: 3,
+    title: 'Research Seminar: Zero-Knowledge Proofs',
+    content: 'Join us next Wednesday for a seminar on the latest advancements in ZK-SNARKs and their application in identity management.',
+    author_user_id: 10,
+    created_at: '2024-12-01T09:00:00',
+    category: 'EVENT',
+    tags: ['Cryptography', 'Seminar'],
+  },
+];
+
 export const getChatRoomById = (id: number) => chatRooms.find(r => r.id === id);
 export const getMessagesByRoom = (roomId: number) => chatMessages.filter(m => m.room_id === roomId);
 export const getChatRoomsByProject = (projectId: number) => chatRooms.filter(r => r.project_id === projectId);
