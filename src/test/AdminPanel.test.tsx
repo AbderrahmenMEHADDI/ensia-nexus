@@ -38,7 +38,7 @@ vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('framer-motion', () => ({ motion: { div: ({ children, ...props }: any) => <div {...props}>{children}</div> } }));
 vi.mock('@/components/ui/tabs', () => {
   const Tabs = ({ children }: any) => <div>{children}</div>;
-  const TabsList = ({ children }: any) => <div>{children}</div>;
+  const TabsList = ({ children }: any) => <div > {children}</div>;
   const TabsTrigger = ({ children, onClick }: any) => (
     <button type="button" role="tab" onClick={onClick}>{children}</button>
   );
