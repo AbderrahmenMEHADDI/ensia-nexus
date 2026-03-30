@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import type { ResearchLab, ResearchGroup, ResearchLabAdmin, User } from '@/types';
-import { Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus, Building2, UserCog, ChevronRight, UserPlus, FlaskConical, Loader2, Info } from 'lucide-react';
+import { Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus, Building2, UserCog, UserPlus, FlaskConical, Loader2, Info, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -46,6 +46,9 @@ const AdminPanel = () => {
   const [editLabDesc, setEditLabDesc] = useState(''); // this state will hold the edited lab description when we are in the edit lab dialog
   const [editLabHead, setEditLabHead] = useState(''); // this state will hold the edited lab head teacher ID when we are in the edit lab dialog
 
+  const isPlatformAdmin = isAdmin;
+  const canManageLab = (labId: number) => isPlatformAdmin || labAdmins.some(a => a.lab_id === labId && a.user_id === user?.id);
+  const manageableLabs = isPlatformAdmin ? labs : labs.filter(l => canManageLab(l.id));
 
   useEffect(() => {
     const load = async () => {
@@ -79,9 +82,13 @@ const AdminPanel = () => {
     : users;
     const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
   const handleValidate = async (groupId: number) => {
+    const target = groups.find(g => g.id === groupId);
+    if (!target || !canManageLab(target.lab_id)) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
     try {
-      const updated = await apiRepository.updateGroup(groupId, {
-        is_validated: true,
+      const updated = await apiRepository.validateGroup(groupId, {
         validated_by_admin_id: user?.id,
         validated_at: new Date().toISOString(),
       });
@@ -92,7 +99,26 @@ const AdminPanel = () => {
     }
   };
 
+  const handleDeleteGroup = async (groupId: number) => {
+    const target = groups.find(g => g.id === groupId);
+    if (!target || !canManageLab(target.lab_id)) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
+    try {
+      await apiRepository.deleteGroup(groupId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+      toast({ title: 'Group deleted' });
+    } catch {
+      toast({ title: 'Delete failed', variant: 'destructive' });
+    }
+  };
+
   const handleAddLab = async () => {
+    if (!isPlatformAdmin) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
     if (!newLabName.trim() || !newLabHead) return;
     try {
       const created = await apiRepository.createLab({
@@ -111,11 +137,16 @@ const AdminPanel = () => {
 
   const handleAddGroup = async () => {
     if (!newGroupName.trim() || !newGroupLab) return;
+    const labId = parseInt(newGroupLab);
+    if (!canManageLab(labId)) {
+      toast({ title: 'Not authorized to create group for this lab', variant: 'destructive' });
+      return;
+    }
     try {
       const created = await apiRepository.createGroup({
         name: newGroupName,
         description: newGroupDesc,
-        lab_id: parseInt(newGroupLab),
+        lab_id: labId,
         is_validated: false,
       });
       setGroups(prev => [...prev, created]);
@@ -129,6 +160,10 @@ const AdminPanel = () => {
 
   const handleAssignLeader = async () => {
     if (!selectedGroupForLeader || !selectedLeader) return;
+    if (!canManageLab(selectedGroupForLeader.lab_id)) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
     try {
       const updated = await apiRepository.updateGroup(selectedGroupForLeader.id, {
         leader_user_id: parseInt(selectedLeader),
@@ -144,6 +179,10 @@ const AdminPanel = () => {
   // we need to add functions to handle adding and removing lab admins, as well as opening the manage admins dialog with the correct lab information. we also need to add functions to handle opening the edit lab dialog and saving the edited lab details.
   
   const handleOpenManageAdmins = (lab: ResearchLab) => { // to handle opening the manage admins dialog, we set the selected lab for admins to the lab we want to manage, this will allow us to display the correct admins in the dialog and perform add/remove actions on the correct lab
+    if (!canManageLab(lab.id)) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
     setSelectedLabForAdmins(lab);
     setNewAdminUser('');
     setManageAdminsOpen(true);
@@ -151,6 +190,10 @@ const AdminPanel = () => {
 
   const handleAddAdmin = async () => { // to handle adding a new admin to the lab, we check if the selected lab and new admin user ID are valid, then we call the API to add the admin, and if successful we update our local state to reflect the change and show a success toast. if there's an error we show an error toast.
     if (!selectedLabForAdmins || !newAdminUser) return;
+    if (!canManageLab(selectedLabForAdmins.id)) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
     const userId = parseInt(newAdminUser);
     if (labAdmins.some(a => a.lab_id === selectedLabForAdmins.id && a.user_id === userId)) {
       toast({ title: 'Already an admin', variant: 'destructive' });
@@ -167,6 +210,10 @@ const AdminPanel = () => {
   };
 
   const handleRemoveAdmin = async (labId: number, userId: number) => { 
+    if (!canManageLab(labId)) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
     const admins = labAdminsFor(labId);
     if (admins.length <= 1) { // Prevents orphaned labs by ensuring at least one admin remains before calling the removal API.
       toast({ title: 'Cannot remove last admin', variant: 'destructive' });
@@ -182,6 +229,10 @@ const AdminPanel = () => {
   };
 
   const handleOpenEditLab = (lab: ResearchLab) => { // Syncs form state with the selected lab to ensure the user sees accurate data upon opening the editor.
+    if (!isPlatformAdmin) {
+      toast({ title: 'Only platform admins can edit labs', variant: 'destructive' });
+      return;
+    }
     setSelectedLabForEdit(lab);
     setEditLabName(lab.name);
     setEditLabDesc(lab.description);
@@ -191,6 +242,10 @@ const AdminPanel = () => {
 
   const handleSaveLab = async () => {
     if (!selectedLabForEdit) return;
+    if (!isPlatformAdmin) {
+      toast({ title: 'Only platform admins can edit labs', variant: 'destructive' });
+      return;
+    }
     try {
       const updated = await apiRepository.updateLab(selectedLabForEdit.id, {
         name: editLabName,
@@ -238,7 +293,9 @@ const AdminPanel = () => {
           <TabsContent value="labs" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground">Research Labs ({labs.length})</h2>
-              <Button onClick={() => setAddLabOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Lab</Button>
+              {isPlatformAdmin && (
+                <Button onClick={() => setAddLabOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Lab</Button>
+              )}
             </div>
             <div className="space-y-3">
               {labs.map(lab => {
@@ -252,10 +309,12 @@ const AdminPanel = () => {
                         <h3 className="font-medium text-foreground">{lab.name}</h3>
                         <p className="text-sm text-muted-foreground mt-1">{lab.description}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenEditLab(lab)}>Edit</Button>
-                        <Button variant="secondary" size="sm" onClick={() => handleOpenManageAdmins(lab)}>Admins</Button>
-                      </div>
+                      {(canManageLab(lab.id) || isPlatformAdmin) && (
+                        <div className="flex items-center gap-2">
+                          {isPlatformAdmin && <Button variant="outline" size="sm" onClick={() => handleOpenEditLab(lab)}>Edit</Button>}
+                          <Button variant="secondary" size="sm" onClick={() => handleOpenManageAdmins(lab)}>Admins</Button>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground mt-3">
                       <span className="flex items-center gap-1"><UserCog className="h-3.5 w-3.5" />Head: {head?.full_name ?? 'Unassigned'}</span>
@@ -286,7 +345,9 @@ const AdminPanel = () => {
           <TabsContent value="groups" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground">Research Groups ({groups.length})</h2>
-              <Button onClick={() => setAddGroupOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Group</Button>
+              {manageableLabs.length > 0 && (
+                <Button onClick={() => setAddGroupOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Group</Button>
+              )}
             </div>
 
             {pendingGroups.length > 0 && (
@@ -305,14 +366,19 @@ const AdminPanel = () => {
                             <h3 className="font-medium text-foreground">{group.name}</h3>
                             <span className="text-xs font-mono text-muted-foreground">{lab?.name.split('—')[0]?.trim()}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors">
-                              <UserCog className="h-3.5 w-3.5" /> Assign Leader
-                            </button>
-                            <button onClick={() => handleValidate(group.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium hover:bg-primary/25 transition-colors">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> Validate
-                            </button>
-                          </div>
+                          {canManageLab(group.lab_id) && (
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors">
+                                <UserCog className="h-3.5 w-3.5" /> Assign Leader
+                              </button>
+                              <button onClick={() => handleValidate(group.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium hover:bg-primary/25 transition-colors">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Validate
+                              </button>
+                              <button onClick={() => handleDeleteGroup(group.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/15 transition-colors">
+                                <Trash2 className="h-3.5 w-3.5" /> Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{group.description}</p>
                         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
@@ -350,9 +416,16 @@ const AdminPanel = () => {
                           </div>
                         </div>
                       </div>
-                      <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                        <UserCog className="h-3.5 w-3.5" /> Change Leader
-                      </button>
+                      {canManageLab(group.lab_id) && (
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                            <UserCog className="h-3.5 w-3.5" /> Change Leader
+                          </button>
+                          <button onClick={() => handleDeleteGroup(group.id)} className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1">
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -453,7 +526,7 @@ const AdminPanel = () => {
                 <Select value={newGroupLab} onValueChange={setNewGroupLab}>
                   <SelectTrigger><SelectValue placeholder="Select lab" /></SelectTrigger>
                   <SelectContent>
-                    {labs.map(l => (
+                    {manageableLabs.map(l => (
                       <SelectItem key={l.id} value={String(l.id)}>{l.name.split('—')[0]?.trim()}</SelectItem>
                     ))}
                   </SelectContent>
