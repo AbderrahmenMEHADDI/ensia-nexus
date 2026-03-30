@@ -375,7 +375,9 @@ const ProjectBoard = () => {
         {/* Kanban Board */}
         <div className="grid md:grid-cols-4 gap-4 mb-10">
           {statusColumns.map(col => {
-            const columnTasks = localTasks.filter(t => t.status === col.status);
+            const columnTasks = localTasks.filter(
+              t => t.project_id === selectedProjectId && t.status === col.status
+            );
             const isOver = dragOverColumn === col.status;
             return (
               <div
