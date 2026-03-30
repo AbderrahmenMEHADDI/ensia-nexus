@@ -105,6 +105,13 @@ export interface ResearchLab {
   created_at: string;
 }
 
+export interface ResearchLabAdmin {
+  lab_id: number;
+  user_id: number;
+  created_at: string;
+  created_by?: number;
+}
+
 export interface ResearchGroup {
   id: number;
   lab_id: number;
