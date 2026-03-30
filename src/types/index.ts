@@ -119,7 +119,7 @@ export interface ResearchGroup {
   description: string;
   leader_user_id: number;
   is_validated: boolean;
-  validated_by_admin_id?: number;
+  validated_by_admin_id?: number; 
   validated_at?: string;
   created_at: string;
 }

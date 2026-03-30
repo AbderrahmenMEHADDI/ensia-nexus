@@ -1,7 +1,7 @@
 import { api } from '../lib/apiClient';
 import type {
   User, Student, Teacher,
-  ResearchLab, ResearchGroup, GroupMember,
+  ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
   Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
 } from '@/types';
@@ -46,6 +46,14 @@ export const apiRepository = {
   getLab: (id: number) => api.get<ResearchLab>(`/labs/${id}`),
   createLab: (data: Partial<ResearchLab>) => api.post<ResearchLab>('/labs/', data),
   updateLab: (id: number, data: Partial<ResearchLab>) => api.put<ResearchLab>(`/labs/${id}`, data),
+  
+  // ── Lab admins ──────────────────────────────────────────────────────────
+  getLabAdmins: (labId?: number) =>
+    api.get<ResearchLabAdmin[]>(labId ? `/lab-admins/?lab_id=${labId}` : '/lab-admins/'),
+  addLabAdmin: (labId: number, userId: number) =>
+    api.post<ResearchLabAdmin>('/lab-admins/', { lab_id: labId, user_id: userId }),
+  removeLabAdmin: (labId: number, userId: number) =>
+    api.delete<void>(`/lab-admins/${labId}/${userId}`),
 
   // ── Groups ───────────────────────────────────────────────────────────────
   getGroups: (labId?: number) =>
@@ -54,6 +62,10 @@ export const apiRepository = {
   createGroup: (data: Partial<ResearchGroup>) => api.post<ResearchGroup>('/groups/', data),
   updateGroup: (id: number, data: Partial<ResearchGroup>) =>
     api.put<ResearchGroup>(`/groups/${id}`, data),
+  validateGroup: (id: number, data?: Partial<ResearchGroup>) =>
+    api.patch<ResearchGroup>(`/groups/${id}`, { is_validated: true, ...data }),
+  deleteGroup: (id: number) => api.delete<void>(`/groups/${id}`),
+
 
   // ── Group members ────────────────────────────────────────────────────────
   getGroupMembers: (groupId?: number) =>
