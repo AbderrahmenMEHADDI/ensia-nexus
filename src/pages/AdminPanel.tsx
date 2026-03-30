@@ -142,12 +142,15 @@ const AdminPanel = () => {
       toast({ title: 'Not authorized to create group for this lab', variant: 'destructive' });
       return;
     }
+    const isCreatorLabAdmin = canManageLab(labId);
     try {
       const created = await apiRepository.createGroup({
         name: newGroupName,
         description: newGroupDesc,
         lab_id: labId,
-        is_validated: false,
+        is_validated: isCreatorLabAdmin,
+        validated_by_admin_id: isCreatorLabAdmin ? user?.id : undefined,
+        validated_at: isCreatorLabAdmin ? new Date().toISOString() : undefined,
       });
       setGroups(prev => [...prev, created]);
       toast({ title: 'Group created' });
