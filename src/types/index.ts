@@ -122,6 +122,7 @@ export interface ResearchGroup {
   validated_by_admin_id?: number; 
   validated_at?: string;
   created_at: string;
+  requested_by_user_id?: number;
 }
 
 export interface GroupMember {

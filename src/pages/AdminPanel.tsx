@@ -362,6 +362,8 @@ const AdminPanel = () => {
                   {pendingGroups.map(group => {
                     const leader = getUserById(group.leader_user_id);
                     const lab = labs.find(l => l.id === group.lab_id);
+                    const requesterId = group.requested_by_user_id ;
+                    const requester = requesterId ? getUserById(requesterId) : undefined;
                     return (
                       <div key={group.id} className="p-4 rounded-xl border border-primary/20 bg-card">
                         <div className="flex items-start justify-between mb-2">
@@ -384,6 +386,13 @@ const AdminPanel = () => {
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{group.description}</p>
+                        {requester && (
+                          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mb-1">
+                            <UserPlus className="h-3.5 w-3.5" />
+                            <span>Requested by {requester.full_name}</span>
+                            <RoleBadge role={requester.role} />
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                           {leader && leader.id !== 0 ? (
                             <><span>Led by {leader.full_name}</span><RoleBadge role={leader.role} /></>

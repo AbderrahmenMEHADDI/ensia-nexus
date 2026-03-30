@@ -1,5 +1,5 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import AdminPanel from './AdminPanel';
+import AdminPanel from '../pages/AdminPanel';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
 
 const baseLabs = [
@@ -18,7 +18,7 @@ const baseUsers = [
 
 const baseLabAdmins = [{ lab_id: 1, user_id: 1, created_at: '2023-03-01' }];
 
-const mockApi = {
+const mockApi = vi.hoisted(() => ({
   getLabs: vi.fn(),
   getGroups: vi.fn(),
   getUsers: vi.fn(),
@@ -28,7 +28,7 @@ const mockApi = {
   deleteGroup: vi.fn(),
   addLabAdmin: vi.fn(),
   removeLabAdmin: vi.fn(),
-};
+}));
 
 let authState: any = {};
 
@@ -36,9 +36,24 @@ vi.mock('@/repositories/apiRepository', () => ({ apiRepository: mockApi }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => authState }));
 vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('framer-motion', () => ({ motion: { div: ({ children, ...props }: any) => <div {...props}>{children}</div> } }));
+vi.mock('@/components/ui/tabs', () => {
+  const Tabs = ({ children }: any) => <div>{children}</div>;
+  const TabsList = ({ children }: any) => <div>{children}</div>;
+  const TabsTrigger = ({ children, onClick }: any) => (
+    <button type="button" role="tab" onClick={onClick}>{children}</button>
+  );
+  const TabsContent = ({ children }: any) => <div>{children}</div>;
+  return { Tabs, TabsList, TabsTrigger, TabsContent };
+});
 vi.mock('@/components/ui/select', () => {
   const Select = ({ value, onValueChange, children }: any) => (
-    <select data-testid="lab-select" value={value ?? ''} onChange={e => onValueChange?.(e.target.value)}>
+    <select
+      data-testid="lab-select"
+      aria-label="lab-select"
+      title="lab-select"
+      value={value ?? ''}
+      onChange={e => onValueChange?.(e.target.value)}
+    >
       {children}
     </select>
   );
@@ -76,33 +91,35 @@ describe('AdminPanel permissions', () => {
     setAuth(5, 'ADMIN');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    expect(screen.getByText(/Add Lab/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Admins/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('tab', { name: /Labs/i }));
+    expect(screen.getByRole('button', { name: /Add Lab/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Admins/i }).length).toBeGreaterThan(0);
   });
 
   it('hides Add Lab for lab-only admin but shows Admins button', async () => {
     setAuth(1, 'TEACHER');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    expect(screen.queryByText(/Add Lab/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Admins/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: /Labs/i }));
+    expect(screen.queryByRole('button', { name: /Add Lab/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Admins/i })).toBeInTheDocument();
   });
 
   it('hides group actions for unauthorized user', async () => {
     setAuth(2, 'STUDENT');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getGroups).toHaveBeenCalled());
-    expect(screen.queryByText(/Assign Leader/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Validate/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Delete/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Assign Leader/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Validate/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete/i })).not.toBeInTheDocument();
   });
 
   it('shows group actions for lab admin', async () => {
     setAuth(1, 'TEACHER');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getGroups).toHaveBeenCalled());
-    expect(screen.getByText(/Assign Leader/i)).toBeInTheDocument();
-    expect(screen.getByText(/Validate/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Assign Leader/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Validate/i })).not.toHaveLength(0);
   });
 
   it('auto-validates group creation by lab admin', async () => {
