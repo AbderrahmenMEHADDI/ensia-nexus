@@ -56,6 +56,7 @@ const AdminPanel = () => {
   const [editLabHead, setEditLabHead] = useState(''); // this state will hold the edited lab head teacher ID when we are in the edit lab dialog
   const [newAdminFullName, setNewAdminFullName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('admin');
 
   const isPlatformAdmin = isAdmin;
   const canManageLab = (labId: number) => isPlatformAdmin || labAdmins.some(a => a.lab_id === labId && a.user_id === user?.id);
@@ -352,6 +353,7 @@ const AdminPanel = () => {
         full_name: newAdminFullName.trim(),
         email: newAdminEmail.trim(),
         role: 'ADMIN',
+        password: newAdminPassword || 'admin',
       });
       setUsers(prev => [created, ...prev]);
       mergeUsersIntoLookup([created]);
@@ -359,6 +361,7 @@ const AdminPanel = () => {
       setCreateAdminOpen(false);
       setNewAdminFullName('');
       setNewAdminEmail('');
+      setNewAdminPassword('admin');
     } catch (e) {
       console.error('Failed to create admin', e);
       toast({ title: 'Failed to create admin', variant: 'destructive' });
@@ -845,6 +848,15 @@ const AdminPanel = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Email</label>
                 <Input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="admin@example.com" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Password</label>
+                <Input
+                  type="password"
+                  value={newAdminPassword}
+                  onChange={e => setNewAdminPassword(e.target.value)}
+                  placeholder="admin"
+                />
               </div>
             </div>
             <DialogFooter>

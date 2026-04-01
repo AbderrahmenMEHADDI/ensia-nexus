@@ -19,7 +19,7 @@ export const apiRepository = {
     const qs = searchParams.toString();
     return api.get<User[]>(qs ? `/users?${qs}` : '/users');
   },
-  createUser: (data: Partial<User> & { full_name: string; email: string; role: UserRole }) =>
+  createUser: (data: Partial<User> & { full_name: string; email: string; role: UserRole; password?: string }) =>
     api.post<User>('/users/', data),
   getUser: (id: number) => api.get<User>(`/users/${id}`),
   updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
