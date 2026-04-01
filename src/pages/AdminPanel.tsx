@@ -27,7 +27,6 @@ const AdminPanel = () => {
   const [userPage, setUserPage] = useState(1);
   const userPageSize = 25;
   const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL');
-  const [platformOnly, setPlatformOnly] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [userLookup, setUserLookup] = useState<Record<number, User>>({});
 
@@ -38,6 +37,7 @@ const AdminPanel = () => {
   const [manageAdminsOpen, setManageAdminsOpen] = useState(false);  // this is a new dialog for managing lab admins, it will open when clicking the "Admins" button on a lab card
   const [editLabOpen, setEditLabOpen] = useState(false); // this is a new dialog for editing lab details, it will open when clicking the "Edit" button on a lab card
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [createAdminOpen, setCreateAdminOpen] = useState(false);
   const [selectedGroupForLeader, setSelectedGroupForLeader] = useState<ResearchGroup | null>(null);
   const [selectedLabForAdmins, setSelectedLabForAdmins] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently managing admins
   const [selectedLabForEdit, setSelectedLabForEdit] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently editing details
@@ -54,6 +54,8 @@ const AdminPanel = () => {
   const [editLabName, setEditLabName] = useState(''); // this state will hold the edited lab name when we are in the edit lab dialog
   const [editLabDesc, setEditLabDesc] = useState(''); // this state will hold the edited lab description when we are in the edit lab dialog
   const [editLabHead, setEditLabHead] = useState(''); // this state will hold the edited lab head teacher ID when we are in the edit lab dialog
+  const [newAdminFullName, setNewAdminFullName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
 
   const isPlatformAdmin = isAdmin;
   const canManageLab = (labId: number) => isPlatformAdmin || labAdmins.some(a => a.lab_id === labId && a.user_id === user?.id);
@@ -112,7 +114,6 @@ const AdminPanel = () => {
         limit: userPageSize,
         role: roleFilter === 'ALL' ? undefined : roleFilter,
         search: userSearch.trim() || undefined,
-        is_platform_admin: platformOnly ? true : undefined,
       });
       setUsers(res.items);
       setUserTotal(res.total);
@@ -127,7 +128,7 @@ const AdminPanel = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [userPage, roleFilter, platformOnly, userSearch]);
+  }, [userPage, roleFilter, userSearch]);
 
   const getUserById = (id: number) => userLookup[id];
   const pendingGroups = groups.filter(g => !g.is_validated);
@@ -337,6 +338,30 @@ const AdminPanel = () => {
       toast({ title: 'Lab deleted' });
     } catch {
       toast({ title: 'Failed to delete lab', variant: 'destructive' });
+    }
+  };
+
+  const handleCreateAdmin = async () => {
+    if (!isPlatformAdmin) {
+      toast({ title: 'Not authorized', variant: 'destructive' });
+      return;
+    }
+    if (!newAdminFullName.trim() || !newAdminEmail.trim()) return;
+    try {
+      const created = await apiRepository.createUser({
+        full_name: newAdminFullName.trim(),
+        email: newAdminEmail.trim(),
+        role: 'ADMIN',
+      });
+      setUsers(prev => [created, ...prev]);
+      mergeUsersIntoLookup([created]);
+      toast({ title: 'Admin created' });
+      setCreateAdminOpen(false);
+      setNewAdminFullName('');
+      setNewAdminEmail('');
+    } catch (e) {
+      console.error('Failed to create admin', e);
+      toast({ title: 'Failed to create admin', variant: 'destructive' });
     }
   };
 
@@ -551,13 +576,11 @@ const AdminPanel = () => {
                   <SelectItem value="PARTNER">Partner</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                variant={platformOnly ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => { setPlatformOnly(prev => !prev); setUserPage(1); }}
-              >
-                {platformOnly ? 'Showing platform admins' : 'All users'}
-              </Button>
+              {isPlatformAdmin && (
+                <Button size="sm" onClick={() => setCreateAdminOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />Create Admin
+                </Button>
+              )}
               {usersLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             </div>
             <div className="space-y-2">
@@ -740,9 +763,11 @@ const AdminPanel = () => {
                   <Select value={newAdminUser} onValueChange={setNewAdminUser}>
                     <SelectTrigger className="w-full"><SelectValue placeholder="Select user" /></SelectTrigger>
                     <SelectContent>
-                      {Object.values(userLookup).map(u => (
-                        <SelectItem key={u.id} value={String(u.id)}>{u.full_name} ({u.role})</SelectItem>
-                      ))}
+                      {Object.values(userLookup)
+                        .filter(u => u.role === 'TEACHER')
+                        .map(u => (
+                          <SelectItem key={u.id} value={String(u.id)}>{u.full_name} ({u.role})</SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <Button onClick={handleAddAdmin} disabled={!newAdminUser || !selectedLabForAdmins}>Add</Button>
@@ -801,6 +826,30 @@ const AdminPanel = () => {
             <DialogFooter>
               <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
               <Button onClick={handleSaveLab} disabled={!editLabName.trim()}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* CREATE ADMIN DIALOG */}
+        <Dialog open={createAdminOpen} onOpenChange={setCreateAdminOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Admin</DialogTitle>
+              <DialogDescription>Create a new admin account.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Full name</label>
+                <Input value={newAdminFullName} onChange={e => setNewAdminFullName(e.target.value)} placeholder="Jane Doe" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Email</label>
+                <Input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="admin@example.com" />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button onClick={handleCreateAdmin} disabled={!newAdminFullName.trim() || !newAdminEmail.trim()}>Create</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

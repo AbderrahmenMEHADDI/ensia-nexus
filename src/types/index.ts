@@ -1,4 +1,4 @@
-export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPERADMIN' | 'PARTNER';
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'PARTNER';
 export type Visibility = 'PUBLIC' | 'PRIVATE';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';
@@ -42,7 +42,6 @@ export interface User {
   full_name: string;
   email: string;
   role: UserRole;
-  is_platform_admin?: boolean;
   institution?: string;
   department?: string;
   contact_email?: string;

@@ -21,7 +21,6 @@ interface AuthContextType extends AuthState {
   hasRole: (role: UserRole | UserRole[]) => boolean;
   isTeacher: boolean;
   isAdmin: boolean;
-  isSuperAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -111,17 +110,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const hasRole = useCallback(
     (role: UserRole | UserRole[]) => {
       if (!state.user) return false;
-      if (state.user.role === 'SUPERADMIN') return true; // Platform superadmins can access everything
-
       const roles = Array.isArray(role) ? role : [role];
       return roles.includes(state.user.role as UserRole);
     },
     [state.user]
   );
 
-  const isSuperAdmin = state.user?.role === 'SUPERADMIN';
   const isTeacher = state.user?.role === 'TEACHER';
-  const isAdmin = state.user?.role === 'ADMIN' || isSuperAdmin;
+  const isAdmin = state.user?.role === 'ADMIN';
 
   const value = {
     ...state,
@@ -134,7 +130,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     hasRole,
     isTeacher,
     isAdmin,
-    isSuperAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

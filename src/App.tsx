@@ -69,7 +69,7 @@ const AppRoutes = () => (
       <Route path="/labs/:labId" element={<ProtectedRoute><LabDetails /></ProtectedRoute>} />
       <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
       <Route path="/student-cv" element={<RoleProtectedRoute allowedRoles={['STUDENT']}><StudentCV /></RoleProtectedRoute>} />
-      <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}><AdminPanel /></RoleProtectedRoute>} />
+      <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>

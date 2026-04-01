@@ -4,7 +4,6 @@ const roleConfig: Record<UserRole, { label: string; className: string }> = {
   STUDENT: { label: 'Student', className: 'bg-info/15 text-info border-info/30' },
   TEACHER: { label: 'Teacher', className: 'bg-primary/15 text-primary border-primary/30' },
   ADMIN: { label: 'Admin', className: 'bg-destructive/15 text-destructive border-destructive/30' },
-  SUPERADMIN: { label: 'Super Admin', className: 'bg-destructive/20 text-destructive border-destructive/40' },
   PARTNER: { label: 'Partner', className: 'bg-success/15 text-success border-success/30' },
 };
 

@@ -19,25 +19,22 @@ export const apiRepository = {
     const qs = searchParams.toString();
     return api.get<User[]>(qs ? `/users?${qs}` : '/users');
   },
+  createUser: (data: Partial<User> & { full_name: string; email: string; role: UserRole }) =>
+    api.post<User>('/users/', data),
   getUser: (id: number) => api.get<User>(`/users/${id}`),
   updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
-  setPlatformAdmin: (id: number, is_platform_admin: boolean) =>
-    api.patch<User>(`/users/${id}/platform-admin`, { is_platform_admin }),
+  deleteUser: (id: number) => api.delete<void>(`/users/${id}`),
   getUsersPaged: (params: {
     skip?: number;
     limit?: number;
     role?: UserRole;
     search?: string;
-    is_platform_admin?: boolean;
   }) => {
     const searchParams = new URLSearchParams();
     if (typeof params.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
     if (typeof params.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
     if (params.role) searchParams.set('role', params.role);
     if (params.search) searchParams.set('search', params.search);
-    if (typeof params.is_platform_admin !== 'undefined') {
-      searchParams.set('is_platform_admin', String(params.is_platform_admin));
-    }
     const qs = searchParams.toString();
     return api.get<UserListResponse>(qs ? `/users/paged?${qs}` : '/users/paged');
   },
