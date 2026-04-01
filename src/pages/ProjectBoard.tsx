@@ -65,13 +65,16 @@ const ProjectBoard = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editAssignee, setEditAssignee] = useState<string>('');
+  const [editLoading, setEditLoading] = useState(false);
+  const [newAssigneeUserId, setNewAssigneeUserId] = useState('none');
   const [editOpen, setEditOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editStatus, setEditStatus] = useState<TaskStatus>('TODO');
   const [editPriority, setEditPriority] = useState<TaskPriority>('MEDIUM');
-  const [editAssignee, setEditAssignee] = useState<string>('');
-  const [editLoading, setEditLoading] = useState(false);
+  const [editAssigneeUserId, setEditAssigneeUserId] = useState('none');
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyProjectId, setApplyProjectId] = useState<number | null>(null);
   const [applyMotivation, setApplyMotivation] = useState('');
@@ -207,6 +210,9 @@ const ProjectBoard = () => {
       status: createStatus,
       priority: newPriority,
       assignee_user_id: newAssignee ? Number(newAssignee) : null,
+      ...(newAssigneeUserId !== 'none'
+        ? { assignee_user_id: Number(newAssigneeUserId) }
+        : {}),
       created_by: user.id,
     };
     try {
@@ -220,30 +226,40 @@ const ProjectBoard = () => {
       setCreateOpen(false);
     } catch {
       toast({ title: 'Failed to create task', variant: 'destructive' });
-    } finally {
-      setCreateLoading(false);
     }
+    setNewTitle(''); setNewDesc(''); setNewPriority('MEDIUM'); setNewAssigneeUserId('none');
+    setCreateOpen(false);
+  };
+
+  const openEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditTitle(task.title || '');
+    setEditDesc(task.description || '');
+    setEditStatus(task.status);
+    setEditPriority(task.priority);
+    setEditAssigneeUserId(task.assignee_user_id ? String(task.assignee_user_id) : 'none');
+    setEditOpen(true);
   };
 
   const handleUpdateTask = async () => {
-    if (!editingTask || !editTitle.trim()) return;
-    setEditLoading(true);
-    const data = {
+    if (!editingTaskId || !editTitle.trim()) return;
+    const payload = {
       title: editTitle.trim(),
       description: editDesc.trim(),
       status: editStatus,
       priority: editPriority,
-      assignee_user_id: editAssignee ? Number(editAssignee) : null,
+      assignee_user_id: editAssigneeUserId !== 'none' ? Number(editAssigneeUserId) : null,
     };
+    // Optimistic update
+    setLocalTasks(prev => prev.map(t => (t.id === editingTaskId ? { ...t, ...payload } : t)));
     try {
-      const updated = await apiRepository.updateTask(editingTask.id, data);
-      setLocalTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+      await apiRepository.updateTask(editingTaskId, payload);
       toast({ title: 'Task updated' });
       setEditOpen(false);
+      setEditingTaskId(null);
     } catch {
       toast({ title: 'Failed to update task', variant: 'destructive' });
-    } finally {
-      setEditLoading(false);
+      await loadProjectData(selectedProjectId!);
     }
   };
 
@@ -424,7 +440,9 @@ const ProjectBoard = () => {
         {/* Kanban Board */}
         <div className="grid md:grid-cols-4 gap-4 mb-10">
           {statusColumns.map(col => {
-            const columnTasks = localTasks.filter(t => t.status === col.status);
+            const columnTasks = localTasks.filter(
+              t => t.project_id === selectedProjectId && t.status === col.status
+            );
             const isOver = dragOverColumn === col.status;
             return (
               <div
@@ -452,6 +470,7 @@ const ProjectBoard = () => {
                         transition={{ delay: i * 0.03 }}
                         draggable
                         onDragStartCapture={(e: React.DragEvent) => handleDragStart(e, task.id)}
+                        onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, task.id)}
                         onDragEnd={handleDragEnd}
                         onClick={() => handleOpenEdit(task)}
                         onKeyDown={(e) => {
@@ -646,6 +665,20 @@ const ProjectBoard = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Select value={newAssigneeUserId} onValueChange={setNewAssigneeUserId}>
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {participants.map(p => {
+                    const pu = getUserById(p.user_id);
+                    if (!pu) return null;
+                    return <SelectItem key={pu.id} value={String(pu.id)}>{pu.full_name}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
@@ -653,6 +686,67 @@ const ProjectBoard = () => {
               {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>Update task details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-task-title">Title</Label>
+              <Input id="edit-task-title" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-task-desc">Description</Label>
+              <Textarea id="edit-task-desc" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={editStatus} onValueChange={v => setEditStatus(v as TaskStatus)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statusColumns.map(s => <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={editPriority} onValueChange={v => setEditPriority(v as TaskPriority)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">Low</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="URGENT">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Select value={editAssigneeUserId} onValueChange={setEditAssigneeUserId}>
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {participants.map(p => {
+                    const pu = getUserById(p.user_id);
+                    if (!pu) return null;
+                    return <SelectItem key={pu.id} value={String(pu.id)}>{pu.full_name}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateTask} disabled={!editTitle.trim()}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
