@@ -23,7 +23,6 @@ const AdminPanel = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [userSearch, setUserSearch] = useState('');
-  const [updatingAdmin, setUpdatingAdmin] = useState<number | null>(null);
   const [userTotal, setUserTotal] = useState(0);
   const [userPage, setUserPage] = useState(1);
   const userPageSize = 25;
@@ -38,6 +37,7 @@ const AdminPanel = () => {
   const [assignLeaderOpen, setAssignLeaderOpen] = useState(false);
   const [manageAdminsOpen, setManageAdminsOpen] = useState(false);  // this is a new dialog for managing lab admins, it will open when clicking the "Admins" button on a lab card
   const [editLabOpen, setEditLabOpen] = useState(false); // this is a new dialog for editing lab details, it will open when clicking the "Edit" button on a lab card
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedGroupForLeader, setSelectedGroupForLeader] = useState<ResearchGroup | null>(null);
   const [selectedLabForAdmins, setSelectedLabForAdmins] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently managing admins
   const [selectedLabForEdit, setSelectedLabForEdit] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently editing details
@@ -288,29 +288,14 @@ const AdminPanel = () => {
     }
   };
 
-  const handleTogglePlatformAdmin = async (target: User) => {
-    if (!isPlatformAdmin) {
-      toast({ title: 'Only platform admins can change this', variant: 'destructive' });
-      return;
-    }
-    setUpdatingAdmin(target.id);
-    try {
-      const updated = await apiRepository.setPlatformAdmin(target.id, !target.is_platform_admin);
-      setUsers(prev => prev.map(u => u.id === target.id ? updated : u));
-      mergeUsersIntoLookup([updated]);
-      toast({ title: !target.is_platform_admin ? 'Platform admin granted' : 'Platform admin revoked' });
-    } catch {
-      toast({ title: 'Failed to update platform admin', variant: 'destructive' });
-    } finally {
-      setUpdatingAdmin(null);
-    }
-  };
+  // Platform admin toggle removed per request
 
   const handleOpenEditLab = (lab: ResearchLab) => { // Syncs form state with the selected lab to ensure the user sees accurate data upon opening the editor.
     if (!isPlatformAdmin) {
       toast({ title: 'Only platform admins can edit labs', variant: 'destructive' });
       return;
     }
+    setDeleteConfirmOpen(false);
     setSelectedLabForEdit(lab);
     setEditLabName(lab.name);
     setEditLabDesc(lab.description ?? '');
@@ -336,6 +321,23 @@ const AdminPanel = () => {
       toast({ title: 'Failed to update lab', variant: 'destructive' });
     }
     setEditLabOpen(false);
+  };
+
+  const handleDeleteLab = async () => {
+    if (!selectedLabForEdit) return;
+    if (!isPlatformAdmin) {
+      toast({ title: 'Only platform admins can delete labs', variant: 'destructive' });
+      return;
+    }
+    try {
+      await apiRepository.deleteLab(selectedLabForEdit.id);
+      setLabs(prev => prev.filter(l => l.id !== selectedLabForEdit.id));
+      setDeleteConfirmOpen(false);
+      setEditLabOpen(false);
+      toast({ title: 'Lab deleted' });
+    } catch {
+      toast({ title: 'Failed to delete lab', variant: 'destructive' });
+    }
   };
 
   if (loading) {
@@ -572,18 +574,6 @@ const AdminPanel = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <RoleBadge role={u.role} />
-                    {isPlatformAdmin && (
-                      <Button
-                        size="sm"
-                        variant={u.is_platform_admin ? 'secondary' : 'default'}
-                        onClick={() => handleTogglePlatformAdmin(u)}
-                        disabled={updatingAdmin === u.id || usersLoading}
-                      >
-                        {updatingAdmin === u.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : u.is_platform_admin ? 'Revoke admin' : 'Make platform admin'}
-                      </Button>
-                    )}
                   </div>
                 </div>
               ))}
@@ -767,7 +757,7 @@ const AdminPanel = () => {
         </Dialog>
 
         {/* EDIT LAB DIALOG */}
-        <Dialog open={editLabOpen} onOpenChange={setEditLabOpen}>
+        <Dialog open={editLabOpen} onOpenChange={(open) => { setEditLabOpen(open); if (!open) setDeleteConfirmOpen(false); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Lab</DialogTitle>
@@ -795,10 +785,37 @@ const AdminPanel = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                
+                <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Delete lab</p>
+                    <p className="text-xs text-muted-foreground">This removes the lab and its groups.</p>
+                  </div>
+                  <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                    <Trash2 className="h-4 w-4 mr-1" />Delete lab
+                  </Button>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
               <Button onClick={handleSaveLab} disabled={!editLabName.trim()}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle>Delete lab?</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete <span className="font-medium text-foreground">{selectedLabForEdit?.name}</span>? This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDeleteLab}>Delete lab</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

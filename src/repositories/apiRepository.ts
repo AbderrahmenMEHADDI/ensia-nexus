@@ -80,6 +80,7 @@ export const apiRepository = {
   getLab: (id: number) => api.get<ResearchLab>(`/labs/${id}`),
   createLab: (data: Partial<ResearchLab>) => api.post<ResearchLab>('/labs/', data),
   updateLab: (id: number, data: Partial<ResearchLab>) => api.put<ResearchLab>(`/labs/${id}`, data),
+  deleteLab: (id: number) => api.delete<void>(`/labs/${id}`),
   
   // ── Lab admins ──────────────────────────────────────────────────────────
   getLabAdmins: (labId?: number) =>
