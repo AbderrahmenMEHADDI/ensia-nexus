@@ -64,6 +64,19 @@ const AdminPanel = () => {
     return next;
   });
 
+  const fetchAllTeachers = async () => {
+    const pageSize = 200;
+    let all: Teacher[] = [];
+    let skip = 0;
+    while (true) {
+      const batch = await apiRepository.getTeachers({ skip, limit: pageSize });
+      all = all.concat(batch);
+      if (batch.length < pageSize) break;
+      skip += pageSize;
+    }
+    return all;
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -71,7 +84,7 @@ const AdminPanel = () => {
           apiRepository.getLabs(),
           apiRepository.getGroups(),
           apiRepository.getLabAdmins(), // added this to load lab admins on initial load when displaying labs and managing admins
-          apiRepository.getTeachers(),
+          fetchAllTeachers(),
           apiRepository.getUsers({ limit: 1000 }),
         ]);
         setLabs(l);
@@ -119,7 +132,10 @@ const AdminPanel = () => {
   const getUserById = (id: number) => userLookup[id];
   const pendingGroups = groups.filter(g => !g.is_validated);
   const validatedGroups = groups.filter(g => g.is_validated);
-  const teacherUsers = Object.values(userLookup).filter(u => u.role === 'TEACHER' && teachers.some(t => t.user_id === u.id));
+  const eligibleTeachers = teachers.filter(t => t.grade === 'MCA' || t.grade === 'PROFESSOR');
+  const headTeacherUsers = eligibleTeachers
+    .map(t => ({ teacher: t, user: userLookup[t.user_id] }))
+    .filter(({ user }) => user && user.role === 'TEACHER');
   const totalUserPages = Math.max(1, Math.ceil(userTotal / userPageSize));
     const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
   const handleValidate = async (groupId: number) => {
@@ -297,8 +313,8 @@ const AdminPanel = () => {
     }
     setSelectedLabForEdit(lab);
     setEditLabName(lab.name);
-    setEditLabDesc(lab.description);
-    setEditLabHead(lab.head_teacher_id.toString());
+    setEditLabDesc(lab.description ?? '');
+    setEditLabHead(lab.head_teacher_id ? String(lab.head_teacher_id) : '');
     setEditLabOpen(true);
   };
 
@@ -312,7 +328,7 @@ const AdminPanel = () => {
       const updated = await apiRepository.updateLab(selectedLabForEdit.id, {
         name: editLabName,
         description: editLabDesc,
-        head_teacher_id: editLabHead ? parseInt(editLabHead) : undefined,
+        head_teacher_id: editLabHead ? Number(editLabHead) : undefined,
       });
       setLabs(prev => prev.map(l => l.id === selectedLabForEdit.id ? updated : l));
       toast({ title: 'Lab updated' });
@@ -606,8 +622,10 @@ const AdminPanel = () => {
                 <Select value={newLabHead} onValueChange={setNewLabHead}>
                   <SelectTrigger><SelectValue placeholder="Select head teacher" /></SelectTrigger>
                   <SelectContent>
-                    {teacherUsers.map(t => (
-                      <SelectItem key={t.id} value={String(t.id)}>{t.full_name} ({t.role})</SelectItem>
+                    {headTeacherUsers.map(({ teacher, user }) => (
+                      <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
+                        {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -670,8 +688,10 @@ const AdminPanel = () => {
                 <Select value={selectedLeader} onValueChange={setSelectedLeader}>
                   <SelectTrigger><SelectValue placeholder="Choose a teacher" /></SelectTrigger>
                   <SelectContent>
-                    {teacherUsers.map(t => (
-                      <SelectItem key={t.id} value={String(t.id)}>{t.full_name} ({t.role})</SelectItem>
+                    {headTeacherUsers.map(({ teacher, user }) => (
+                      <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
+                        {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -767,8 +787,10 @@ const AdminPanel = () => {
                 <Select value={editLabHead} onValueChange={setEditLabHead}>
                   <SelectTrigger><SelectValue placeholder="Select head" /></SelectTrigger>
                   <SelectContent>
-                    {teacherUsers.map(t => (
-                      <SelectItem key={t.id} value={String(t.id)}>{t.full_name}</SelectItem>
+                    {headTeacherUsers.map(({ teacher, user }) => (
+                      <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
+                        {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

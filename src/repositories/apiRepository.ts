@@ -43,7 +43,13 @@ export const apiRepository = {
   },
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
-  getTeachers: () => api.get<Teacher[]>('/teachers/'),
+  getTeachers: (params?: { skip?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (typeof params?.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
+    if (typeof params?.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
+    const qs = searchParams.toString();
+    return api.get<Teacher[]>(qs ? `/teachers/?${qs}` : '/teachers/');
+  },
   getStudentProfile: (userId: number) => api.get<Student>(`/students/${userId}`),
   createStudentProfile: (data: Partial<Student> & { user_id: number }) =>
     api.post<Student>('/students/', data),
