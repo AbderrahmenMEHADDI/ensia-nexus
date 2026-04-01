@@ -161,7 +161,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   created_by: number;
-  assignee_user_id?: number;
+  assignee_user_id?: number | null;
   due_date?: string;
   created_at: string;
   updated_at: string;

@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = useCallback(async (credentials: { email: string; password: string }) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
-      const user = await authProvider.signInWithGoogle(userId);
+      const user = await authProvider.login(credentials);
       setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
       console.error('Sign in failed:', error);
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
       const user = await authProvider.signInWithGoogle(idToken);
-      setState({ user, isAuthenticated: true, isLoading: false });
+      setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
       console.error('Sign in failed:', error);
       setState(s => ({ ...s, isLoading: false }));

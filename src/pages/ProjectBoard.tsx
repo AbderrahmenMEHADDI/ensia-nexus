@@ -62,6 +62,16 @@ const ProjectBoard = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState<TaskPriority>('MEDIUM');
+  const [createLoading, setCreateLoading] = useState(false);
+  const [newAssignee, setNewAssignee] = useState<string>('');
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editStatus, setEditStatus] = useState<TaskStatus>('TODO');
+  const [editPriority, setEditPriority] = useState<TaskPriority>('MEDIUM');
+  const [editAssignee, setEditAssignee] = useState<string>('');
+  const [editLoading, setEditLoading] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyProjectId, setApplyProjectId] = useState<number | null>(null);
   const [applyMotivation, setApplyMotivation] = useState('');
@@ -177,25 +187,64 @@ const ProjectBoard = () => {
     setDragOverColumn(null);
   };
 
+  const handleOpenEdit = (task: Task) => {
+    setEditingTask(task);
+    setEditTitle(task.title);
+    setEditDesc(task.description || '');
+    setEditStatus(task.status);
+    setEditPriority(task.priority);
+    setEditAssignee(task.assignee_user_id ? String(task.assignee_user_id) : '');
+    setEditOpen(true);
+  };
+
   const handleCreateTask = async () => {
     if (!newTitle.trim() || !selectedProjectId || !user) return;
+    setCreateLoading(true);
     const data = {
       project_id: selectedProjectId,
       title: newTitle.trim(),
       description: newDesc.trim(),
       status: createStatus,
       priority: newPriority,
+      assignee_user_id: newAssignee ? Number(newAssignee) : null,
       created_by: user.id,
     };
     try {
       const created = await apiRepository.createTask(data);
       setLocalTasks(prev => [...prev, created]);
       toast({ title: 'Task created' });
+      setNewTitle('');
+      setNewDesc('');
+      setNewPriority('MEDIUM');
+      setNewAssignee('');
+      setCreateOpen(false);
     } catch {
       toast({ title: 'Failed to create task', variant: 'destructive' });
+    } finally {
+      setCreateLoading(false);
     }
-    setNewTitle(''); setNewDesc(''); setNewPriority('MEDIUM');
-    setCreateOpen(false);
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTask || !editTitle.trim()) return;
+    setEditLoading(true);
+    const data = {
+      title: editTitle.trim(),
+      description: editDesc.trim(),
+      status: editStatus,
+      priority: editPriority,
+      assignee_user_id: editAssignee ? Number(editAssignee) : null,
+    };
+    try {
+      const updated = await apiRepository.updateTask(editingTask.id, data);
+      setLocalTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+      toast({ title: 'Task updated' });
+      setEditOpen(false);
+    } catch {
+      toast({ title: 'Failed to update task', variant: 'destructive' });
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   const handleOpenApply = (projectId: number) => {
@@ -402,9 +451,19 @@ const ProjectBoard = () => {
                         animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
                         transition={{ delay: i * 0.03 }}
                         draggable
-                        onDragStart={(e: any) => handleDragStart(e, task.id)}
+                        onDragStartCapture={(e: React.DragEvent) => handleDragStart(e, task.id)}
                         onDragEnd={handleDragEnd}
-                        className={`p-3 rounded-lg border border-border bg-card border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-grab active:cursor-grabbing hover:border-primary/30 transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
+                        onClick={() => handleOpenEdit(task)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleOpenEdit(task);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Task: ${task.title}. Click to edit.`}
+                        className={`p-3 rounded-lg border border-border bg-card border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-grab active:cursor-grabbing hover:border-primary/30 focus-visible:ring-2 focus-visible:ring-primary focus:outline-none transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <span className="text-sm font-medium text-foreground leading-tight">{task.title}</span>
@@ -511,10 +570,89 @@ const ProjectBoard = () => {
                 </Select>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Select value={newAssignee} onValueChange={setNewAssignee}>
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {participants.map(p => {
+                    const u = getUserById(p.user_id);
+                    return u ? <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem> : null;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateTask} disabled={!newTitle.trim()}>Create</Button>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={createLoading}>Cancel</Button>
+            <Button onClick={handleCreateTask} disabled={createLoading || !newTitle.trim()}>
+              {createLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>Modify task details and assignment.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input id="edit-title" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-desc">Description</Label>
+              <Textarea id="edit-desc" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={editStatus} onValueChange={v => setEditStatus(v as TaskStatus)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {statusColumns.map(s => <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Priority</Label>
+                <Select value={editPriority} onValueChange={v => setEditPriority(v as TaskPriority)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">Low</SelectItem>
+                    <SelectItem value="MEDIUM">Medium</SelectItem>
+                    <SelectItem value="HIGH">High</SelectItem>
+                    <SelectItem value="URGENT">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Select value={editAssignee} onValueChange={setEditAssignee}>
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {participants.map(p => {
+                    const u = getUserById(p.user_id);
+                    return u ? <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem> : null;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
+            <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
+              {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
