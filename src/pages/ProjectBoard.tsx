@@ -193,7 +193,9 @@ const ProjectBoard = () => {
       description: newDesc.trim(),
       status: createStatus,
       priority: newPriority,
-      assignee_user_id: newAssigneeUserId !== 'none' ? Number(newAssigneeUserId) : null,
+      ...(newAssigneeUserId !== 'none'
+        ? { assignee_user_id: Number(newAssigneeUserId) }
+        : {}),
       created_by: user.id,
     };
     try {
