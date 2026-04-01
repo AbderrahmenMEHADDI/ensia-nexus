@@ -42,6 +42,7 @@ export interface User {
   full_name: string;
   email: string;
   role: UserRole;
+  is_platform_admin?: boolean;
   institution?: string;
   department?: string;
   contact_email?: string;
@@ -49,6 +50,11 @@ export interface User {
   address?: string;
   website?: string;
   created_at: string;
+}
+
+export interface UserListResponse {
+  items: User[];
+  total: number;
 }
 
 export interface Student {

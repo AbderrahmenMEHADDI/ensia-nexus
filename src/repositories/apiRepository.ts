@@ -1,9 +1,10 @@
 import { api } from '../lib/apiClient';
 import type {
-  User, Student, Teacher,
+  User, UserListResponse, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
   Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
+  UserRole,
 } from '@/types';
 
 /**
@@ -11,11 +12,38 @@ import type {
  */
 export const apiRepository = {
   // ── Users ────────────────────────────────────────────────────────────────
-  getUsers: () => api.get<User[]>('/users'),
+  getUsers: (params?: { skip?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (typeof params?.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
+    if (typeof params?.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
+    const qs = searchParams.toString();
+    return api.get<User[]>(qs ? `/users?${qs}` : '/users');
+  },
   getUser: (id: number) => api.get<User>(`/users/${id}`),
   updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
+  setPlatformAdmin: (id: number, is_platform_admin: boolean) =>
+    api.patch<User>(`/users/${id}/platform-admin`, { is_platform_admin }),
+  getUsersPaged: (params: {
+    skip?: number;
+    limit?: number;
+    role?: UserRole;
+    search?: string;
+    is_platform_admin?: boolean;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (typeof params.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
+    if (typeof params.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
+    if (params.role) searchParams.set('role', params.role);
+    if (params.search) searchParams.set('search', params.search);
+    if (typeof params.is_platform_admin !== 'undefined') {
+      searchParams.set('is_platform_admin', String(params.is_platform_admin));
+    }
+    const qs = searchParams.toString();
+    return api.get<UserListResponse>(qs ? `/users/paged?${qs}` : '/users/paged');
+  },
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
+  getTeachers: () => api.get<Teacher[]>('/teachers/'),
   getStudentProfile: (userId: number) => api.get<Student>(`/students/${userId}`),
   createStudentProfile: (data: Partial<Student> & { user_id: number }) =>
     api.post<Student>('/students/', data),
@@ -62,8 +90,7 @@ export const apiRepository = {
   createGroup: (data: Partial<ResearchGroup>) => api.post<ResearchGroup>('/groups/', data),
   updateGroup: (id: number, data: Partial<ResearchGroup>) =>
     api.put<ResearchGroup>(`/groups/${id}`, data),
-  validateGroup: (id: number, data?: Partial<ResearchGroup>) =>
-    api.patch<ResearchGroup>(`/groups/${id}`, { is_validated: true, ...data }),
+  validateGroup: (id: number) => api.post<ResearchGroup>(`/groups/${id}/approve`),
   deleteGroup: (id: number) => api.delete<void>(`/groups/${id}`),
 
 

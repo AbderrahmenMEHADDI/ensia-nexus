@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
-import type { ResearchLab, ResearchGroup, ResearchLabAdmin, User } from '@/types';
+import type { ResearchLab, ResearchGroup, ResearchLabAdmin, User, Teacher, UserRole } from '@/types';
 import { Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus, Building2, UserCog, UserPlus, FlaskConical, Loader2, Info, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -19,9 +19,18 @@ const AdminPanel = () => {
   const [labs, setLabs] = useState<ResearchLab[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
   const [labAdmins, setLabAdmins] = useState<ResearchLabAdmin[]>([]); // state to hold lab admins for easy access
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [userSearch, setUserSearch] = useState('');
+  const [updatingAdmin, setUpdatingAdmin] = useState<number | null>(null);
+  const [userTotal, setUserTotal] = useState(0);
+  const [userPage, setUserPage] = useState(1);
+  const userPageSize = 25;
+  const [roleFilter, setRoleFilter] = useState<UserRole | 'ALL'>('ALL');
+  const [platformOnly, setPlatformOnly] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userLookup, setUserLookup] = useState<Record<number, User>>({});
 
   // Dialog states
   const [addLabOpen, setAddLabOpen] = useState(false);
@@ -49,20 +58,27 @@ const AdminPanel = () => {
   const isPlatformAdmin = isAdmin;
   const canManageLab = (labId: number) => isPlatformAdmin || labAdmins.some(a => a.lab_id === labId && a.user_id === user?.id);
   const manageableLabs = isPlatformAdmin ? labs : labs.filter(l => canManageLab(l.id));
+  const mergeUsersIntoLookup = (list: User[]) => setUserLookup(prev => {
+    const next = { ...prev };
+    list.forEach(u => { next[u.id] = u; });
+    return next;
+  });
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [l, g, u, la] = await Promise.all([
+        const [l, g, la, t, allUsers] = await Promise.all([
           apiRepository.getLabs(),
           apiRepository.getGroups(),
-          apiRepository.getUsers(),
           apiRepository.getLabAdmins(), // added this to load lab admins on initial load when displaying labs and managing admins
+          apiRepository.getTeachers(),
+          apiRepository.getUsers({ limit: 1000 }),
         ]);
         setLabs(l);
         setGroups(g);
-        setUsers(u);
         setLabAdmins(la); // i added this so we can use it to display admins in the lab cards and manage them in the manage admins dialog
+        setTeachers(t);
+        mergeUsersIntoLookup(allUsers);
       } catch (e) {
         console.error('AdminPanel load error:', e);
         toast({ title: 'Error loading data', variant: 'destructive' });
@@ -73,13 +89,38 @@ const AdminPanel = () => {
     load();
   }, []);
 
-  const getUserById = (id: number) => users.find(u => u.id === id);
+  const fetchUsers = async (pageOverride?: number) => {
+    const page = pageOverride ?? userPage;
+    setUsersLoading(true);
+    try {
+      const skip = (page - 1) * userPageSize;
+      const res = await apiRepository.getUsersPaged({
+        skip,
+        limit: userPageSize,
+        role: roleFilter === 'ALL' ? undefined : roleFilter,
+        search: userSearch.trim() || undefined,
+        is_platform_admin: platformOnly ? true : undefined,
+      });
+      setUsers(res.items);
+      setUserTotal(res.total);
+      mergeUsersIntoLookup(res.items);
+    } catch (e) {
+      console.error('Failed to load users', e);
+      toast({ title: 'Failed to load users', variant: 'destructive' });
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [userPage, roleFilter, platformOnly, userSearch]);
+
+  const getUserById = (id: number) => userLookup[id];
   const pendingGroups = groups.filter(g => !g.is_validated);
   const validatedGroups = groups.filter(g => g.is_validated);
-  const teacherUsers = users.filter(u => u.role === 'TEACHER');
-  const filteredUsers = userSearch
-    ? users.filter(u => u.full_name.toLowerCase().includes(userSearch.toLowerCase()) || u.email.toLowerCase().includes(userSearch.toLowerCase()))
-    : users;
+  const teacherUsers = Object.values(userLookup).filter(u => u.role === 'TEACHER' && teachers.some(t => t.user_id === u.id));
+  const totalUserPages = Math.max(1, Math.ceil(userTotal / userPageSize));
     const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
   const handleValidate = async (groupId: number) => {
     const target = groups.find(g => g.id === groupId);
@@ -228,6 +269,24 @@ const AdminPanel = () => {
       toast({ title: 'Admin removed' });
     } catch {
       toast({ title: 'Failed to remove admin', variant: 'destructive' });
+    }
+  };
+
+  const handleTogglePlatformAdmin = async (target: User) => {
+    if (!isPlatformAdmin) {
+      toast({ title: 'Only platform admins can change this', variant: 'destructive' });
+      return;
+    }
+    setUpdatingAdmin(target.id);
+    try {
+      const updated = await apiRepository.setPlatformAdmin(target.id, !target.is_platform_admin);
+      setUsers(prev => prev.map(u => u.id === target.id ? updated : u));
+      mergeUsersIntoLookup([updated]);
+      toast({ title: !target.is_platform_admin ? 'Platform admin granted' : 'Platform admin revoked' });
+    } catch {
+      toast({ title: 'Failed to update platform admin', variant: 'destructive' });
+    } finally {
+      setUpdatingAdmin(null);
     }
   };
 
@@ -458,13 +517,33 @@ const AdminPanel = () => {
 
           {/* USERS TAB */}
           <TabsContent value="users" className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Users ({users.length})</h2>
+            <h2 className="text-xl font-semibold text-foreground">Users ({userTotal})</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Search users..." className="pl-9" />
+              <Input value={userSearch} onChange={e => { setUserPage(1); setUserSearch(e.target.value); }} placeholder="Search users..." className="pl-9" />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v as UserRole | 'ALL'); setUserPage(1); }}>
+                <SelectTrigger className="w-[180px]"><SelectValue placeholder="Role" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All roles</SelectItem>
+                  <SelectItem value="STUDENT">Student</SelectItem>
+                  <SelectItem value="TEACHER">Teacher</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="PARTNER">Partner</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant={platformOnly ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => { setPlatformOnly(prev => !prev); setUserPage(1); }}
+              >
+                {platformOnly ? 'Showing platform admins' : 'All users'}
+              </Button>
+              {usersLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             </div>
             <div className="space-y-2">
-              {filteredUsers.map(u => (
+              {users.map(u => (
                 <div key={u.id} className="p-3 rounded-lg border border-border bg-card flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground">
@@ -475,9 +554,33 @@ const AdminPanel = () => {
                       <span className="text-xs font-mono text-muted-foreground">{u.email}</span>
                     </div>
                   </div>
-                  <RoleBadge role={u.role} />
+                  <div className="flex items-center gap-3">
+                    <RoleBadge role={u.role} />
+                    {isPlatformAdmin && (
+                      <Button
+                        size="sm"
+                        variant={u.is_platform_admin ? 'secondary' : 'default'}
+                        onClick={() => handleTogglePlatformAdmin(u)}
+                        disabled={updatingAdmin === u.id || usersLoading}
+                      >
+                        {updatingAdmin === u.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : u.is_platform_admin ? 'Revoke admin' : 'Make platform admin'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
+              {users.length === 0 && !usersLoading && (
+                <div className="text-sm text-muted-foreground">No users found for this filter.</div>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Page {userPage} of {totalUserPages}</span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setUserPage(p => Math.max(1, p - 1))} disabled={userPage === 1 || usersLoading}>Previous</Button>
+                <Button variant="outline" size="sm" onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))} disabled={userPage >= totalUserPages || usersLoading}>Next</Button>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
@@ -627,7 +730,7 @@ const AdminPanel = () => {
                   <Select value={newAdminUser} onValueChange={setNewAdminUser}>
                     <SelectTrigger className="w-full"><SelectValue placeholder="Select user" /></SelectTrigger>
                     <SelectContent>
-                      {users.map(u => (
+                      {Object.values(userLookup).map(u => (
                         <SelectItem key={u.id} value={String(u.id)}>{u.full_name} ({u.role})</SelectItem>
                       ))}
                     </SelectContent>
