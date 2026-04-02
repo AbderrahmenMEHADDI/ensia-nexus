@@ -155,9 +155,21 @@ const AdminPanel = () => {
   const filteredAssignmentGroups = manageableGroups.filter(g =>
     g.name.toLowerCase().includes(assignGroupSearch.trim().toLowerCase())
   );
+  const selectedGroupsForAssignment = manageableGroups.filter(g => selectedAssignmentGroups.includes(g.id));
+  const canTeacherBeAssignedToSelectedGroups = (teacherId: number) => {
+    if (selectedGroupsForAssignment.length === 0) return true;
+    return selectedGroupsForAssignment.some(group => {
+      if (group.leader_user_id === teacherId) return false;
+      const isActiveMember = groupMembers.some(
+        m => m.group_id === group.id && m.user_id === teacherId && m.is_active
+      );
+      return !isActiveMember;
+    });
+  };
   const filteredAssignmentTeachers = teacherUsers.filter(t =>
-    t.full_name.toLowerCase().includes(assignTeacherSearch.trim().toLowerCase()) ||
-    t.email.toLowerCase().includes(assignTeacherSearch.trim().toLowerCase())
+    (t.full_name.toLowerCase().includes(assignTeacherSearch.trim().toLowerCase()) ||
+      t.email.toLowerCase().includes(assignTeacherSearch.trim().toLowerCase())) &&
+    canTeacherBeAssignedToSelectedGroups(t.id)
   );
   const toggleAssignmentGroup = (groupId: number) => {
     setSelectedAssignmentGroups(prev => prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]);
@@ -185,10 +197,15 @@ const AdminPanel = () => {
       toast({ title: 'Select groups and teachers', variant: 'destructive' });
       return;
     }
+    const validTeacherIds = selectedAssignmentTeachers.filter(canTeacherBeAssignedToSelectedGroups);
+    if (validTeacherIds.length === 0) {
+      toast({ title: 'Selected teachers are already leaders in these groups', variant: 'destructive' });
+      return;
+    }
     try {
       const assigned = await apiRepository.bulkAssignGroupMembers({
         group_ids: selectedAssignmentGroups,
-        teacher_user_ids: selectedAssignmentTeachers,
+        teacher_user_ids: validTeacherIds,
       });
       setGroupMembers(prev => {
         const index = new Map(prev.map(m => [`${m.group_id}-${m.user_id}`, m]));
