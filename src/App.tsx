@@ -23,6 +23,8 @@ import AdminPanel from "./pages/AdminPanel";
 import Announcements from "./pages/Announcements";
 import LabDetails from "./pages/LabDetails";
 import GroupDetails from "./pages/GroupDetails";
+import Groups from "./pages/Groups";
+import GroupLeadership from "./pages/GroupLeadership";
 import StudentCV from "./pages/StudentCV";
 import NotFound from "./pages/NotFound";
 
@@ -70,6 +72,8 @@ const AppRoutes = () => (
       <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
       <Route path="/labs/:labId" element={<ProtectedRoute><LabDetails /></ProtectedRoute>} />
       <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
+      <Route path="/groups" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><Groups /></RoleProtectedRoute>} />
+      <Route path="/group-leadership" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><GroupLeadership /></RoleProtectedRoute>} />
       <Route path="/student-cv" element={<RoleProtectedRoute allowedRoles={['STUDENT']}><StudentCV /></RoleProtectedRoute>} />
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
