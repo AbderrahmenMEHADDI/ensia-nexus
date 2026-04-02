@@ -9,6 +9,7 @@ import { type UserRole } from "@/types";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import CompleteRegistration from "./pages/CompleteRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Feed from "./pages/Feed";
@@ -56,6 +57,7 @@ const AppRoutes = () => (
       <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
       <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignUp /></PublicOnlyRoute>} />
+      <Route path="/complete-registration" element={<ProtectedRoute><CompleteRegistration /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
