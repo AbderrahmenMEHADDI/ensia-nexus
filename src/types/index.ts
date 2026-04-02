@@ -51,6 +51,11 @@ export interface User {
   created_at: string;
 }
 
+export interface UserListResponse {
+  items: User[];
+  total: number;
+}
+
 export interface Student {
   user_id: number;
   university: string;
@@ -105,6 +110,13 @@ export interface ResearchLab {
   created_at: string;
 }
 
+export interface ResearchLabAdmin {
+  lab_id: number;
+  user_id: number;
+  created_at: string;
+  created_by?: number;
+}
+
 export interface ResearchGroup {
   id: number;
   lab_id: number;
@@ -112,9 +124,10 @@ export interface ResearchGroup {
   description: string;
   leader_user_id: number;
   is_validated: boolean;
-  validated_by_admin_id?: number;
+  validated_by_admin_id?: number; 
   validated_at?: string;
   created_at: string;
+  requested_by_user_id?: number;
 }
 
 export interface GroupMember {

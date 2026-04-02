@@ -111,18 +111,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     (role: UserRole | UserRole[]) => {
       if (!state.user) return false;
       const roles = Array.isArray(role) ? role : [role];
-
-      if (roles.includes('TEACHER') && state.user.role === 'TEACHER') return true;
-      if (roles.includes('ADMIN') && state.user.role === 'ADMIN') return true;
-      if (roles.includes('STUDENT') && state.user.role === 'STUDENT') return true;
-
       return roles.includes(state.user.role as UserRole);
     },
     [state.user]
   );
 
-  const isTeacher = hasRole('TEACHER');
-  const isAdmin = hasRole('ADMIN');
+  const isTeacher = state.user?.role === 'TEACHER';
+  const isAdmin = state.user?.role === 'ADMIN';
 
   const value = {
     ...state,

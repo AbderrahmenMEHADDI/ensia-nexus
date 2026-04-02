@@ -1,4 +1,4 @@
-import type { User, Student, Teacher, ResearchLab, ResearchGroup, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage, GroupJoinRequest, FeedPost, FeedComment, FeedLike, FeedSave, Announcement } from '@/types';
+import type { User, Student, Teacher, ResearchLab, ResearchGroup, ResearchLabAdmin, GroupMember, Project, ProjectParticipant, ProjectApplication, Task, TaskUpdate, ProjectResource, ChatRoom, ChatMessage, GroupJoinRequest, FeedPost, FeedComment, FeedLike, FeedSave, Announcement } from '@/types';
 
 export const users: User[] = [
   { id: 1, full_name: 'Dr. Amina Belkacem', email: 'a.belkacem@ensia.edu.dz', role: 'TEACHER', created_at: '2023-01-15' },
@@ -115,6 +115,13 @@ export const projectResources: ProjectResource[] = [
   { id: 6, project_id: 3, resource_type: 'GIT_REPO', title: 'ZK Identity Contracts', url: 'https://github.com/ensia-lab/zk-identity', created_by: 10, created_at: '2024-03-05' },
   { id: 7, project_id: 4, resource_type: 'PAPER_DOC', title: 'MAPPO: Multi-Agent PPO', url: 'https://arxiv.org/abs/2103.01955', created_by: 2, created_at: '2024-04-01' },
 ];
+export const labAdmins: ResearchLabAdmin[] = [
+  { lab_id: 1, user_id: 1, created_at: '2023-03-01', created_by: 5 },
+  { lab_id: 1, user_id: 5, created_at: '2023-03-01', created_by: 5 },
+  { lab_id: 2, user_id: 10, created_at: '2023-04-01', created_by: 5 },
+  { lab_id: 2, user_id: 6, created_at: '2023-06-01', created_by: 5 },
+  { lab_id: 3, user_id: 8, created_at: '2023-05-01', created_by: 5 },
+];
 
 // Helper to get user by ID
 export const getUserById = (id: number) => users.find(u => u.id === id);
@@ -130,7 +137,9 @@ export const getTasksByProject = (projectId: number) => tasks.filter(t => t.proj
 export const getParticipantsByProject = (projectId: number) => projectParticipants.filter(p => p.project_id === projectId);
 export const getResourcesByProject = (projectId: number) => projectResources.filter(r => r.project_id === projectId);
 export const getApplicationsByProject = (projectId: number) => projectApplications.filter(a => a.project_id === projectId);
-
+export const getLabAdmins = (labId: number) => labAdmins.filter(a => a.lab_id === labId);
+export const getLabsByAdmin = (userId: number) => researchLabs.filter(l => labAdmins.some(a => a.lab_id === l.id && a.user_id === userId));
+export const isLabAdmin = (labId: number, userId?: number) => !!userId && labAdmins.some(a => a.lab_id === labId && a.user_id === userId);
 // Current user simulation
 export const currentUser = users[0]; // Dr. Amina Belkacem (TEACHER)
 

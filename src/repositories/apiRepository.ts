@@ -1,9 +1,10 @@
 import { api } from '../lib/apiClient';
 import type {
-  User, Student, Teacher,
-  ResearchLab, ResearchGroup, GroupMember,
+  User, UserListResponse, Student, Teacher,
+  ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
   Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
+  UserRole,
 } from '@/types';
 
 /**
@@ -11,11 +12,41 @@ import type {
  */
 export const apiRepository = {
   // ── Users ────────────────────────────────────────────────────────────────
-  getUsers: () => api.get<User[]>('/users'),
+  getUsers: (params?: { skip?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (typeof params?.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
+    if (typeof params?.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
+    const qs = searchParams.toString();
+    return api.get<User[]>(qs ? `/users?${qs}` : '/users');
+  },
+  createUser: (data: Partial<User> & { full_name: string; email: string; role: UserRole; password?: string }) =>
+    api.post<User>('/users/', data),
   getUser: (id: number) => api.get<User>(`/users/${id}`),
   updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
+  deleteUser: (id: number) => api.delete<void>(`/users/${id}`),
+  getUsersPaged: (params: {
+    skip?: number;
+    limit?: number;
+    role?: UserRole;
+    search?: string;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (typeof params.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
+    if (typeof params.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
+    if (params.role) searchParams.set('role', params.role);
+    if (params.search) searchParams.set('search', params.search);
+    const qs = searchParams.toString();
+    return api.get<UserListResponse>(qs ? `/users/paged?${qs}` : '/users/paged');
+  },
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
+  getTeachers: (params?: { skip?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (typeof params?.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
+    if (typeof params?.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
+    const qs = searchParams.toString();
+    return api.get<Teacher[]>(qs ? `/teachers/?${qs}` : '/teachers/');
+  },
   getStudentProfile: (userId: number) => api.get<Student>(`/students/${userId}`),
   createStudentProfile: (data: Partial<Student> & { user_id: number }) =>
     api.post<Student>('/students/', data),
@@ -46,6 +77,15 @@ export const apiRepository = {
   getLab: (id: number) => api.get<ResearchLab>(`/labs/${id}`),
   createLab: (data: Partial<ResearchLab>) => api.post<ResearchLab>('/labs/', data),
   updateLab: (id: number, data: Partial<ResearchLab>) => api.put<ResearchLab>(`/labs/${id}`, data),
+  deleteLab: (id: number) => api.delete<void>(`/labs/${id}`),
+  
+  // ── Lab admins ──────────────────────────────────────────────────────────
+  getLabAdmins: (labId?: number) =>
+    api.get<ResearchLabAdmin[]>(labId ? `/lab-admins/?lab_id=${labId}` : '/lab-admins/'),
+  addLabAdmin: (labId: number, userId: number) =>
+    api.post<ResearchLabAdmin>('/lab-admins/', { lab_id: labId, user_id: userId }),
+  removeLabAdmin: (labId: number, userId: number) =>
+    api.delete<void>(`/lab-admins/${labId}/${userId}`),
 
   // ── Groups ───────────────────────────────────────────────────────────────
   getGroups: (labId?: number) =>
@@ -54,6 +94,9 @@ export const apiRepository = {
   createGroup: (data: Partial<ResearchGroup>) => api.post<ResearchGroup>('/groups/', data),
   updateGroup: (id: number, data: Partial<ResearchGroup>) =>
     api.put<ResearchGroup>(`/groups/${id}`, data),
+  validateGroup: (id: number) => api.post<ResearchGroup>(`/groups/${id}/approve`),
+  deleteGroup: (id: number) => api.delete<void>(`/groups/${id}`),
+
 
   // ── Group members ────────────────────────────────────────────────────────
   getGroupMembers: (groupId?: number) =>
