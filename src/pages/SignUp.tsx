@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { GOOGLE_CLIENT_ID } from '@/lib/googleAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +24,7 @@ const signUpSchema = z.object({
 type SignUpValues = z.infer<typeof signUpSchema>;
 
 const SignUp = () => {
-  const { signInWithGoogle, signUp, isLoading, isAuthenticated } = useAuth();
+  const { signInWithGoogle, signUp, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
@@ -33,21 +33,17 @@ const SignUp = () => {
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
+    setValue,
     formState: { errors }
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       role: 'STUDENT',
-    }
+    },
   });
 
   const selectedRole = watch('role');
-
-  useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard', { replace: true });
-  }, [isAuthenticated, navigate]);
 
   const onFormSubmit = async (data: SignUpValues) => {
     setSubmitting(true);
@@ -56,10 +52,17 @@ const SignUp = () => {
         email: data.email,
         full_name: data.fullName,
         password: data.password,
-        role: data.role
       });
-      toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
-      navigate('/dashboard', { replace: true });
+      if (data.role === 'TEACHER') {
+        toast({ title: 'Account created', description: 'Please complete teacher profile details.' });
+        navigate('/complete-registration', {
+          replace: true,
+          state: { role: 'TEACHER' },
+        });
+      } else {
+        toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err: any) {
       toast({
         title: 'Sign up failed',
@@ -186,7 +189,7 @@ const SignUp = () => {
               <Label>Role</Label>
               <Select
                 value={selectedRole}
-                onValueChange={(v: any) => setValue('role', v)}
+                onValueChange={(v: any) => setValue('role', v, { shouldValidate: true })}
               >
                 <SelectTrigger className="w-full">
                   <div className="flex items-center gap-2">

@@ -48,4 +48,11 @@ export const authProvider = {
   async signup(data: any): Promise<User> {
     return api.post<User>('/auth/signup', data);
   },
+
+  /**
+   * Complete registration by selecting role and filling role-specific profile details.
+   */
+  async completeRegistration(data: any): Promise<User> {
+    return api.patch<User>('/auth/complete-registration', data);
+  },
 };

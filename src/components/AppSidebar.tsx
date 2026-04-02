@@ -3,6 +3,8 @@ import { type UserRole } from '@/types';
 import { NavLink } from '@/components/NavLink';
 import { RoleBadge } from '@/components/Badges';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { apiRepository } from '@/repositories/apiRepository';
 import {
   LayoutDashboard,
   Kanban,
@@ -14,6 +16,7 @@ import {
   MessageCircle,
   Megaphone,
   FileUser,
+  Users,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -32,6 +35,7 @@ const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRol
   { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
   { path: '/projects/1', label: 'Project Board', icon: Kanban },
   { path: '/announcements', label: 'Announcements', icon: Megaphone },
+  { path: '/groups', label: 'Groups', icon: Users, allowedRoles: ['TEACHER'] },
   { path: '/student-cv', label: 'Student CV', icon: FileUser, allowedRoles: ['STUDENT'] },
   { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
   { path: '/chat', label: 'Chat', icon: MessageCircle },
@@ -43,6 +47,23 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { user, signOut, hasRole } = useAuth();
+  const [hasLeadershipGroups, setHasLeadershipGroups] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!user || user.role !== 'TEACHER') {
+        setHasLeadershipGroups(false);
+        return;
+      }
+      try {
+        const groups = await apiRepository.getGroups();
+        setHasLeadershipGroups(groups.some(g => g.leader_user_id === user.id));
+      } catch {
+        setHasLeadershipGroups(false);
+      }
+    };
+    load();
+  }, [user?.id, user?.role]);
 
   return (
     <Sidebar collapsible="icon">
@@ -83,6 +104,20 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+              {hasLeadershipGroups && (
+                <SidebarMenuItem key="/group-leadership">
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/group-leadership"
+                      className="hover:bg-sidebar-accent"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Group Leadership</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

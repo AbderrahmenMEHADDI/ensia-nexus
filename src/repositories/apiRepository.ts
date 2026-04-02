@@ -4,7 +4,7 @@ import type {
   ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
   Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
-  UserRole,
+  UserRole, GroupInvitation,
 } from '@/types';
 
 /**
@@ -101,6 +101,18 @@ export const apiRepository = {
   // ── Group members ────────────────────────────────────────────────────────
   getGroupMembers: (groupId?: number) =>
     api.get<GroupMember[]>(groupId ? `/group-members/?group_id=${groupId}` : '/group-members/'),
+  bulkAssignGroupMembers: (data: { group_ids: number[]; teacher_user_ids: number[] }) =>
+    api.post<GroupMember[]>('/group-members/bulk-assign', data),
+  getMyGroupInvitations: () => api.get<GroupInvitation[]>('/group-invitations/mine'),
+  getGroupInvitations: (groupId: number) => api.get<GroupInvitation[]>(`/group-invitations/group/${groupId}`),
+  inviteTeacherToGroup: (groupId: number, teacherUserId: number) =>
+    api.post<GroupInvitation>('/group-invitations/', { group_id: groupId, teacher_user_id: teacherUserId }),
+  inviteTeachersToGroupBulk: (groupId: number, teacherUserIds: number[]) =>
+    api.post<GroupInvitation[]>('/group-invitations/bulk', { group_id: groupId, teacher_user_ids: teacherUserIds }),
+  cancelGroupInvitation: (invitationId: number) =>
+    api.delete<void>(`/group-invitations/${invitationId}`),
+  respondToGroupInvitation: (invitationId: number, status: 'ACCEPTED' | 'REJECTED') =>
+    api.patch<GroupInvitation>(`/group-invitations/${invitationId}/respond`, { status }),
 
   // ── Projects ─────────────────────────────────────────────────────────────
   getProjects: (groupId?: number) =>

@@ -15,6 +15,7 @@ interface AuthContextType extends AuthState {
   signIn: (credentials: { email: string; password: string }) => Promise<void>;
   signInWithGoogle: (idToken?: string) => Promise<void>;
   signUp: (data: any) => Promise<void>;
+  completeRegistration: (data: any) => Promise<void>;
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
   role: UserRole | null;
@@ -105,6 +106,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const completeRegistration = useCallback(async (data: any) => {
+    setState(s => ({ ...s, isLoading: true }));
+    try {
+      const user = await authProvider.completeRegistration(data);
+      setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
+    } catch (error) {
+      console.error('Complete registration failed:', error);
+      setState(s => ({ ...s, isLoading: false }));
+      throw error;
+    }
+  }, []);
+
   const role = state.user?.role || null;
 
   const hasRole = useCallback(
@@ -124,6 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signIn,
     signInWithGoogle,
     signUp,
+    completeRegistration,
     signOut,
     checkAuth,
     role,

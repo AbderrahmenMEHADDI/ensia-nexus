@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
-import type { ResearchLab, ResearchGroup, ResearchLabAdmin, User, Teacher, UserRole } from '@/types';
+import type { GroupMember, ResearchLab, ResearchGroup, ResearchLabAdmin, User, Teacher, UserRole } from '@/types';
 import { Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus, Building2, UserCog, UserPlus, FlaskConical, Loader2, Info, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge'; // this is for displaying lab admins in the lab cards
+import { Checkbox } from '@/components/ui/checkbox';
 
 const AdminPanel = () => {
   const { user, isAdmin } = useAuth();
@@ -19,6 +20,7 @@ const AdminPanel = () => {
   const [labs, setLabs] = useState<ResearchLab[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
   const [labAdmins, setLabAdmins] = useState<ResearchLabAdmin[]>([]); // state to hold lab admins for easy access
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +40,7 @@ const AdminPanel = () => {
   const [editLabOpen, setEditLabOpen] = useState(false); // this is a new dialog for editing lab details, it will open when clicking the "Edit" button on a lab card
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [createAdminOpen, setCreateAdminOpen] = useState(false);
+  const [assignMembersOpen, setAssignMembersOpen] = useState(false);
   const [selectedGroupForLeader, setSelectedGroupForLeader] = useState<ResearchGroup | null>(null);
   const [selectedLabForAdmins, setSelectedLabForAdmins] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently managing admins
   const [selectedLabForEdit, setSelectedLabForEdit] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently editing details
@@ -57,6 +60,10 @@ const AdminPanel = () => {
   const [newAdminFullName, setNewAdminFullName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('admin');
+  const [selectedAssignmentGroups, setSelectedAssignmentGroups] = useState<number[]>([]);
+  const [selectedAssignmentTeachers, setSelectedAssignmentTeachers] = useState<number[]>([]);
+  const [assignGroupSearch, setAssignGroupSearch] = useState('');
+  const [assignTeacherSearch, setAssignTeacherSearch] = useState('');
 
   const isPlatformAdmin = isAdmin;
   const canManageLab = (labId: number) => isPlatformAdmin || labAdmins.some(a => a.lab_id === labId && a.user_id === user?.id);
@@ -83,17 +90,19 @@ const AdminPanel = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [l, g, la, t, allUsers] = await Promise.all([
+        const [l, g, la, t, allUsers, gm] = await Promise.all([
           apiRepository.getLabs(),
           apiRepository.getGroups(),
           apiRepository.getLabAdmins(), // added this to load lab admins on initial load when displaying labs and managing admins
           fetchAllTeachers(),
           apiRepository.getUsers({ limit: 1000 }),
+          apiRepository.getGroupMembers(),
         ]);
         setLabs(l);
         setGroups(g);
         setLabAdmins(la); // i added this so we can use it to display admins in the lab cards and manage them in the manage admins dialog
         setTeachers(t);
+        setGroupMembers(gm);
         mergeUsersIntoLookup(allUsers);
       } catch (e) {
         console.error('AdminPanel load error:', e);
@@ -139,6 +148,79 @@ const AdminPanel = () => {
     .map(t => ({ teacher: t, user: userLookup[t.user_id] }))
     .filter(({ user }) => user && user.role === 'TEACHER');
   const totalUserPages = Math.max(1, Math.ceil(userTotal / userPageSize));
+  const teacherUsers = teachers
+    .map(t => userLookup[t.user_id])
+    .filter((u): u is User => !!u && u.role === 'TEACHER');
+  const manageableGroups = groups.filter(g => canManageLab(g.lab_id));
+  const filteredAssignmentGroups = manageableGroups.filter(g =>
+    g.name.toLowerCase().includes(assignGroupSearch.trim().toLowerCase())
+  );
+  const selectedGroupsForAssignment = manageableGroups.filter(g => selectedAssignmentGroups.includes(g.id));
+  const canTeacherBeAssignedToSelectedGroups = (teacherId: number) => {
+    if (selectedGroupsForAssignment.length === 0) return true;
+    return selectedGroupsForAssignment.some(group => {
+      if (group.leader_user_id === teacherId) return false;
+      const isActiveMember = groupMembers.some(
+        m => m.group_id === group.id && m.user_id === teacherId && m.is_active
+      );
+      return !isActiveMember;
+    });
+  };
+  const filteredAssignmentTeachers = teacherUsers.filter(t =>
+    (t.full_name.toLowerCase().includes(assignTeacherSearch.trim().toLowerCase()) ||
+      t.email.toLowerCase().includes(assignTeacherSearch.trim().toLowerCase())) &&
+    canTeacherBeAssignedToSelectedGroups(t.id)
+  );
+  const toggleAssignmentGroup = (groupId: number) => {
+    setSelectedAssignmentGroups(prev => prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]);
+  };
+  const toggleAssignmentTeacher = (teacherId: number) => {
+    setSelectedAssignmentTeachers(prev => prev.includes(teacherId) ? prev.filter(id => id !== teacherId) : [...prev, teacherId]);
+  };
+  const selectAllFilteredGroups = () => {
+    setSelectedAssignmentGroups(prev => Array.from(new Set([...prev, ...filteredAssignmentGroups.map(g => g.id)])));
+  };
+  const clearFilteredGroups = () => {
+    const filteredIds = new Set(filteredAssignmentGroups.map(g => g.id));
+    setSelectedAssignmentGroups(prev => prev.filter(id => !filteredIds.has(id)));
+  };
+  const selectAllFilteredTeachers = () => {
+    setSelectedAssignmentTeachers(prev => Array.from(new Set([...prev, ...filteredAssignmentTeachers.map(t => t.id)])));
+  };
+  const clearFilteredTeachers = () => {
+    const filteredIds = new Set(filteredAssignmentTeachers.map(t => t.id));
+    setSelectedAssignmentTeachers(prev => prev.filter(id => !filteredIds.has(id)));
+  };
+
+  const handleBulkAssignMembers = async () => {
+    if (selectedAssignmentGroups.length === 0 || selectedAssignmentTeachers.length === 0) {
+      toast({ title: 'Select groups and teachers', variant: 'destructive' });
+      return;
+    }
+    const validTeacherIds = selectedAssignmentTeachers.filter(canTeacherBeAssignedToSelectedGroups);
+    if (validTeacherIds.length === 0) {
+      toast({ title: 'Selected teachers are already leaders in these groups', variant: 'destructive' });
+      return;
+    }
+    try {
+      const assigned = await apiRepository.bulkAssignGroupMembers({
+        group_ids: selectedAssignmentGroups,
+        teacher_user_ids: validTeacherIds,
+      });
+      setGroupMembers(prev => {
+        const index = new Map(prev.map(m => [`${m.group_id}-${m.user_id}`, m]));
+        assigned.forEach(m => index.set(`${m.group_id}-${m.user_id}`, m));
+        return Array.from(index.values());
+      });
+      toast({ title: 'Teachers assigned to groups' });
+      setAssignMembersOpen(false);
+      setSelectedAssignmentGroups([]);
+      setSelectedAssignmentTeachers([]);
+    } catch (e) {
+      console.error('Bulk assign failed', e);
+      toast({ title: 'Failed to assign teachers', variant: 'destructive' });
+    }
+  };
     const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
   const handleValidate = async (groupId: number) => {
     const target = groups.find(g => g.id === groupId);
@@ -147,10 +229,7 @@ const AdminPanel = () => {
       return;
     }
     try {
-      const updated = await apiRepository.validateGroup(groupId, {
-        validated_by_admin_id: user?.id,
-        validated_at: new Date().toISOString(),
-      });
+      const updated = await apiRepository.validateGroup(groupId);
       setGroups(prev => prev.map(g => g.id === groupId ? updated : g));
       toast({ title: 'Group validated' });
     } catch {
@@ -453,9 +532,16 @@ const AdminPanel = () => {
           <TabsContent value="groups" className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-foreground">Research Groups ({groups.length})</h2>
-              {manageableLabs.length > 0 && (
-                <Button onClick={() => setAddGroupOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Group</Button>
-              )}
+              <div className="flex items-center gap-2">
+                {manageableGroups.length > 0 && (
+                  <Button variant="secondary" onClick={() => setAssignMembersOpen(true)} size="sm">
+                    <Users className="h-4 w-4 mr-1" />Assign Members
+                  </Button>
+                )}
+                {manageableLabs.length > 0 && (
+                  <Button onClick={() => setAddGroupOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Group</Button>
+                )}
+              </div>
             </div>
 
             {pendingGroups.length > 0 && (
@@ -530,6 +616,8 @@ const AdminPanel = () => {
                             <span>{lab?.name.split('—')[0]?.trim()}</span>
                             <span>·</span>
                             <span>Led by {leader?.full_name}</span>
+                            <span>·</span>
+                            <span>{groupMembers.filter(m => m.group_id === group.id && m.is_active).length} members</span>
                           </div>
                         </div>
                       </div>
@@ -650,6 +738,100 @@ const AdminPanel = () => {
             <DialogFooter>
               <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
               <Button onClick={handleAddLab} disabled={!newLabName.trim() || !newLabHead}>Create Lab</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ASSIGN GROUP MEMBERS DIALOG */}
+        <Dialog open={assignMembersOpen} onOpenChange={setAssignMembersOpen}>
+          <DialogContent className="sm:max-w-[860px]">
+            <DialogHeader>
+              <DialogTitle>Assign Teachers to Groups</DialogTitle>
+              <DialogDescription>
+                Select one or more groups and teachers. Existing assignments are kept, and repeated assignments are allowed.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>{selectedAssignmentGroups.length} group(s) selected</span>
+              <span>{selectedAssignmentTeachers.length} teacher(s) selected</span>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 py-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Groups</label>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={selectAllFilteredGroups}>Select all</Button>
+                    <Button variant="ghost" size="sm" onClick={clearFilteredGroups}>Clear</Button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={assignGroupSearch}
+                    onChange={e => setAssignGroupSearch(e.target.value)}
+                    placeholder="Search groups..."
+                    className="pl-9"
+                  />
+                </div>
+                <div className="h-[240px] overflow-auto rounded-lg border p-3 space-y-2">
+                  {filteredAssignmentGroups.map(group => (
+                    <label key={group.id} className="flex items-center justify-between gap-2 text-sm rounded-md border border-border/50 px-2 py-1.5 hover:bg-muted/30">
+                      <span className="truncate">{group.name}</span>
+                      <Checkbox
+                        checked={selectedAssignmentGroups.includes(group.id)}
+                        onCheckedChange={() => toggleAssignmentGroup(group.id)}
+                      />
+                    </label>
+                  ))}
+                  {filteredAssignmentGroups.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No groups match this search.</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Teachers</label>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={selectAllFilteredTeachers}>Select all</Button>
+                    <Button variant="ghost" size="sm" onClick={clearFilteredTeachers}>Clear</Button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={assignTeacherSearch}
+                    onChange={e => setAssignTeacherSearch(e.target.value)}
+                    placeholder="Search teachers by name or email..."
+                    className="pl-9"
+                  />
+                </div>
+                <div className="h-[240px] overflow-auto rounded-lg border p-3 space-y-2">
+                  {filteredAssignmentTeachers.map(t => (
+                    <label key={t.id} className="flex items-center justify-between gap-2 text-sm rounded-md border border-border/50 px-2 py-1.5 hover:bg-muted/30">
+                      <div className="min-w-0">
+                        <p className="truncate">{t.full_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{t.email}</p>
+                      </div>
+                      <Checkbox
+                        checked={selectedAssignmentTeachers.includes(t.id)}
+                        onCheckedChange={() => toggleAssignmentTeacher(t.id)}
+                      />
+                    </label>
+                  ))}
+                  {filteredAssignmentTeachers.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No teachers match this search.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <Button
+                onClick={handleBulkAssignMembers}
+                disabled={!selectedAssignmentGroups.length || !selectedAssignmentTeachers.length}
+              >
+                Assign Selected
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

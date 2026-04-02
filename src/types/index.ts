@@ -137,6 +137,16 @@ export interface GroupMember {
   joined_at: string;
 }
 
+export interface GroupInvitation {
+  id: number;
+  group_id: number;
+  teacher_user_id: number;
+  invited_by_user_id: number;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  created_at: string;
+  responded_at?: string;
+}
+
 export interface Project {
   id: number;
   group_id: number;

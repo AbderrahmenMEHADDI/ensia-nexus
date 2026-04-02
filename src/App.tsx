@@ -9,6 +9,7 @@ import { type UserRole } from "@/types";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import CompleteRegistration from "./pages/CompleteRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Feed from "./pages/Feed";
@@ -22,6 +23,8 @@ import AdminPanel from "./pages/AdminPanel";
 import Announcements from "./pages/Announcements";
 import LabDetails from "./pages/LabDetails";
 import GroupDetails from "./pages/GroupDetails";
+import Groups from "./pages/Groups";
+import GroupLeadership from "./pages/GroupLeadership";
 import StudentCV from "./pages/StudentCV";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +59,7 @@ const AppRoutes = () => (
       <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
       <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignUp /></PublicOnlyRoute>} />
+      <Route path="/complete-registration" element={<ProtectedRoute><CompleteRegistration /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
@@ -68,6 +72,8 @@ const AppRoutes = () => (
       <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
       <Route path="/labs/:labId" element={<ProtectedRoute><LabDetails /></ProtectedRoute>} />
       <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
+      <Route path="/groups" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><Groups /></RoleProtectedRoute>} />
+      <Route path="/group-leadership" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><GroupLeadership /></RoleProtectedRoute>} />
       <Route path="/student-cv" element={<RoleProtectedRoute allowedRoles={['STUDENT']}><StudentCV /></RoleProtectedRoute>} />
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
