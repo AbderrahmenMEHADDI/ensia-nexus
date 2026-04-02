@@ -68,6 +68,9 @@ const Groups = () => {
         .filter(m => m.user_id === user.id && m.is_active)
         .map(m => m.group_id)
     );
+    groups
+      .filter(g => g.leader_user_id === user.id)
+      .forEach(g => myGroupIds.add(g.id));
     return groups.filter(g => myGroupIds.has(g.id));
   }, [groups, members, user]);
 

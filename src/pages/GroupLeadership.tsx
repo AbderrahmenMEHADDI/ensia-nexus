@@ -134,6 +134,7 @@ const GroupLeadership = () => {
             const blockedPendingTeacherIds = pendingTeacherIdsByGroup[group.id] || new Set<number>();
             const searchValue = (teacherSearch[group.id] || '').trim().toLowerCase();
             const selectableTeachers = users.filter(t => {
+              if (t.id === user?.id) return false;
               if (blockedPendingTeacherIds.has(t.id)) return false;
               if (!searchValue) return true;
               return t.full_name.toLowerCase().includes(searchValue) || t.email.toLowerCase().includes(searchValue);
