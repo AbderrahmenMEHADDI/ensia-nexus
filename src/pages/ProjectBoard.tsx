@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { ApplicationStatusBadge, PriorityBadge, ProjectStatusBadge, getPriorityBorderClass } from '@/components/Badges';
 import {
+  canUserReviewProject,
   getProjectStatus,
   isProjectOpenForStudentApplications,
 } from '@/lib/projectAccess';
@@ -95,6 +96,7 @@ const ProjectBoard = () => {
   const [formMemberUserId, setFormMemberUserId] = useState('');
   const [formMemberRole, setFormMemberRole] = useState<ParticipantRole>('MEMBER');
   const [formAddMemberLoading, setFormAddMemberLoading] = useState(false);
+  const [projectReviewLoading, setProjectReviewLoading] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -156,6 +158,11 @@ const ProjectBoard = () => {
   const lab = group ? getLabById(group.lab_id) : null;
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
   const validatedGroups = groups.filter(g => g.is_validated);
+  const canReviewSelectedProject = Boolean(
+    project &&
+    getProjectStatus(project) === 'PENDING' &&
+    canUserReviewProject(user?.id, project, groups)
+  );
   const getBlockingApplication = (projectId: number) =>
     applications.find(
       a =>
@@ -366,6 +373,26 @@ const ProjectBoard = () => {
     }
   };
 
+  const handleReviewSelectedProject = async (status: 'APPROVED' | 'REJECTED') => {
+    if (!selectedProjectId) return;
+
+    setProjectReviewLoading(status);
+    try {
+      const updated = await apiRepository.reviewProject(selectedProjectId, { status });
+      setProjects(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+      toast({ title: `Project ${status.toLowerCase()}` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: 'Failed to review project',
+        description: message,
+        variant: 'destructive',
+      });
+    } finally {
+      setProjectReviewLoading(null);
+    }
+  };
+
   if (loading && projects.length === 0) {
     return (
       <div className="container py-10 flex justify-center">
@@ -397,7 +424,6 @@ const ProjectBoard = () => {
                     <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
-                      <ProjectStatusBadge status={getProjectStatus(pubProject)} />
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
@@ -499,6 +525,28 @@ const ProjectBoard = () => {
           </div>
 
           <p className="text-muted-foreground text-sm max-w-2xl mb-3">{project.description}</p>
+
+          {canReviewSelectedProject && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Button
+                size="sm"
+                onClick={() => handleReviewSelectedProject('APPROVED')}
+                disabled={projectReviewLoading !== null}
+              >
+                {projectReviewLoading === 'APPROVED' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Approve Project
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleReviewSelectedProject('REJECTED')}
+                disabled={projectReviewLoading !== null}
+              >
+                {projectReviewLoading === 'REJECTED' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Reject Project
+              </Button>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-muted-foreground">Team:</span>
