@@ -1,6 +1,8 @@
 export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'PARTNER';
 export type Visibility = 'PUBLIC' | 'PRIVATE';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+export type ProjectStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ProjectReviewStatus = 'APPROVED' | 'REJECTED';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
@@ -153,6 +155,10 @@ export interface Project {
   title: string;
   description: string;
   visibility: Visibility;
+  status?: ProjectStatus;
+  reviewed_by?: number;
+  reviewed_at?: string;
+  decision_note?: string;
   created_by: number;
   created_at: string;
 }

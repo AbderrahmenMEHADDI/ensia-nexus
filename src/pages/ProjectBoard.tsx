@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
-import { PriorityBadge, getPriorityBorderClass } from '@/components/Badges';
+import { PriorityBadge, ProjectStatusBadge, getPriorityBorderClass } from '@/components/Badges';
+import {
+  getProjectStatus,
+  isProjectOpenForStudentApplications,
+} from '@/lib/projectAccess';
 import type {
   Task,
   TaskStatus,
@@ -149,7 +153,7 @@ const ProjectBoard = () => {
   const project = projects.find(p => p.id === selectedProjectId);
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
-  const publicProjects = projects.filter(p => p.visibility === 'PUBLIC');
+  const publicProjects = projects.filter(isProjectOpenForStudentApplications);
   const hasApplied = (projectId: number) =>
     applications.some(a => a.project_id === projectId && a.student_user_id === user?.id);
 
@@ -378,7 +382,10 @@ const ProjectBoard = () => {
                     <div key={pubProject.id} className="rounded-lg border border-border p-3">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
+                          <ProjectStatusBadge status={getProjectStatus(pubProject)} />
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
                       <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
@@ -419,6 +426,7 @@ const ProjectBoard = () => {
             <span className={`text-xs font-mono px-2 py-0.5 rounded ${project.visibility === 'PUBLIC' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
               {project.visibility}
             </span>
+            <ProjectStatusBadge status={getProjectStatus(project)} />
           </div>
 
           <p className="text-muted-foreground text-sm max-w-2xl mb-3">{project.description}</p>

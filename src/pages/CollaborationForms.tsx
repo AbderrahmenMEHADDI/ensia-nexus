@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
+import { isProjectOpenForStudentApplications } from '@/lib/projectAccess';
 import type { ParticipantRole, Project, ResearchGroup, Student, User, Visibility } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,7 @@ const CollaborationForms = () => {
   const [researchInterests, setResearchInterests] = useState('');
   const [skills, setSkills] = useState('');
   const [cvUrl, setCvUrl] = useState('');
+  const availableApplicationProjects = projects.filter(isProjectOpenForStudentApplications);
 
   useEffect(() => {
     const load = async () => {
@@ -199,7 +201,9 @@ const CollaborationForms = () => {
           <Card>
             <CardHeader>
               <CardTitle>Application for Join Project</CardTitle>
-              <CardDescription>Students can apply to join an available project.</CardDescription>
+              <CardDescription>
+                Students can apply only to approved public projects.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -209,11 +213,16 @@ const CollaborationForms = () => {
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(project => (
+                    {availableApplicationProjects.map(project => (
                       <SelectItem key={project.id} value={String(project.id)}>{project.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {availableApplicationProjects.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No approved public projects are available for applications right now.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Motivation</Label>
