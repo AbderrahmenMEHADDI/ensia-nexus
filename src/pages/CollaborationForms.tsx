@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
+import { isProjectOpenForStudentApplications } from '@/lib/projectAccess';
 import type { ParticipantRole, Project, ResearchGroup, Student, User, Visibility } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,8 @@ const CollaborationForms = () => {
   const [researchInterests, setResearchInterests] = useState('');
   const [skills, setSkills] = useState('');
   const [cvUrl, setCvUrl] = useState('');
+  const availableApplicationProjects = projects.filter(isProjectOpenForStudentApplications);
+  const validatedGroups = groups.filter(group => group.is_validated);
 
   useEffect(() => {
     const load = async () => {
@@ -97,8 +100,13 @@ const CollaborationForms = () => {
       setMotivation('');
       setApplicationProjectId('');
       toast({ title: 'Application submitted successfully' });
-    } catch {
-      toast({ title: 'Failed to submit application', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: 'Failed to submit application',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setSubmitting(null);
     }
@@ -106,6 +114,10 @@ const CollaborationForms = () => {
 
   const submitProjectDetails = async () => {
     if (!user || !projectTitle.trim() || !projectGroupId) return;
+    if (user.role === 'ADMIN') {
+      toast({ title: 'Admins cannot create projects', variant: 'destructive' });
+      return;
+    }
     setSubmitting('project');
     try {
       const created = await apiRepository.createProject({
@@ -199,7 +211,9 @@ const CollaborationForms = () => {
           <Card>
             <CardHeader>
               <CardTitle>Application for Join Project</CardTitle>
-              <CardDescription>Students can apply to join an available project.</CardDescription>
+              <CardDescription>
+                Students can apply only to approved public projects.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -209,11 +223,16 @@ const CollaborationForms = () => {
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map(project => (
+                    {availableApplicationProjects.map(project => (
                       <SelectItem key={project.id} value={String(project.id)}>{project.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {availableApplicationProjects.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No approved public projects are available for applications right now.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Motivation</Label>
@@ -231,58 +250,65 @@ const CollaborationForms = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Details Form</CardTitle>
-              <CardDescription>Create a project with full details and description.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label>Project Title</Label>
-                <Input value={projectTitle} onChange={e => setProjectTitle(e.target.value)} placeholder="Project title" />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={projectDescription}
-                  onChange={e => setProjectDescription(e.target.value)}
-                  rows={4}
-                  placeholder="Project description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Research Group</Label>
-                <Select value={projectGroupId} onValueChange={setProjectGroupId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groups.map(group => (
-                      <SelectItem key={group.id} value={String(group.id)}>{group.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Visibility</Label>
-                <Select value={projectVisibility} onValueChange={v => setProjectVisibility(v as Visibility)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PRIVATE">Private</SelectItem>
-                    <SelectItem value="PUBLIC">Public</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="md:col-span-2">
-                <Button onClick={submitProjectDetails} disabled={submitting === 'project' || !projectTitle.trim() || !projectGroupId}>
-                  {submitting === 'project' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Save Project Details
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {role !== 'ADMIN' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Details Form</CardTitle>
+                <CardDescription>Create a project with full details and description.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Project Title</Label>
+                  <Input value={projectTitle} onChange={e => setProjectTitle(e.target.value)} placeholder="Project title" />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={projectDescription}
+                    onChange={e => setProjectDescription(e.target.value)}
+                    rows={4}
+                    placeholder="Project description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Research Group</Label>
+                  <Select value={projectGroupId} onValueChange={setProjectGroupId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {validatedGroups.map(group => (
+                        <SelectItem key={group.id} value={String(group.id)}>{group.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {validatedGroups.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      No validated groups are available for project creation.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Visibility</Label>
+                  <Select value={projectVisibility} onValueChange={v => setProjectVisibility(v as Visibility)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PRIVATE">Private</SelectItem>
+                      <SelectItem value="PUBLIC">Public</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <Button onClick={submitProjectDetails} disabled={submitting === 'project' || !projectTitle.trim() || !projectGroupId}>
+                    {submitting === 'project' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Save Project Details
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

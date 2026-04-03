@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
-import { PriorityBadge, getPriorityBorderClass } from '@/components/Badges';
+import { ApplicationStatusBadge, PriorityBadge, ProjectStatusBadge, getPriorityBorderClass } from '@/components/Badges';
+import {
+  canUserReviewProject,
+  getProjectStatus,
+  isProjectOpenForStudentApplications,
+} from '@/lib/projectAccess';
 import type {
   Task,
   TaskStatus,
@@ -44,6 +49,7 @@ const ProjectBoard = () => {
   const { user } = useAuth();
   const isStudent = user?.role === 'STUDENT';
   const canManageProjects = !!user && user.role !== 'STUDENT';
+  const canCreateProjects = !!user && user.role !== 'ADMIN';
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [applications, setApplications] = useState<ProjectApplication[]>([]);
@@ -90,6 +96,7 @@ const ProjectBoard = () => {
   const [formMemberUserId, setFormMemberUserId] = useState('');
   const [formMemberRole, setFormMemberRole] = useState<ParticipantRole>('MEMBER');
   const [formAddMemberLoading, setFormAddMemberLoading] = useState(false);
+  const [projectReviewLoading, setProjectReviewLoading] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -99,14 +106,14 @@ const ProjectBoard = () => {
           apiRepository.getGroups(),
           apiRepository.getLabs(),
           apiRepository.getUsers(),
-          isStudent ? apiRepository.getApplications() : Promise.resolve([] as ProjectApplication[]),
+          isStudent ? apiRepository.getMyApplications() : apiRepository.getApplications(),
         ]);
         setProjects(p);
         setGroups(g);
         setLabs(l);
         setAllUsers(u);
         setApplications(a);
-        if (p.length > 0) {
+        if (p.length > 0 && !isStudent) {
           const firstId = p[0].id;
           setSelectedProjectId(firstId);
           await loadProjectData(firstId);
@@ -149,9 +156,26 @@ const ProjectBoard = () => {
   const project = projects.find(p => p.id === selectedProjectId);
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
-  const publicProjects = projects.filter(p => p.visibility === 'PUBLIC');
-  const hasApplied = (projectId: number) =>
-    applications.some(a => a.project_id === projectId && a.student_user_id === user?.id);
+  const publicProjects = projects.filter(isProjectOpenForStudentApplications);
+  const validatedGroups = groups.filter(g => g.is_validated);
+  const canReviewSelectedProject = Boolean(
+    project &&
+    getProjectStatus(project) === 'PENDING' &&
+    canUserReviewProject(user?.id, project, groups)
+  );
+  const getBlockingApplication = (projectId: number) =>
+    applications.find(
+      a =>
+        a.project_id === projectId &&
+        a.student_user_id === user?.id &&
+        (a.status === 'PENDING' || a.status === 'ACCEPTED')
+    );
+  const getApplyButtonLabel = (projectId: number) => {
+    const application = getBlockingApplication(projectId);
+    if (!application) return 'Apply';
+    if (application.status === 'PENDING') return 'Pending Review';
+    return 'Already Accepted';
+  };
 
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
@@ -282,8 +306,13 @@ const ProjectBoard = () => {
       setApplications(prev => [created, ...prev]);
       setApplyOpen(false);
       toast({ title: 'Application submitted' });
-    } catch {
-      toast({ title: 'Failed to submit application', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: 'Failed to submit application',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setApplySubmitting(false);
     }
@@ -291,6 +320,10 @@ const ProjectBoard = () => {
 
   const handleCreateProjectFromForm = async () => {
     if (!user || !formProjectTitle.trim() || !formGroupId) return;
+    if (user.role === 'ADMIN') {
+      toast({ title: 'Admins cannot create projects', variant: 'destructive' });
+      return;
+    }
     setFormCreateProjectLoading(true);
     try {
       const created = await apiRepository.createProject({
@@ -340,10 +373,108 @@ const ProjectBoard = () => {
     }
   };
 
+  const handleReviewSelectedProject = async (status: 'APPROVED' | 'REJECTED') => {
+    if (!selectedProjectId) return;
+
+    setProjectReviewLoading(status);
+    try {
+      const updated = await apiRepository.reviewProject(selectedProjectId, { status });
+      setProjects(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+      toast({ title: `Project ${status.toLowerCase()}` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: 'Failed to review project',
+        description: message,
+        variant: 'destructive',
+      });
+    } finally {
+      setProjectReviewLoading(null);
+    }
+  };
+
   if (loading && projects.length === 0) {
     return (
       <div className="container py-10 flex justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isStudent) {
+    return (
+      <div className="container py-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="mb-8">
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">Public Projects</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Apply to approved public projects. Pending or accepted applications cannot be submitted again.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            {publicProjects.map(pubProject => {
+              const pubGroup = getGroupById(pubProject.group_id);
+              const blockingApplication = getBlockingApplication(pubProject.id);
+
+              return (
+                <div key={pubProject.id} className="rounded-lg border border-border p-4 bg-card">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
+                  <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
+                  {blockingApplication && (
+                    <div className="mb-3">
+                      <ApplicationStatusBadge status={blockingApplication.status} />
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => handleOpenApply(pubProject.id)}
+                    disabled={Boolean(blockingApplication)}
+                  >
+                    {getApplyButtonLabel(pubProject.id)}
+                  </Button>
+                </div>
+              );
+            })}
+            {publicProjects.length === 0 && (
+              <p className="text-sm text-muted-foreground">No public projects available right now.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Application for Join Project</DialogTitle>
+              <DialogDescription>Provide your motivation to apply for this public project.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="space-y-2">
+                <Label>Motivation</Label>
+                <Textarea
+                  rows={4}
+                  value={applyMotivation}
+                  onChange={e => setApplyMotivation(e.target.value)}
+                  placeholder="Tell why you are a good fit and what you can contribute."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setApplyOpen(false)}>Cancel</Button>
+              <Button onClick={handleApplyToProject} disabled={applySubmitting || !applyMotivation.trim()}>
+                {applySubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Submit Application
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
@@ -359,43 +490,14 @@ const ProjectBoard = () => {
         <div className="mb-8">
           {canManageProjects && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Button size="sm" onClick={() => setProjectFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" /> Project Details Form
-              </Button>
+              {canCreateProjects && (
+                <Button size="sm" onClick={() => setProjectFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Project Details Form
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Member Details Form
               </Button>
-            </div>
-          )}
-
-          {isStudent && (
-            <div className="mb-6 rounded-xl border border-border bg-card p-4">
-              <h2 className="text-lg font-semibold text-foreground mb-3">Public Projects</h2>
-              <div className="grid md:grid-cols-2 gap-3">
-                {publicProjects.map(pubProject => {
-                  const pubGroup = getGroupById(pubProject.group_id);
-                  return (
-                    <div key={pubProject.id} className="rounded-lg border border-border p-3">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
-                      <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => handleOpenApply(pubProject.id)}
-                        disabled={hasApplied(pubProject.id)}
-                      >
-                        {hasApplied(pubProject.id) ? 'Already Applied' : 'Apply'}
-                      </Button>
-                    </div>
-                  );
-                })}
-                {publicProjects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No public projects available right now.</p>
-                )}
-              </div>
             </div>
           )}
 
@@ -419,9 +521,32 @@ const ProjectBoard = () => {
             <span className={`text-xs font-mono px-2 py-0.5 rounded ${project.visibility === 'PUBLIC' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
               {project.visibility}
             </span>
+            <ProjectStatusBadge status={getProjectStatus(project)} />
           </div>
 
           <p className="text-muted-foreground text-sm max-w-2xl mb-3">{project.description}</p>
+
+          {canReviewSelectedProject && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <Button
+                size="sm"
+                onClick={() => handleReviewSelectedProject('APPROVED')}
+                disabled={projectReviewLoading !== null}
+              >
+                {projectReviewLoading === 'APPROVED' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Approve Project
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleReviewSelectedProject('REJECTED')}
+                disabled={projectReviewLoading !== null}
+              >
+                {projectReviewLoading === 'REJECTED' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Reject Project
+              </Button>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-muted-foreground">Team:</span>
@@ -803,9 +928,14 @@ const ProjectBoard = () => {
                     <SelectValue placeholder="Select group" />
                   </SelectTrigger>
                   <SelectContent>
-                    {groups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                    {validatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {validatedGroups.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No validated groups are available for project creation.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Visibility</Label>

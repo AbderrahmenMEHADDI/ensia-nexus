@@ -1,4 +1,4 @@
-import { type UserRole, type TaskPriority, type TaskStatus, type ApplicationStatus } from '@/types';
+import { type UserRole, type TaskPriority, type TaskStatus, type ApplicationStatus, type ProjectStatus } from '@/types';
 
 const roleConfig: Record<UserRole, { label: string; className: string }> = {
   STUDENT: { label: 'Student', className: 'bg-info/15 text-info border-info/30' },
@@ -58,6 +58,21 @@ const appStatusConfig: Record<ApplicationStatus, { label: string; className: str
 
 export const ApplicationStatusBadge = ({ status }: { status: ApplicationStatus }) => {
   const config = appStatusConfig[status];
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${config.className}`}>
+      {config.label}
+    </span>
+  );
+};
+
+const projectStatusConfig: Record<ProjectStatus, { label: string; className: string }> = {
+  PENDING: { label: 'Pending Review', className: 'bg-primary/15 text-primary border-primary/30' },
+  APPROVED: { label: 'Approved', className: 'bg-success/15 text-success border-success/30' },
+  REJECTED: { label: 'Rejected', className: 'bg-destructive/15 text-destructive border-destructive/30' },
+};
+
+export const ProjectStatusBadge = ({ status }: { status: ProjectStatus }) => {
+  const config = projectStatusConfig[status];
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${config.className}`}>
       {config.label}

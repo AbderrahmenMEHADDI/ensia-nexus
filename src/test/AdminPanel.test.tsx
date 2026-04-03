@@ -22,6 +22,9 @@ const mockApi = vi.hoisted(() => ({
   getLabs: vi.fn(),
   getGroups: vi.fn(),
   getUsers: vi.fn(),
+  getUsersPaged: vi.fn(),
+  getTeachers: vi.fn(),
+  getGroupMembers: vi.fn(),
   getLabAdmins: vi.fn(),
   createGroup: vi.fn(),
   validateGroup: vi.fn(),
@@ -38,24 +41,28 @@ vi.mock('@/hooks/use-toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('framer-motion', () => ({ motion: { div: ({ children, ...props }: any) => <div {...props}>{children}</div> } }));
 vi.mock('@/components/ui/tabs', () => {
   const Tabs = ({ children }: any) => <div>{children}</div>;
-  const TabsList = ({ children }: any) => <div > {children}</div>;
+  const TabsList = ({ children }: any) => <div>{children}</div>;
   const TabsTrigger = ({ children, onClick }: any) => (
-    <button type="button" role="tab" onClick={onClick}>{children}</button>
+    <button type="button" onClick={onClick}>{children}</button>
   );
   const TabsContent = ({ children }: any) => <div>{children}</div>;
   return { Tabs, TabsList, TabsTrigger, TabsContent };
 });
 vi.mock('@/components/ui/select', () => {
   const Select = ({ value, onValueChange, children }: any) => (
-    <select
-      data-testid="lab-select"
-      aria-label="lab-select"
-      title="lab-select"
-      value={value ?? ''}
-      onChange={e => onValueChange?.(e.target.value)}
-    >
-      {children}
-    </select>
+    <>
+      <label htmlFor="mock-select" className="sr-only">Mock select</label>
+      <select
+        id="mock-select"
+        data-testid="lab-select"
+        aria-label="lab-select"
+        title="lab-select"
+        value={value ?? ''}
+        onChange={e => onValueChange?.(e.target.value)}
+      >
+        {children}
+      </select>
+    </>
   );
   const SelectTrigger = ({ children }: any) => <>{children}</>;
   const SelectContent = ({ children }: any) => <>{children}</>;
@@ -80,6 +87,18 @@ beforeEach(() => {
   mockApi.getLabs.mockResolvedValue([...baseLabs]);
   mockApi.getGroups.mockResolvedValue([...baseGroups]);
   mockApi.getUsers.mockResolvedValue([...baseUsers]);
+  mockApi.getUsersPaged.mockResolvedValue({ items: [...baseUsers], total: baseUsers.length });
+  mockApi.getTeachers.mockResolvedValue([
+    {
+      user_id: 1,
+      experience_years: 12,
+      grade: 'PROFESSOR',
+      department: 'Computer Science',
+      research_interests: 'AI',
+      created_at: '2023-01-01',
+    },
+  ]);
+  mockApi.getGroupMembers.mockResolvedValue([]);
   mockApi.getLabAdmins.mockResolvedValue([...baseLabAdmins]);
   mockApi.validateGroup.mockResolvedValue({ ...baseGroups[0], is_validated: true });
   mockApi.deleteGroup.mockResolvedValue(undefined);
@@ -91,7 +110,6 @@ describe('AdminPanel permissions', () => {
     setAuth(5, 'ADMIN');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /Labs/i }));
     expect(screen.getByRole('button', { name: /Add Lab/i })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Admins/i }).length).toBeGreaterThan(0);
   });
@@ -100,7 +118,6 @@ describe('AdminPanel permissions', () => {
     setAuth(1, 'TEACHER');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole('tab', { name: /Labs/i }));
     expect(screen.queryByRole('button', { name: /Add Lab/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Admins/i })).toBeInTheDocument();
   });
@@ -131,7 +148,11 @@ describe('AdminPanel permissions', () => {
     fireEvent.click(screen.getByText(/Add Group/i));
     fireEvent.change(screen.getByPlaceholderText(/NLP .* Understanding/i), { target: { value: 'New Group' } });
     fireEvent.change(screen.getByPlaceholderText(/Brief description/i), { target: { value: 'Desc' } });
-    fireEvent.change(screen.getByTestId('lab-select'), { target: { value: '1' } });
+    const labSelect = screen.getAllByTestId('lab-select').find(
+      node => node.textContent?.includes('LRIA')
+    );
+    expect(labSelect).toBeDefined();
+    fireEvent.change(labSelect!, { target: { value: '1' } });
     fireEvent.click(screen.getByText(/Create Group/i));
 
     await waitFor(() => expect(mockApi.createGroup).toHaveBeenCalled());

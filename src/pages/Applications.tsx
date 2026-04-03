@@ -1,69 +1,59 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
-import { ApplicationStatusBadge, RoleBadge } from '@/components/Badges';
-import type { ProjectApplication, User, Project, ResearchGroup, GroupMember } from '@/types';
+import { ApplicationStatusBadge, ProjectStatusBadge, RoleBadge } from '@/components/Badges';
+import {
+  canUserReviewProject,
+  canUserReviewProjectApplication,
+  getProjectStatus,
+} from '@/lib/projectAccess';
+import type {
+  ProjectApplication,
+  User,
+  Project,
+  ResearchGroup,
+  ProjectParticipant,
+  ProjectReviewStatus,
+} from '@/types';
 import { FileText, CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Applications = () => {
-  const { user, isTeacher, isAdmin } = useAuth();
+  const { user, isTeacher } = useAuth();
   const { toast } = useToast();
   const [apps, setApps] = useState<ProjectApplication[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
-  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<number | null>(null);
+  const [reviewingAppId, setReviewingAppId] = useState<number | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
-  const [newMotivation, setNewMotivation] = useState('');
-  const [applyProjectId, setApplyProjectId] = useState('');
-  const [showApplyForm, setShowApplyForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const isGroupOwner = (projectId: number) => {
-    if (!user) return false;
-    if (isAdmin) return true;
-    const project = projects.find(p => p.id === projectId);
-    if (!project) return false;
-    if (project.created_by === user.id) return true;
-    const group = groups.find(g => g.id === project.group_id);
-    return group?.leader_user_id === user.id;
-  };
-
-  const isGroupMember = (groupId: number) => {
-    if (!user) return false;
-    return groupMembers.some(gm => gm.group_id === groupId && gm.user_id === user.id && gm.is_active);
-  };
-
-  const canSeeApp = (app: ProjectApplication) => {
-    if (!user) return false;
-    if (app.student_user_id === user.id) return true;
-    const project = projects.find(p => p.id === app.project_id);
-    if (project && isGroupMember(project.group_id)) return true;
-    return false;
-  };
+  const [selectedProject, setSelectedProject] = useState<number | null>(null);
+  const [projectDecisionNote, setProjectDecisionNote] = useState('');
+  const [reviewingProjectId, setReviewingProjectId] = useState<number | null>(null);
 
   const getUserById = (id: number) => users.find(u => u.id === id);
   const getProjectById = (id: number) => projects.find(p => p.id === id);
+  const getGroupById = (id: number) => groups.find(g => g.id === id);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [a, u, p, g, gm] = await Promise.all([
+        const [a, u, p, g, pp] = await Promise.all([
           apiRepository.getApplications(),
           apiRepository.getUsers(),
           apiRepository.getProjects(),
           apiRepository.getGroups(),
-          apiRepository.getGroupMembers(),
+          apiRepository.getProjectParticipants(),
         ]);
         setApps(a);
         setUsers(u);
         setProjects(p);
         setGroups(g);
-        setGroupMembers(gm);
+        setParticipants(pp);
       } catch (e) {
         console.error('Applications load error:', e);
         toast({ title: 'Error loading applications', variant: 'destructive' });
@@ -72,43 +62,52 @@ const Applications = () => {
       }
     };
     load();
-  }, []);
+  }, [toast]);
+
+  const pendingProjectsForReview = useMemo(
+    () =>
+      projects.filter(
+        project =>
+          getProjectStatus(project) === 'PENDING' &&
+          canUserReviewProject(user?.id, project, groups)
+      ),
+    [groups, projects, user?.id]
+  );
 
   const handleReview = async (appId: number, decision: 'ACCEPTED' | 'REJECTED') => {
+    setReviewingAppId(appId);
     try {
       const updated = await apiRepository.reviewApplication(appId, {
         status: decision,
-        decision_note: decisionNote,
-        reviewed_at: new Date().toISOString(),
+        decision_note: decisionNote.trim() || undefined,
       });
       setApps(prev => prev.map(a => a.id === appId ? updated : a));
       toast({ title: `Application ${decision.toLowerCase()}` });
     } catch (e) {
       toast({ title: 'Review failed', variant: 'destructive' });
+    } finally {
+      setReviewingAppId(null);
+      setSelectedApp(null);
+      setDecisionNote('');
     }
-    setSelectedApp(null);
-    setDecisionNote('');
   };
 
-  const handleApply = async () => {
-    if (!newMotivation.trim() || !applyProjectId || !user) return;
-    setSubmitting(true);
+  const handleProjectReview = async (projectId: number, decision: ProjectReviewStatus) => {
+    setReviewingProjectId(projectId);
     try {
-      const newApp = await apiRepository.createApplication({
-        project_id: Number(applyProjectId),
-        student_user_id: user.id,
-        motivation: newMotivation,
-        status: 'PENDING',
+      const updated = await apiRepository.reviewProject(projectId, {
+        status: decision,
+        decision_note: projectDecisionNote.trim() || undefined,
       });
-      setApps(prev => [newApp, ...prev]);
-      setNewMotivation('');
-      setApplyProjectId('');
-      setShowApplyForm(false);
-      toast({ title: 'Application submitted!' });
+      setProjects(prev => prev.map(project => (project.id === projectId ? updated : project)));
+      toast({ title: `Project ${decision === 'APPROVED' ? 'approved' : 'rejected'}` });
     } catch (e) {
-      toast({ title: 'Submission failed', variant: 'destructive' });
+      toast({ title: 'Project review failed', variant: 'destructive' });
+    } finally {
+      setReviewingProjectId(null);
+      setSelectedProject(null);
+      setProjectDecisionNote('');
     }
-    setSubmitting(false);
   };
 
   if (loading) {
@@ -126,70 +125,110 @@ const Applications = () => {
           <div>
             <span className="text-xs font-mono text-primary uppercase tracking-wider">Applications</span>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">
-              {isTeacher ? 'Review Applications' : 'My Applications'}
+              {isTeacher ? 'Review Applications' : 'Application Access'}
             </h1>
+            <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+              You can review applications only if you are a group leader or a project participant with LEAD/REVIEWER role.
+            </p>
           </div>
-          {!isTeacher && (
-            <button
-              onClick={() => setShowApplyForm(!showApplyForm)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              <FileText className="h-4 w-4" /> Apply to Project
-            </button>
-          )}
         </div>
 
-        {/* Apply form */}
-        {showApplyForm && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="mb-8 p-6 rounded-xl border border-primary/20 bg-card"
-          >
-            <h3 className="font-serif font-semibold text-foreground mb-4">Submit Application</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Project</label>
-                <select
-                  value={applyProjectId}
-                  onChange={e => setApplyProjectId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="">Select a project...</option>
-                  {projects.map(p => (
-                    <option key={p.id} value={p.id}>{p.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-mono text-muted-foreground uppercase tracking-wider block mb-1">Motivation Statement</label>
-                <textarea
-                  value={newMotivation}
-                  onChange={e => setNewMotivation(e.target.value)}
-                  rows={4}
-                  placeholder="Explain why you want to join this project..."
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
-                />
-              </div>
-              <button
-                onClick={handleApply}
-                disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {submitting && <Loader2 className="h-3 w-3 animate-spin" />}
-                Submit Application
-              </button>
+        {pendingProjectsForReview.length > 0 && (
+          <div className="mb-8 p-5 rounded-xl border border-primary/20 bg-card space-y-4">
+            <div>
+              <h2 className="font-serif font-semibold text-foreground">Pending Projects To Review</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Only research group leaders can approve or reject pending projects.
+              </p>
             </div>
-          </motion.div>
+            <div className="space-y-3">
+              {pendingProjectsForReview.map(project => {
+                const group = getGroupById(project.group_id);
+                const isSelectedProject = selectedProject === project.id;
+
+                return (
+                  <div key={project.id} className="rounded-lg border border-border bg-background/40 p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-sm font-medium text-foreground">{project.title}</h3>
+                          <ProjectStatusBadge status={getProjectStatus(project)} />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Group: {group?.name || 'Unknown group'}</p>
+                      </div>
+                      {!isSelectedProject && (
+                        <button
+                          onClick={() => setSelectedProject(project.id)}
+                          className="text-sm font-mono text-primary hover:underline"
+                        >
+                          Review project →
+                        </button>
+                      )}
+                    </div>
+
+                    {isSelectedProject && (
+                      <div className="space-y-3 mt-3 pt-3 border-t border-border">
+                        <textarea
+                          value={projectDecisionNote}
+                          onChange={e => setProjectDecisionNote(e.target.value)}
+                          rows={2}
+                          placeholder="Optional decision note..."
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleProjectReview(project.id, 'APPROVED')}
+                            disabled={reviewingProjectId === project.id}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success/15 text-success text-sm font-medium hover:bg-success/25 transition-colors disabled:opacity-60"
+                          >
+                            {reviewingProjectId === project.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4" />
+                            )}
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleProjectReview(project.id, 'REJECTED')}
+                            disabled={reviewingProjectId === project.id}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60"
+                          >
+                            {reviewingProjectId === project.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedProject(null);
+                              setProjectDecisionNote('');
+                            }}
+                            className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* Applications list */}
         <div className="space-y-4">
-          {apps.filter(canSeeApp).map((app, i) => {
+          {apps.map((app, i) => {
             const student = getUserById(app.student_user_id);
             const project = getProjectById(app.project_id);
             const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
             const isSelected = selectedApp === app.id;
+            const canReviewThisApp = project
+              ? canUserReviewProjectApplication(user?.id, project, groups, participants)
+              : false;
 
             return (
               <motion.div
@@ -205,6 +244,7 @@ const Applications = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium text-foreground">{project?.title || 'Unknown Project'}</h3>
                         <ApplicationStatusBadge status={app.status} />
+                        {project && <ProjectStatusBadge status={getProjectStatus(project)} />}
                       </div>
                       <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                         <span>by {student?.full_name}</span>
@@ -228,7 +268,7 @@ const Applications = () => {
                     </div>
                   )}
 
-                  {isGroupOwner(app.project_id) && app.status === 'PENDING' && (
+                  {canReviewThisApp && app.status === 'PENDING' && (
                     <div>
                       {!isSelected ? (
                         <button
@@ -249,15 +289,27 @@ const Applications = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleReview(app.id, 'ACCEPTED')}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success/15 text-success text-sm font-medium hover:bg-success/25 transition-colors"
+                              disabled={reviewingAppId === app.id}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-success/15 text-success text-sm font-medium hover:bg-success/25 transition-colors disabled:opacity-60"
                             >
-                              <CheckCircle2 className="h-4 w-4" /> Accept
+                              {reviewingAppId === app.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4" />
+                              )}
+                              Accept
                             </button>
                             <button
                               onClick={() => handleReview(app.id, 'REJECTED')}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors"
+                              disabled={reviewingAppId === app.id}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors disabled:opacity-60"
                             >
-                              <XCircle className="h-4 w-4" /> Reject
+                              {reviewingAppId === app.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <XCircle className="h-4 w-4" />
+                              )}
+                              Reject
                             </button>
                             <button
                               onClick={() => { setSelectedApp(null); setDecisionNote(''); }}
@@ -274,8 +326,11 @@ const Applications = () => {
               </motion.div>
             );
           })}
-          {apps.filter(canSeeApp).length === 0 && (
-            <p className="text-muted-foreground text-center py-16">No applications found.</p>
+          {apps.length === 0 && (
+            <div className="text-muted-foreground text-center py-16">
+              <FileText className="h-5 w-5 mx-auto mb-2" />
+              <p>No applications available for your current reviewer scope.</p>
+            </div>
           )}
         </div>
       </motion.div>
