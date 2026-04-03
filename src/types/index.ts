@@ -227,8 +227,10 @@ export interface GroupJoinRequest {
 export interface ChatRoom {
   id: number;
   name: string;
-  type: 'TEAM' | 'PROJECT';
+  type: 'TEAM' | 'PROJECT' | 'LAB' | 'GROUP';
   project_id?: number;
+  lab_id?: number;
+  group_id?: number;
   created_at: string;
 }
 
