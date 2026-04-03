@@ -99,8 +99,13 @@ const CollaborationForms = () => {
       setMotivation('');
       setApplicationProjectId('');
       toast({ title: 'Application submitted successfully' });
-    } catch {
-      toast({ title: 'Failed to submit application', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: 'Failed to submit application',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setSubmitting(null);
     }

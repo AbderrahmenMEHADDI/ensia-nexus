@@ -103,7 +103,7 @@ const ProjectBoard = () => {
           apiRepository.getGroups(),
           apiRepository.getLabs(),
           apiRepository.getUsers(),
-          isStudent ? apiRepository.getApplications() : Promise.resolve([] as ProjectApplication[]),
+          isStudent ? Promise.resolve([] as ProjectApplication[]) : apiRepository.getApplications(),
         ]);
         setProjects(p);
         setGroups(g);
@@ -286,8 +286,13 @@ const ProjectBoard = () => {
       setApplications(prev => [created, ...prev]);
       setApplyOpen(false);
       toast({ title: 'Application submitted' });
-    } catch {
-      toast({ title: 'Failed to submit application', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : undefined;
+      toast({
+        title: 'Failed to submit application',
+        description: message,
+        variant: 'destructive',
+      });
     } finally {
       setApplySubmitting(false);
     }
