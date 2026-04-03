@@ -149,6 +149,7 @@ export const apiRepository = {
 
   // ── Applications ─────────────────────────────────────────────────────────
   getApplications: () => api.get<ProjectApplication[]>('/project-applications/'),
+  getMyApplications: () => api.get<ProjectApplication[]>('/project-applications/mine'),
   getApplication: (id: number) => api.get<ProjectApplication>(`/project-applications/${id}`),
   createApplication: (data: Partial<ProjectApplication>) =>
     api.post<ProjectApplication>('/project-applications/', data),

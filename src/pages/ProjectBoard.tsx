@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
-import { PriorityBadge, ProjectStatusBadge, getPriorityBorderClass } from '@/components/Badges';
+import { ApplicationStatusBadge, PriorityBadge, ProjectStatusBadge, getPriorityBorderClass } from '@/components/Badges';
 import {
   getProjectStatus,
   isProjectOpenForStudentApplications,
@@ -103,14 +103,14 @@ const ProjectBoard = () => {
           apiRepository.getGroups(),
           apiRepository.getLabs(),
           apiRepository.getUsers(),
-          isStudent ? Promise.resolve([] as ProjectApplication[]) : apiRepository.getApplications(),
+          isStudent ? apiRepository.getMyApplications() : apiRepository.getApplications(),
         ]);
         setProjects(p);
         setGroups(g);
         setLabs(l);
         setAllUsers(u);
         setApplications(a);
-        if (p.length > 0) {
+        if (p.length > 0 && !isStudent) {
           const firstId = p[0].id;
           setSelectedProjectId(firstId);
           await loadProjectData(firstId);
@@ -154,8 +154,19 @@ const ProjectBoard = () => {
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
-  const hasApplied = (projectId: number) =>
-    applications.some(a => a.project_id === projectId && a.student_user_id === user?.id);
+  const getBlockingApplication = (projectId: number) =>
+    applications.find(
+      a =>
+        a.project_id === projectId &&
+        a.student_user_id === user?.id &&
+        (a.status === 'PENDING' || a.status === 'ACCEPTED')
+    );
+  const getApplyButtonLabel = (projectId: number) => {
+    const application = getBlockingApplication(projectId);
+    if (!application) return 'Apply';
+    if (application.status === 'PENDING') return 'Pending Review';
+    return 'Already Accepted';
+  };
 
   const handleDragStart = (e: React.DragEvent, taskId: number) => {
     setDraggedTaskId(taskId);
@@ -357,6 +368,85 @@ const ProjectBoard = () => {
     );
   }
 
+  if (isStudent) {
+    return (
+      <div className="container py-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="mb-8">
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">Public Projects</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Apply to approved public projects. Pending or accepted applications cannot be submitted again.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-3">
+            {publicProjects.map(pubProject => {
+              const pubGroup = getGroupById(pubProject.group_id);
+              const blockingApplication = getBlockingApplication(pubProject.id);
+
+              return (
+                <div key={pubProject.id} className="rounded-lg border border-border p-4 bg-card">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
+                      <ProjectStatusBadge status={getProjectStatus(pubProject)} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
+                  <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
+                  {blockingApplication && (
+                    <div className="mb-3">
+                      <ApplicationStatusBadge status={blockingApplication.status} />
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => handleOpenApply(pubProject.id)}
+                    disabled={Boolean(blockingApplication)}
+                  >
+                    {getApplyButtonLabel(pubProject.id)}
+                  </Button>
+                </div>
+              );
+            })}
+            {publicProjects.length === 0 && (
+              <p className="text-sm text-muted-foreground">No public projects available right now.</p>
+            )}
+          </div>
+        </motion.div>
+
+        <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Application for Join Project</DialogTitle>
+              <DialogDescription>Provide your motivation to apply for this public project.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="space-y-2">
+                <Label>Motivation</Label>
+                <Textarea
+                  rows={4}
+                  value={applyMotivation}
+                  onChange={e => setApplyMotivation(e.target.value)}
+                  placeholder="Tell why you are a good fit and what you can contribute."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setApplyOpen(false)}>Cancel</Button>
+              <Button onClick={handleApplyToProject} disabled={applySubmitting || !applyMotivation.trim()}>
+                {applySubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Submit Application
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
   if (!project) {
     return <div className="container py-10 text-center text-muted-foreground">No projects found.</div>;
   }
@@ -374,40 +464,6 @@ const ProjectBoard = () => {
               <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Member Details Form
               </Button>
-            </div>
-          )}
-
-          {isStudent && (
-            <div className="mb-6 rounded-xl border border-border bg-card p-4">
-              <h2 className="text-lg font-semibold text-foreground mb-3">Public Projects</h2>
-              <div className="grid md:grid-cols-2 gap-3">
-                {publicProjects.map(pubProject => {
-                  const pubGroup = getGroupById(pubProject.group_id);
-                  return (
-                    <div key={pubProject.id} className="rounded-lg border border-border p-3">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
-                          <ProjectStatusBadge status={getProjectStatus(pubProject)} />
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
-                      <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
-                      <Button
-                        size="sm"
-                        onClick={() => handleOpenApply(pubProject.id)}
-                        disabled={hasApplied(pubProject.id)}
-                      >
-                        {hasApplied(pubProject.id) ? 'Already Applied' : 'Apply'}
-                      </Button>
-                    </div>
-                  );
-                })}
-                {publicProjects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No public projects available right now.</p>
-                )}
-              </div>
             </div>
           )}
 
