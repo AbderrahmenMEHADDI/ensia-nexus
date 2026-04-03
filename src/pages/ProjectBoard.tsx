@@ -48,6 +48,7 @@ const ProjectBoard = () => {
   const { user } = useAuth();
   const isStudent = user?.role === 'STUDENT';
   const canManageProjects = !!user && user.role !== 'STUDENT';
+  const canCreateProjects = !!user && user.role !== 'ADMIN';
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [applications, setApplications] = useState<ProjectApplication[]>([]);
@@ -154,6 +155,7 @@ const ProjectBoard = () => {
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
+  const validatedGroups = groups.filter(g => g.is_validated);
   const getBlockingApplication = (projectId: number) =>
     applications.find(
       a =>
@@ -311,6 +313,10 @@ const ProjectBoard = () => {
 
   const handleCreateProjectFromForm = async () => {
     if (!user || !formProjectTitle.trim() || !formGroupId) return;
+    if (user.role === 'ADMIN') {
+      toast({ title: 'Admins cannot create projects', variant: 'destructive' });
+      return;
+    }
     setFormCreateProjectLoading(true);
     try {
       const created = await apiRepository.createProject({
@@ -458,9 +464,11 @@ const ProjectBoard = () => {
         <div className="mb-8">
           {canManageProjects && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
-              <Button size="sm" onClick={() => setProjectFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" /> Project Details Form
-              </Button>
+              {canCreateProjects && (
+                <Button size="sm" onClick={() => setProjectFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Project Details Form
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Member Details Form
               </Button>
@@ -872,9 +880,14 @@ const ProjectBoard = () => {
                     <SelectValue placeholder="Select group" />
                   </SelectTrigger>
                   <SelectContent>
-                    {groups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                    {validatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {validatedGroups.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No validated groups are available for project creation.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Visibility</Label>
