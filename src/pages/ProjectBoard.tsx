@@ -16,6 +16,7 @@ import type {
   ProjectParticipant,
   ProjectResource,
   ResearchGroup,
+  GroupMember,
   ResearchLab,
   User,
   ProjectApplication,
@@ -57,6 +58,7 @@ const ProjectBoard = () => {
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
   const [resources, setResources] = useState<ProjectResource[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [labs, setLabs] = useState<ResearchLab[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
@@ -98,18 +100,35 @@ const ProjectBoard = () => {
   const [formAddMemberLoading, setFormAddMemberLoading] = useState(false);
   const [projectReviewLoading, setProjectReviewLoading] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
+  const fetchAllUsers = async () => {
+    const pageSize = 500;
+    let all: User[] = [];
+    let skip = 0;
+
+    while (true) {
+      const res = await apiRepository.getUsersPaged({ skip, limit: pageSize });
+      all = all.concat(res.items);
+      if (all.length >= res.total || res.items.length < pageSize) break;
+      skip += pageSize;
+    }
+
+    return all;
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
-        const [p, g, l, u, a] = await Promise.all([
+        const [p, g, gm, l, u, a] = await Promise.all([
           apiRepository.getProjects(),
           apiRepository.getGroups(),
+          apiRepository.getGroupMembers(),
           apiRepository.getLabs(),
-          apiRepository.getUsers(),
+          fetchAllUsers(),
           isStudent ? apiRepository.getMyApplications() : apiRepository.getApplications(),
         ]);
         setProjects(p);
         setGroups(g);
+        setGroupMembers(gm);
         setLabs(l);
         setAllUsers(u);
         setApplications(a);
@@ -156,6 +175,17 @@ const ProjectBoard = () => {
   const project = projects.find(p => Number(p.id) === Number(selectedProjectId));
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
+  const selectedMemberFormProject = projects.find(p => Number(p.id) === Number(formMemberProjectId));
+  const availableMemberOptions = selectedMemberFormProject
+    ? allUsers.filter(u =>
+        groupMembers.some(
+          gm =>
+            gm.group_id === selectedMemberFormProject.group_id &&
+            gm.user_id === u.id &&
+            gm.is_active
+        )
+      )
+    : [];
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
   const validatedGroups = groups.filter(g => g.is_validated);
   const canReviewSelectedProject = Boolean(
@@ -999,7 +1029,7 @@ const ProjectBoard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="space-y-2">
                 <Label>Project</Label>
-                <Select value={formMemberProjectId} onValueChange={setFormMemberProjectId}>
+                <Select value={formMemberProjectId} onValueChange={value => { setFormMemberProjectId(value); setFormMemberUserId(''); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
@@ -1012,12 +1042,15 @@ const ProjectBoard = () => {
                 <Label>Member</Label>
                 <Select value={formMemberUserId} onValueChange={setFormMemberUserId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder={formMemberProjectId ? 'Select group member' : 'Select project first'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allUsers.map(u => <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem>)}
+                    {availableMemberOptions.map(u => <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {formMemberProjectId && availableMemberOptions.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No active members found in this project's group.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Role</Label>
