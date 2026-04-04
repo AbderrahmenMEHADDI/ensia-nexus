@@ -153,7 +153,7 @@ const ProjectBoard = () => {
   const getGroupById = (id: number) => groups.find(g => g.id === id);
   const getLabById = (id: number) => labs.find(l => l.id === id);
 
-  const project = projects.find(p => p.id === selectedProjectId);
+  const project = projects.find(p => Number(p.id) === Number(selectedProjectId));
   const group = project ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
@@ -333,9 +333,11 @@ const ProjectBoard = () => {
         visibility: formVisibility,
         created_by: user.id,
       });
-      setProjects(prev => [created, ...prev]);
-      setSelectedProjectId(created.id);
-      await loadProjectData(created.id);
+      const createdId = Number(created.id);
+      const refreshedProjects = await apiRepository.getProjects();
+      setProjects(refreshedProjects);
+      setSelectedProjectId(createdId);
+      await loadProjectData(createdId);
       setProjectFormOpen(false);
       setFormProjectTitle('');
       setFormProjectDescription('');
@@ -392,6 +394,64 @@ const ProjectBoard = () => {
       setProjectReviewLoading(null);
     }
   };
+
+  const projectFormDialog = (
+    <Dialog open={projectFormOpen} onOpenChange={setProjectFormOpen}>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Project Details Form</DialogTitle>
+          <DialogDescription>Fill this form to create a new project.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Project Title</Label>
+            <Input value={formProjectTitle} onChange={e => setFormProjectTitle(e.target.value)} placeholder="Project title" />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea value={formProjectDescription} onChange={e => setFormProjectDescription(e.target.value)} rows={4} placeholder="Project description" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Research Group</Label>
+              <Select value={formGroupId} onValueChange={setFormGroupId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {validatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {validatedGroups.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  No validated groups are available for project creation.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Visibility</Label>
+              <Select value={formVisibility} onValueChange={v => setFormVisibility(v as Visibility)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PRIVATE">Private</SelectItem>
+                  <SelectItem value="PUBLIC">Public</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setProjectFormOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreateProjectFromForm} disabled={formCreateProjectLoading || !formProjectTitle.trim() || !formGroupId}>
+            {formCreateProjectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create Project
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   if (loading && projects.length === 0) {
     return (
@@ -480,7 +540,28 @@ const ProjectBoard = () => {
   }
 
   if (!project) {
-    return <div className="container py-10 text-center text-muted-foreground">No projects found.</div>;
+    return (
+      <div className="container py-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-2">No projects yet</h1>
+            <p className="text-sm text-muted-foreground mt-3">
+              Create the first project for your validated group to start managing tasks and members.
+            </p>
+            {canCreateProjects && (
+              <div className="mt-6 flex justify-center gap-2">
+                <Button onClick={() => setProjectFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Project Details Form
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {projectFormDialog}
+      </div>
+    );
   }
 
   return (
@@ -905,61 +986,7 @@ const ProjectBoard = () => {
       </Dialog>
 
       {/* Group Admin: Project Details Form */}
-      <Dialog open={projectFormOpen} onOpenChange={setProjectFormOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Project Details Form</DialogTitle>
-            <DialogDescription>Fill this form to create a new project.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Project Title</Label>
-              <Input value={formProjectTitle} onChange={e => setFormProjectTitle(e.target.value)} placeholder="Project title" />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={formProjectDescription} onChange={e => setFormProjectDescription(e.target.value)} rows={4} placeholder="Project description" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Research Group</Label>
-                <Select value={formGroupId} onValueChange={setFormGroupId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {validatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {validatedGroups.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No validated groups are available for project creation.
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Visibility</Label>
-                <Select value={formVisibility} onValueChange={v => setFormVisibility(v as Visibility)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PRIVATE">Private</SelectItem>
-                    <SelectItem value="PUBLIC">Public</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProjectFormOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateProjectFromForm} disabled={formCreateProjectLoading || !formProjectTitle.trim() || !formGroupId}>
-              {formCreateProjectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Project
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {projectFormDialog}
 
       {/* Group Admin: Member Details Form */}
       <Dialog open={memberFormOpen} onOpenChange={setMemberFormOpen}>
