@@ -33,8 +33,7 @@ import { Button } from '@/components/ui/button';
 
 const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRole[] }[] = [
   { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
-  { path: '/projects', label: 'Projects', icon: Kanban },
-  { path: '/announcements', label: 'Announcements', icon: Megaphone },
+  { path: '/projects', label: 'Project Board', icon: Kanban },
   { path: '/groups', label: 'Groups', icon: Users, allowedRoles: ['TEACHER'] },
   { path: '/student-cv', label: 'Student CV', icon: FileUser, allowedRoles: ['STUDENT'] },
   { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
