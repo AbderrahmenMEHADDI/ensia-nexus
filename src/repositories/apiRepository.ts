@@ -4,7 +4,7 @@ import type {
   ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
   Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
-  UserRole, GroupInvitation,
+  UserRole, GroupInvitation, ProjectReviewStatus,
 } from '@/types';
 
 /**
@@ -119,6 +119,8 @@ export const apiRepository = {
     api.get<Project[]>(groupId ? `/projects/?group_id=${groupId}` : '/projects/'),
   getProject: (id: number) => api.get<Project>(`/projects/${id}`),
   createProject: (data: Partial<Project>) => api.post<Project>('/projects/', data),
+  reviewProject: (id: number, data: { status: ProjectReviewStatus; decision_note?: string }) =>
+    api.post<Project>(`/projects/${id}/review`, data),
 
   // ── Project participants ──────────────────────────────────────────────────
   getProjectParticipants: (projectId?: number) =>
@@ -147,6 +149,7 @@ export const apiRepository = {
 
   // ── Applications ─────────────────────────────────────────────────────────
   getApplications: () => api.get<ProjectApplication[]>('/project-applications/'),
+  getMyApplications: () => api.get<ProjectApplication[]>('/project-applications/mine'),
   getApplication: (id: number) => api.get<ProjectApplication>(`/project-applications/${id}`),
   createApplication: (data: Partial<ProjectApplication>) =>
     api.post<ProjectApplication>('/project-applications/', data),

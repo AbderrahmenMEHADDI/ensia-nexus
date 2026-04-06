@@ -1,22 +1,56 @@
 import { useState, useRef, useEffect } from 'react';
-import { Hash, Send, Users, FolderOpen, Loader2 } from 'lucide-react';
+import { Hash, Send, Users, FolderOpen, Loader2, Plus, Beaker, Layers, ChevronRight } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { chatRepository } from '@/repositories/chatRepository';
 import { apiRepository } from '@/repositories/apiRepository';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ChatMessage, ChatRoom, Project } from '@/types';
+import type { ChatMessage, ChatRoom, Project, ResearchLab, ResearchGroup, ResearchLabAdmin } from '@/types';
+import { toast } from 'sonner';
 
 const Chat = () => {
   const { user: currentUser } = useAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [labs, setLabs] = useState<ResearchLab[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [labAdmins, setLabAdmins] = useState<ResearchLabAdmin[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // New channel modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [createTarget, setCreateTarget] = useState<{
+    type: 'LAB' | 'GROUP' | 'PROJECT';
+    id: number;
+    name: string;
+  } | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (id: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
   
   const ws = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,17 +59,40 @@ const Chat = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [roomsData, projectsData] = await Promise.all([
+        const [roomsData, projectsData, labsData, groupsData] = await Promise.all([
           chatRepository.getRooms(),
-          apiRepository.getProjects()
+          apiRepository.getProjects(),
+          apiRepository.getLabs(),
+          apiRepository.getGroups()
         ]);
+        
         setRooms(roomsData);
         setProjects(projectsData);
+        setLabs(labsData);
+        setGroups(groupsData);
+
+        // Fetch lab admins separately as it may fail for non-admins (though we updated the backend)
+        try {
+          const adminsData = await apiRepository.getLabAdmins();
+          setLabAdmins(adminsData);
+        } catch (adminError) {
+          console.warn('Failed to fetch lab admins:', adminError);
+          setLabAdmins([]);
+        }
+
         if (roomsData.length > 0) {
           setSelectedRoomId(roomsData[0].id);
+          
+          // Auto-expand sections that have the selected room or just expand all initially for better UX
+          const initialExpanded: Record<string, boolean> = {};
+          labsData.forEach(l => initialExpanded[`lab-${l.id}`] = true);
+          groupsData.forEach(g => initialExpanded[`group-${g.id}`] = true);
+          projectsData.forEach(p => initialExpanded[`project-${p.id}`] = true);
+          setExpandedSections(initialExpanded);
         }
       } catch (error) {
         console.error('Failed to fetch chat data:', error);
+        toast.error('Failed to load chat data');
       } finally {
         setIsLoading(false);
       }
@@ -114,8 +171,80 @@ const Chat = () => {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const handleCreateChannel = async () => {
+    if (!newChannelName.trim() || !createTarget || !currentUser) return;
+    
+    setIsCreating(true);
+    try {
+      const payload: Partial<ChatRoom> = {
+        name: newChannelName.trim(),
+        type: createTarget.type,
+      };
+
+      if (createTarget.type === 'LAB') payload.lab_id = createTarget.id;
+      if (createTarget.type === 'GROUP') payload.group_id = createTarget.id;
+      if (createTarget.type === 'PROJECT') payload.project_id = createTarget.id;
+
+      const newRoom = await chatRepository.createRoom(payload);
+      setRooms([...rooms, newRoom]);
+      setSelectedRoomId(newRoom.id);
+      setIsCreateModalOpen(false);
+      setNewChannelName('');
+      toast.success(`Channel #${newRoom.name} created!`);
+    } catch (error) {
+      console.error('Failed to create channel:', error);
+      toast.error('Failed to create channel');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const canManageLab = (labId: number) => {
+    if (currentUser?.role === 'ADMIN') return true;
+    return labAdmins.some(a => a.lab_id === labId && a.user_id === currentUser?.id);
+  };
+
+  const canManageGroup = (groupId: number) => {
+    if (currentUser?.role === 'ADMIN') return true;
+    const group = groups.find(g => g.id === groupId);
+    return group?.leader_user_id === currentUser?.id;
+  };
+
+  const canManageProject = (projectId: number) => {
+    if (currentUser?.role === 'ADMIN') return true;
+    const project = projects.find(p => p.id === projectId);
+    return project?.created_by === currentUser?.id;
+  };
+
   const teamRooms = rooms.filter(r => r.type === 'TEAM');
+  const projectRoomsMap = rooms.reduce((acc, r) => {
+    if (r.project_id) {
+      if (!acc[r.project_id]) acc[r.project_id] = [];
+      acc[r.project_id].push(r);
+    }
+    return acc;
+  }, {} as Record<number, ChatRoom[]>);
+
+  const labRoomsMap = rooms.reduce((acc, r) => {
+    if (r.lab_id) {
+      if (!acc[r.lab_id]) acc[r.lab_id] = [];
+      acc[r.lab_id].push(r);
+    }
+    return acc;
+  }, {} as Record<number, ChatRoom[]>);
+
+  const groupRoomsMap = rooms.reduce((acc, r) => {
+    if (r.group_id) {
+      if (!acc[r.group_id]) acc[r.group_id] = [];
+      acc[r.group_id].push(r);
+    }
+    return acc;
+  }, {} as Record<number, ChatRoom[]>);
+
+  const labsWithRooms = labs.filter(l => rooms.some(r => r.lab_id === l.id));
+  const groupsWithRooms = groups.filter(g => rooms.some(r => r.group_id === g.id));
   const projectsWithRooms = projects.filter(p => rooms.some(r => r.project_id === p.id));
+  
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
 
   // Group messages by date
@@ -171,6 +300,122 @@ const Chat = () => {
             </div>
           )}
 
+          {/* Lab rooms */}
+          {labsWithRooms.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-1.5 px-3 mb-2">
+                <Beaker className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Research Labs</span>
+              </div>
+              {labsWithRooms.map(lab => {
+                const isExpanded = expandedSections[`lab-${lab.id}`] ?? true;
+                return (
+                  <Collapsible 
+                    key={lab.id} 
+                    open={isExpanded} 
+                    onOpenChange={() => toggleSection(`lab-${lab.id}`)}
+                    className="mb-2"
+                  >
+                    <div className="flex items-center justify-between px-3 py-1 mb-1 group/header">
+                      <CollapsibleTrigger className="flex items-center gap-1.5 flex-1 min-w-0 hover:text-foreground transition-colors text-left">
+                        <ChevronRight className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                        <span className="text-[11px] font-medium text-muted-foreground/80 truncate block">
+                          {lab.name}
+                        </span>
+                      </CollapsibleTrigger>
+                      {canManageLab(lab.id) && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCreateTarget({ type: 'LAB', id: lab.id, name: lab.name });
+                            setIsCreateModalOpen(true);
+                          }}
+                          className="opacity-0 group-hover/header:opacity-100 p-0.5 hover:bg-muted rounded transition-all ml-1"
+                        >
+                          <Plus className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      )}
+                    </div>
+                    <CollapsibleContent className="space-y-1">
+                      {(labRoomsMap[lab.id] || []).map(room => (
+                        <button
+                          key={room.id}
+                          onClick={() => setSelectedRoomId(room.id)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all duration-200 ml-4 w-[calc(100%-1rem)] ${
+                            selectedRoomId === room.id
+                              ? 'bg-primary/10 text-primary font-semibold shadow-sm shadow-primary/5'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                        >
+                          <Hash className={`h-3.5 w-3.5 shrink-0 ${selectedRoomId === room.id ? 'text-primary' : 'text-muted-foreground/60'}`} />
+                          <span className="truncate">{room.name}</span>
+                        </button>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Group rooms */}
+          {groupsWithRooms.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center gap-1.5 px-3 mb-2">
+                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Research Groups</span>
+              </div>
+              {groupsWithRooms.map(group => {
+                const isExpanded = expandedSections[`group-${group.id}`] ?? true;
+                return (
+                  <Collapsible 
+                    key={group.id} 
+                    open={isExpanded} 
+                    onOpenChange={() => toggleSection(`group-${group.id}`)}
+                    className="mb-2"
+                  >
+                    <div className="flex items-center justify-between px-3 py-1 mb-1 group/header">
+                      <CollapsibleTrigger className="flex items-center gap-1.5 flex-1 min-w-0 hover:text-foreground transition-colors text-left">
+                        <ChevronRight className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                        <span className="text-[11px] font-medium text-muted-foreground/80 truncate block">
+                          {group.name}
+                        </span>
+                      </CollapsibleTrigger>
+                      {canManageGroup(group.id) && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCreateTarget({ type: 'GROUP', id: group.id, name: group.name });
+                            setIsCreateModalOpen(true);
+                          }}
+                          className="opacity-0 group-hover/header:opacity-100 p-0.5 hover:bg-muted rounded transition-all ml-1"
+                        >
+                          <Plus className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      )}
+                    </div>
+                    <CollapsibleContent className="space-y-1">
+                      {(groupRoomsMap[group.id] || []).map(room => (
+                        <button
+                          key={room.id}
+                          onClick={() => setSelectedRoomId(room.id)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all duration-200 ml-4 w-[calc(100%-1rem)] ${
+                            selectedRoomId === room.id
+                              ? 'bg-primary/10 text-primary font-semibold shadow-sm shadow-primary/5'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                        >
+                          <Hash className={`h-3.5 w-3.5 shrink-0 ${selectedRoomId === room.id ? 'text-primary' : 'text-muted-foreground/60'}`} />
+                          <span className="truncate">{room.name}</span>
+                        </button>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
+          )}
+
           {/* Project rooms */}
           {projectsWithRooms.length > 0 && (
             <div className="mb-6">
@@ -179,29 +424,52 @@ const Chat = () => {
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Projects</span>
               </div>
               {projectsWithRooms.map(project => {
-                const projectRooms = rooms.filter(r => r.project_id === project.id);
+                const projectRooms = projectRoomsMap[project.id] || [];
+                const isExpanded = expandedSections[`project-${project.id}`] ?? true;
                 return (
-                  <div key={project.id} className="mb-2">
-                    <div className="px-3 py-1 mb-1">
-                      <span className="text-[11px] font-medium text-muted-foreground/80 truncate block">
-                        {project.title}
-                      </span>
+                  <Collapsible 
+                    key={project.id} 
+                    open={isExpanded} 
+                    onOpenChange={() => toggleSection(`project-${project.id}`)}
+                    className="mb-2"
+                  >
+                    <div className="flex items-center justify-between px-3 py-1 mb-1 group/header">
+                      <CollapsibleTrigger className="flex items-center gap-1.5 flex-1 min-w-0 hover:text-foreground transition-colors text-left">
+                        <ChevronRight className={`h-3 w-3 shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                        <span className="text-[11px] font-medium text-muted-foreground/80 truncate block">
+                          {project.title}
+                        </span>
+                      </CollapsibleTrigger>
+                      {canManageProject(project.id) && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCreateTarget({ type: 'PROJECT', id: project.id, name: project.title });
+                            setIsCreateModalOpen(true);
+                          }}
+                          className="opacity-0 group-hover/header:opacity-100 p-0.5 hover:bg-muted rounded transition-all ml-1"
+                        >
+                          <Plus className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      )}
                     </div>
-                    {projectRooms.map(room => (
-                      <button
-                        key={room.id}
-                        onClick={() => setSelectedRoomId(room.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-all duration-200 ml-2' ${
-                          selectedRoomId === room.id
-                            ? 'bg-primary/10 text-primary font-semibold shadow-sm shadow-primary/5'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                        }`}
-                      >
-                        <Hash className={`h-3.5 w-3.5 shrink-0 ${selectedRoomId === room.id ? 'text-primary' : 'text-muted-foreground/60'}`} />
-                        <span className="truncate">{room.name}</span>
-                      </button>
-                    ))}
-                  </div>
+                    <CollapsibleContent className="space-y-1">
+                      {projectRooms.map(room => (
+                        <button
+                          key={room.id}
+                          onClick={() => setSelectedRoomId(room.id)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all duration-200 ml-4 w-[calc(100%-1rem)] ${
+                            selectedRoomId === room.id
+                              ? 'bg-primary/10 text-primary font-semibold shadow-sm shadow-primary/5'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                        >
+                          <Hash className={`h-3.5 w-3.5 shrink-0 ${selectedRoomId === room.id ? 'text-primary' : 'text-muted-foreground/60'}`} />
+                          <span className="truncate">{room.name}</span>
+                        </button>
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
                 );
               })}
             </div>
@@ -342,6 +610,58 @@ const Chat = () => {
           </div>
         )}
       </div>
+
+      {/* Create Room Modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Plus className="h-4 w-4 text-primary" />
+              </div>
+              <span>Create New Channel</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                Channel Name
+              </label>
+              <Input
+                placeholder="e.g. documentation, team-chat"
+                value={newChannelName}
+                onChange={(e) => setNewChannelName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateChannel();
+                }}
+                className="rounded-xl border-border/60 focus-visible:ring-primary h-11"
+              />
+              <p className="text-[10px] text-muted-foreground px-1 italic">
+                Creating in <span className="text-foreground font-semibold font-mono">#{createTarget?.name}</span>
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)} className="rounded-xl px-6">
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateChannel} 
+              disabled={!newChannelName.trim() || isCreating}
+              className="rounded-xl px-8 shadow-lg shadow-primary/20"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Channel'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
