@@ -1,18 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import {
-  currentUser, feedPosts, feedComments, feedLikes, feedSaves,
-  getUserById, projects, getCommentsByPost, getLikesByPost, getSavesByPost,
-  researchGroups, groupMembers, getLabById, users, tasks, projectParticipants,
-} from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import {
   Heart, Bookmark, MessageCircle, Send, MoreHorizontal,
-  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles,
+  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { FeedComment, FeedLike, FeedSave } from '@/types';
+import { useToast } from '@/hooks/use-toast';
+import type { Announcement, User, Project, ResearchGroup, Task, Comment } from '@/types';
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -28,45 +26,66 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number }) => {
+const PostCard = ({
+  post,
+  index,
+  user,
+  getUserById,
+  onReact,
+  onAddComment
+}: {
+  post: Announcement;
+  index: number;
+  user: User | null;
+  getUserById: (id: number) => User | undefined;
+  onReact: (id: number, type: string) => Promise<void>;
+  onAddComment: (id: number, text: string) => Promise<void>;
+}) => {
   const author = getUserById(post.author_user_id);
-  const project = post.project_id ? projects.find(p => p.id === post.project_id) : null;
-
-  const [likes, setLikes] = useState<FeedLike[]>(getLikesByPost(post.id));
-  const [saves, setSaves] = useState<FeedSave[]>(getSavesByPost(post.id));
-  const [comments, setComments] = useState<FeedComment[]>(getCommentsByPost(post.id));
   const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const { toast } = useToast();
 
-  const isLiked = likes.some(l => l.user_id === currentUser.id);
-  const isSaved = saves.some(s => s.user_id === currentUser.id);
+  const isLiked = post.interactions?.user_reacted === 'like';
+  const reactionsCount = post.interactions?.reactions_count || 0;
+  const commentsCount = post.interactions?.comments_count || 0;
 
-  const toggleLike = () => {
-    setLikes(prev =>
-      isLiked ? prev.filter(l => l.user_id !== currentUser.id) : [...prev, { post_id: post.id, user_id: currentUser.id }]
-    );
+  const toggleComments = async () => {
+    const nextShow = !showComments;
+    setShowComments(nextShow);
+    if (nextShow && comments.length === 0) {
+      setLoadingComments(true);
+      try {
+        const res = await apiRepository.getComments(post.id);
+        setComments(res);
+      } catch (e) {
+        toast({ title: 'Failed to load comments', variant: 'destructive' });
+      } finally {
+        setLoadingComments(false);
+      }
+    }
   };
 
-  const toggleSave = () => {
-    setSaves(prev =>
-      isSaved ? prev.filter(s => s.user_id !== currentUser.id) : [...prev, { post_id: post.id, user_id: currentUser.id }]
-    );
-  };
-
-  const submitComment = () => {
-    if (!newComment.trim()) return;
-    setComments(prev => [...prev, {
-      id: Date.now(),
-      post_id: post.id,
-      author_user_id: currentUser.id,
-      content: newComment.trim(),
-      created_at: new Date().toISOString(),
-    }]);
-    setNewComment('');
-    setShowComments(true);
+  const submitComment = async () => {
+    if (!newComment.trim() || !user) return;
+    try {
+      await onAddComment(post.id, newComment.trim());
+      // Refresh comments if shown
+      if (showComments) {
+        const res = await apiRepository.getComments(post.id);
+        setComments(res);
+      }
+      setNewComment('');
+    } catch {
+      toast({ title: 'Failed to post comment', variant: 'destructive' });
+    }
   };
 
   if (!author) return null;
+
+  const tags = post.tags ? (Array.isArray(post.tags) ? post.tags : (post.tags as string).split(',').filter(Boolean)) : [];
 
   return (
     <motion.article
@@ -84,29 +103,25 @@ const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number })
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{author.full_name}</span>
             <RoleBadge role={author.role} />
+            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border bg-accent/50 border-border`}>
+              {post.category}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
-            {project && (
-              <>
-                <span className="text-xs text-muted-foreground">·</span>
-                <Link to={`/projects/${project.id}`} className="text-xs text-primary hover:underline truncate">
-                  {project.title}
-                </Link>
-              </>
-            )}
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="px-5 pt-3 pb-4">
+        <h3 className="text-base font-semibold text-foreground mb-2">{post.title}</h3>
         <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{post.content}</p>
-        {post.tags.length > 0 && (
+        {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
-            {post.tags.map(tag => (
+            {tags.map(tag => (
               <span key={tag} className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent text-accent-foreground">
-                #{tag}
+                #{tag.trim()}
               </span>
             ))}
           </div>
@@ -114,22 +129,22 @@ const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number })
       </div>
 
       {/* Engagement stats */}
-      {(likes.length > 0 || comments.length > 0) && (
+      {(reactionsCount > 0 || commentsCount > 0) && (
         <div className="flex items-center justify-between px-5 py-2 border-t border-border">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {likes.length > 0 && (
+            {reactionsCount > 0 && (
               <span className="flex items-center gap-1">
                 <Heart className="h-3 w-3 fill-primary text-primary" />
-                {likes.length}
+                {reactionsCount}
               </span>
             )}
           </div>
-          {comments.length > 0 && (
+          {commentsCount > 0 && (
             <button
-              onClick={() => setShowComments(!showComments)}
+              onClick={toggleComments}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              {comments.length} comment{comments.length > 1 ? 's' : ''}
+              {commentsCount} comment{commentsCount > 1 ? 's' : ''}
             </button>
           )}
         </div>
@@ -138,24 +153,23 @@ const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number })
       {/* Action buttons */}
       <div className="flex items-center border-t border-border">
         <button
-          onClick={toggleLike}
+          onClick={() => onReact(post.id, 'like')}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50 ${isLiked ? 'text-primary' : 'text-muted-foreground'}`}
         >
           <Heart className={`h-4 w-4 ${isLiked ? 'fill-primary' : ''}`} />
           Like
         </button>
         <button
-          onClick={() => setShowComments(!showComments)}
+          onClick={toggleComments}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
         >
           <MessageCircle className="h-4 w-4" />
           Comment
         </button>
         <button
-          onClick={toggleSave}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50 ${isSaved ? 'text-primary' : 'text-muted-foreground'}`}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
         >
-          <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-primary' : ''}`} />
+          <Bookmark className="h-4 w-4" />
           Save
         </button>
       </div>
@@ -171,45 +185,51 @@ const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number })
             className="overflow-hidden border-t border-border"
           >
             <div className="p-4 space-y-3">
-              {comments.map(comment => {
-                const cAuthor = getUserById(comment.author_user_id);
-                if (!cAuthor) return null;
-                return (
-                  <div key={comment.id} className="flex gap-2.5">
-                    <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                      {cAuthor.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="rounded-lg bg-accent/50 p-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-foreground">{cAuthor.full_name}</span>
-                          <span className="text-[11px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
+              {loadingComments ? (
+                <div className="flex justify-center py-2"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+              ) : (
+                comments.map(comment => {
+                  const cAuthor = getUserById(comment.author_user_id);
+                  if (!cAuthor) return null;
+                  return (
+                    <div key={comment.id} className="flex gap-2.5">
+                      <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                        {cAuthor.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="rounded-lg bg-accent/50 p-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-foreground">{cAuthor.full_name}</span>
+                            <span className="text-[11px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
+                          </div>
+                          <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
                         </div>
-                        <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
 
               {/* New comment input */}
-              <div className="flex gap-2.5 pt-1">
-                <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                  {currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              {user && (
+                <div className="flex gap-2.5 pt-1">
+                  <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+                    {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="flex-1 flex gap-2">
+                    <input
+                      value={newComment}
+                      onChange={e => setNewComment(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && submitComment()}
+                      placeholder="Write a comment..."
+                      className="flex-1 text-xs bg-accent/40 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim()}>
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex-1 flex gap-2">
-                  <input
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && submitComment()}
-                    placeholder="Write a comment..."
-                    className="flex-1 text-xs bg-accent/40 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
-                  />
-                  <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim()}>
-                    <Send className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -219,16 +239,125 @@ const PostCard = ({ post, index }: { post: typeof feedPosts[0]; index: number })
 };
 
 const Feed = () => {
+  const { user, isTeacher, isAdmin } = useAuth();
+  const { toast } = useToast();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
+  const [newPostTitle, setNewPostTitle] = useState('');
 
-  const myGroupIds = groupMembers.filter(m => m.user_id === currentUser.id && m.is_active).map(m => m.group_id);
-  const myGroups = researchGroups.filter(g => myGroupIds.includes(g.id));
-  const myParticipations = projectParticipants.filter(p => p.user_id === currentUser.id);
-  const myProjects = myParticipations.map(p => projects.find(proj => proj.id === p.project_id)!).filter(Boolean);
-  const activeTasks = tasks.filter(
-    t => (t.assignee_user_id === currentUser.id || t.created_by === currentUser.id) &&
-      (t.status === 'IN_PROGRESS' || t.status === 'TODO')
-  );
+  const loadData = async () => {
+    try {
+      const [ann, u, g, p, t] = await Promise.all([
+        apiRepository.getAnnouncements(),
+        apiRepository.getUsers(),
+        apiRepository.getGroups(),
+        apiRepository.getProjects(),
+        apiRepository.getTasks()
+      ]);
+
+      // Fetch interactions for announcements
+      const richAnn = await Promise.all(ann.map(async (a) => {
+        try {
+          const interactions = await apiRepository.getInteractions(a.id);
+          return { ...a, interactions };
+        } catch { return a; }
+      }));
+
+      setAnnouncements(richAnn);
+      setUsers(u);
+      setGroups(g);
+      setProjects(p);
+      setTasks(t);
+    } catch (e) {
+      console.error('Feed data load error:', e);
+      toast({ title: 'Failed to synchronize feed', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const getUserById = (id: number) => users.find(u => u.id === id);
+
+  const handleReact = async (id: number, type: string) => {
+    if (!user) return;
+    try {
+      const res = await apiRepository.reactToAnnouncement(id, {
+        announcement_id: id,
+        user_id: user.id,
+        reaction_type: type
+      });
+      // Refresh this announcement's interactions
+      const newItem = await apiRepository.getInteractions(id);
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: newItem } : a));
+    } catch {
+      toast({ title: 'Reaction failed', variant: 'destructive' });
+    }
+  };
+
+  const handleAddComment = async (id: number, text: string) => {
+    if (!user) return;
+    try {
+      await apiRepository.createComment(id, {
+        announcement_id: id,
+        author_user_id: user.id,
+        content: text
+      });
+      // Refresh interactions for count
+      const newItem = await apiRepository.getInteractions(id);
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: newItem } : a));
+    } catch {
+      throw new Error('Comment failed');
+    }
+  };
+
+  const handlePost = async () => {
+    if (!newPostContent.trim() || !user) return;
+    try {
+      const created = await apiRepository.createAnnouncement({
+        title: newPostTitle.trim() || 'New Update',
+        content: newPostContent.trim(),
+        category: 'RESEARCH',
+        author_user_id: user.id,
+      });
+      toast({ title: 'Announcement posted' });
+      setNewPostContent('');
+      setNewPostTitle('');
+      // Reload feed
+      loadData();
+    } catch {
+      toast({ title: 'Failed to post', variant: 'destructive' });
+    }
+  };
+
+  // Stats
+  const activeTasks = tasks.filter(t => (t.assignee_user_id === user?.id) && (t.status === 'IN_PROGRESS' || t.status === 'TODO'));
+  const myGroups = groups.filter(g => g.leader_user_id === user?.id); // Should ideally check group members too
+
+  // Tags aggregation
+  const allTags = announcements.flatMap(a => {
+    const t = a.tags;
+    if (!t) return [];
+    if (Array.isArray(t)) return t;
+    return (t as string).split(',').filter(Boolean);
+  }).map(t => t.trim());
+  const trendingTags = Array.from(new Set(allTags)).slice(0, 7);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
@@ -237,36 +366,59 @@ const Feed = () => {
           {/* Main column */}
           <div className="space-y-4">
             {/* Composer */}
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
-                  {currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
-                <div className="flex-1">
-                  <textarea
-                    value={newPostContent}
-                    onChange={e => setNewPostContent(e.target.value)}
-                    placeholder="Share an update, insight, or milestone..."
-                    rows={3}
-                    className="w-full text-sm bg-transparent text-foreground placeholder:text-muted-foreground resize-none focus:outline-none"
-                  />
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Visible to all members</span>
+            {(isTeacher || isAdmin) && (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <div className="flex gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                    {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <input
+                      value={newPostTitle}
+                      onChange={e => setNewPostTitle(e.target.value)}
+                      placeholder="Title (optional)"
+                      className="w-full text-sm font-semibold bg-transparent text-foreground placeholder:text-muted-foreground border-none focus:outline-none"
+                    />
+                    <textarea
+                      value={newPostContent}
+                      onChange={e => setNewPostContent(e.target.value)}
+                      placeholder="Share an update, insight, or milestone..."
+                      rows={3}
+                      className="w-full text-sm bg-transparent text-foreground placeholder:text-muted-foreground resize-none focus:outline-none"
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Visible to all members</span>
+                      </div>
+                      <Button size="sm" onClick={handlePost} disabled={!newPostContent.trim()} className="h-8 px-4 text-xs">
+                        Post Announcement
+                      </Button>
                     </div>
-                    <Button size="sm" disabled={!newPostContent.trim()} className="h-8 px-4 text-xs">
-                      Post
-                    </Button>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Posts feed */}
-            {feedPosts.map((post, i) => (
-              <PostCard key={post.id} post={post} index={i} />
-            ))}
+            {announcements.length > 0 ? (
+              announcements.map((post, i) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  index={i}
+                  user={user || null}
+                  getUserById={getUserById}
+                  onReact={handleReact}
+                  onAddComment={handleAddComment}
+                />
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
+                <Info className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No feed items yet.</p>
+              </div>
+            )}
           </div>
 
           {/* Right sidebar */}
@@ -275,16 +427,16 @@ const Feed = () => {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-muted-foreground">
-                  {currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{currentUser.full_name}</p>
-                  <RoleBadge role={currentUser.role} />
+                  <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
+                  <RoleBadge role={user?.role || 'STUDENT'} />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2 rounded-lg bg-accent/50">
-                  <span className="text-lg font-display font-semibold text-foreground">{myProjects.length}</span>
+                  <span className="text-lg font-display font-semibold text-foreground">{projects.length}</span>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Projects</p>
                 </div>
                 <div className="p-2 rounded-lg bg-accent/50">
@@ -301,40 +453,38 @@ const Feed = () => {
             {/* My Groups */}
             {myGroups.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-4">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">My Groups</h3>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">My Led Groups</h3>
                 <div className="space-y-2.5">
-                  {myGroups.map(group => {
-                    const lab = getLabById(group.lab_id);
-                    const memberCount = groupMembers.filter(m => m.group_id === group.id && m.is_active).length;
-                    return (
-                      <div key={group.id} className="flex items-start gap-2.5">
-                        <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <FlaskConical className="h-3.5 w-3.5 text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-foreground truncate">{group.name}</p>
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Users className="h-3 w-3" /> {memberCount}
-                          </p>
-                        </div>
+                  {myGroups.map(group => (
+                    <div key={group.id} className="flex items-start gap-2.5">
+                      <div className="h-8 w-8 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FlaskConical className="h-3.5 w-3.5 text-primary" />
                       </div>
-                    );
-                  })}
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-foreground truncate">{group.name}</p>
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Users className="h-3 w-3" /> Managed by you
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {/* Trending tags */}
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Trending Topics</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {['NLP', 'Research', 'Computer Vision', 'Blockchain', 'Reinforcement Learning', 'Medical AI', 'Data Engineering'].map(tag => (
-                  <span key={tag} className="px-2 py-1 rounded-full text-[11px] font-medium bg-accent text-accent-foreground cursor-pointer hover:bg-accent/80 transition-colors">
-                    #{tag}
-                  </span>
-                ))}
+            {trendingTags.length > 0 && (
+              <div className="rounded-xl border border-border bg-card p-4">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Recent Topics</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {trendingTags.map(tag => (
+                    <span key={tag} className="px-2 py-1 rounded-full text-[11px] font-medium bg-accent text-accent-foreground cursor-pointer hover:bg-accent/80 transition-colors">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </aside>
         </div>
       </motion.div>
