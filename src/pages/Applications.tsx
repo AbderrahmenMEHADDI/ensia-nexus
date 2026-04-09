@@ -32,6 +32,7 @@ const Applications = () => {
   const [selectedApp, setSelectedApp] = useState<number | null>(null);
   const [reviewingAppId, setReviewingAppId] = useState<number | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState<number | 'all'>('all');
   const [ratingDrafts, setRatingDrafts] = useState<Record<number, ProjectApplicationReviewerRatingInput>>({});
   const [savingRatingAppId, setSavingRatingAppId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
@@ -78,15 +79,22 @@ const Applications = () => {
   );
 
   const sortedApps = useMemo(
-    () =>
-      [...apps].sort((a, b) => {
+    () => {
+      const filtered = filterProjectId === 'all' 
+        ? apps 
+        : apps.filter(a => a.project_id === filterProjectId);
+
+      return [...filtered].sort((a, b) => {
         const rankA = a.ranking?.rank_position ?? 999999;
         const rankB = b.ranking?.rank_position ?? 999999;
         if (rankA !== rankB) return rankA - rankB;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }),
-    [apps]
+      });
+    },
+    [apps, filterProjectId]
   );
+  
+  const uniqueProjectIdsInApps = useMemo(() => Array.from(new Set(apps.map(a => a.project_id))), [apps]);
 
   const getDefaultRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
     const myRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
@@ -214,7 +222,7 @@ const Applications = () => {
   return (
     <div className="container py-10">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <span className="text-xs font-mono text-primary uppercase tracking-wider">Applications</span>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">
@@ -224,6 +232,26 @@ const Applications = () => {
               You can review applications only if you are a group leader or a project participant with LEAD/REVIEWER role.
             </p>
           </div>
+          {uniqueProjectIdsInApps.length > 0 && (
+            <div className="flex flex-col gap-1.5 md:w-64">
+              <label className="text-xs font-mono text-muted-foreground">Filter by Project</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                value={filterProjectId}
+                onChange={e => setFilterProjectId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              >
+                <option value="all">All Projects</option>
+                {uniqueProjectIdsInApps.map(id => {
+                  const p = getProjectById(id);
+                  return (
+                    <option key={id} value={id}>
+                      {p ? p.title : `Project #${id}`}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
         </div>
 
         {pendingProjectsForReview.length > 0 && (
@@ -362,9 +390,9 @@ const Applications = () => {
                   <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 mb-3">
                     <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
                       <span className="text-primary">Rank #{app.ranking?.rank_position ?? '-'}</span>
-                      <span className="text-foreground">Final: {app.ranking?.final_score?.toFixed?.(2) ?? '-'} / 100</span>
-                      <span className="text-muted-foreground">Model: {app.ranking?.model_score?.toFixed?.(2) ?? '-'}</span>
-                      <span className="text-muted-foreground">Member eval: {app.ranking?.reviewer_score?.toFixed?.(2) ?? '-'}</span>
+                      <span className="text-foreground">Final: {app.ranking?.final_score != null ? app.ranking.final_score.toFixed(2) : '-'} / 100</span>
+                      <span className="text-muted-foreground">Model: {app.ranking?.model_score != null ? app.ranking.model_score.toFixed(2) : '-'}</span>
+                      <span className="text-muted-foreground">Member eval: {app.ranking?.reviewer_score != null ? app.ranking.reviewer_score.toFixed(2) : '-'}</span>
                     </div>
                     {app.ranking?.explanation && (
                       <p className="text-xs text-muted-foreground mt-2">{app.ranking.explanation}</p>

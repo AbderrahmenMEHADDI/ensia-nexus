@@ -996,7 +996,13 @@ const ProjectBoard = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Application for Join Project</DialogTitle>
-            <DialogDescription>Provide your motivation to apply for this public project.</DialogDescription>
+            <DialogDescription>
+              Provide your motivation to apply for this public project.
+              <br/>
+              <span className="text-muted-foreground text-xs mt-1 block">
+                Note: The AI ranking model evaluates your application using your Motivation, Profile Skills/Bio/Interests, CV records, and Previous Projects. Make sure your profile is fully updated!
+              </span>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-2">
@@ -1005,7 +1011,7 @@ const ProjectBoard = () => {
                 rows={4}
                 value={applyMotivation}
                 onChange={e => setApplyMotivation(e.target.value)}
-                placeholder="Tell why you are a good fit and what you can contribute."
+                placeholder="Describe why your skills and experience make you a good fit. (Include details relevant to the project)"
               />
             </div>
           </div>
