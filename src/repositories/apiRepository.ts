@@ -156,6 +156,8 @@ export const apiRepository = {
     api.post<ProjectApplication>('/project-applications/', data),
   reviewApplication: (id: number, data: Partial<ProjectApplication>) =>
     api.put<ProjectApplication>(`/project-applications/${id}`, data),
+  deleteApplication: (id: number) =>
+    api.delete<void>(`/project-applications/${id}`),
   getApplicationRanking: (id: number) =>
     api.get<ProjectApplicationRanking>(`/project-applications/${id}/ranking`),
   getApplicationReviewerRatings: (id: number) =>

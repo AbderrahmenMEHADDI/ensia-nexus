@@ -80,9 +80,9 @@ const Applications = () => {
   const sortedApps = useMemo(
     () =>
       [...apps].sort((a, b) => {
-        const scoreA = a.ranking?.final_score ?? -1;
-        const scoreB = b.ranking?.final_score ?? -1;
-        if (scoreA !== scoreB) return scoreB - scoreA;
+        const rankA = a.ranking?.rank_position ?? 999999;
+        const rankB = b.ranking?.rank_position ?? 999999;
+        if (rankA !== rankB) return rankA - rankB;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }),
     [apps]
@@ -169,8 +169,13 @@ const Applications = () => {
         status: decision,
         decision_note: decisionNote.trim() || undefined,
       });
-      setApps(prev => prev.map(a => a.id === appId ? updated : a));
-      toast({ title: `Application ${decision.toLowerCase()}` });
+      if (decision === 'REJECTED') {
+        setApps(prev => prev.filter(a => a.id !== appId));
+        toast({ title: 'Application rejected and removed' });
+      } else {
+        setApps(prev => prev.map(a => a.id === appId ? updated : a));
+        toast({ title: `Application ${decision.toLowerCase()}` });
+      }
     } catch (e) {
       toast({ title: 'Review failed', variant: 'destructive' });
     } finally {
