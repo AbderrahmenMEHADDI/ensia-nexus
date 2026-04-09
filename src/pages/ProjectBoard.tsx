@@ -333,7 +333,8 @@ const ProjectBoard = () => {
         motivation: applyMotivation.trim(),
         status: 'PENDING',
       });
-      setApplications(prev => [created, ...prev]);
+      const refreshedApplications = await apiRepository.getMyApplications();
+      setApplications(refreshedApplications.length > 0 ? refreshedApplications : [created]);
       setApplyOpen(false);
       toast({ title: 'Application submitted' });
     } catch (error) {
@@ -521,6 +522,9 @@ const ProjectBoard = () => {
                   {blockingApplication && (
                     <div className="mb-3">
                       <ApplicationStatusBadge status={blockingApplication.status} />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        Model score: {blockingApplication.ranking?.model_score?.toFixed?.(2) ?? '-'} / 100
+                      </p>
                     </div>
                   )}
                   <Button

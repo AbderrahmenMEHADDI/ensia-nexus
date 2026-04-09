@@ -3,6 +3,7 @@ import type {
   User, UserListResponse, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
+  ProjectApplicationRanking, ProjectApplicationReviewerRating, ProjectApplicationReviewerRatingInput,
   Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
   UserRole, GroupInvitation, ProjectReviewStatus,
 } from '@/types';
@@ -155,6 +156,12 @@ export const apiRepository = {
     api.post<ProjectApplication>('/project-applications/', data),
   reviewApplication: (id: number, data: Partial<ProjectApplication>) =>
     api.put<ProjectApplication>(`/project-applications/${id}`, data),
+  getApplicationRanking: (id: number) =>
+    api.get<ProjectApplicationRanking>(`/project-applications/${id}/ranking`),
+  getApplicationReviewerRatings: (id: number) =>
+    api.get<ProjectApplicationReviewerRating[]>(`/project-applications/${id}/reviewer-ratings`),
+  upsertMyApplicationRating: (id: number, data: ProjectApplicationReviewerRatingInput) =>
+    api.put<ProjectApplicationReviewerRating>(`/project-applications/${id}/my-rating`, data),
 
   // ── Announcements ────────────────────────────────────────────────────────
   getAnnouncements: () => api.get<Announcement[]>('/announcements/'),
