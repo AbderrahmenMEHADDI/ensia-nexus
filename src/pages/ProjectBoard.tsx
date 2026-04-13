@@ -132,10 +132,23 @@ const ProjectBoard = () => {
         setLabs(l);
         setAllUsers(u);
         setApplications(a);
-        if (p.length > 0 && !isStudent) {
-          const firstId = p[0].id;
-          setSelectedProjectId(firstId);
-          await loadProjectData(firstId);
+        
+        let initialProjectId: number | null = null;
+        if (p.length > 0) {
+          if (!isStudent) {
+            initialProjectId = p[0].id;
+          } else {
+            // Find first accepted project for student
+            const acceptedApp = a.find(app => app.status === 'ACCEPTED');
+            if (acceptedApp) {
+              initialProjectId = acceptedApp.project_id;
+            }
+          }
+        }
+
+        if (initialProjectId) {
+          setSelectedProjectId(initialProjectId);
+          await loadProjectData(initialProjectId);
         }
       } catch (e) {
         console.error('ProjectBoard load error:', e);
@@ -492,7 +505,12 @@ const ProjectBoard = () => {
     );
   }
 
-  if (isStudent) {
+  const acceptedProjectIds = applications
+    .filter(a => a.status === 'ACCEPTED')
+    .map(a => a.project_id);
+  const isMemberOfSelected = selectedProjectId ? acceptedProjectIds.includes(selectedProjectId) : false;
+
+  if (isStudent && !isMemberOfSelected) {
     return (
       <div className="container py-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -572,6 +590,9 @@ const ProjectBoard = () => {
       </div>
     );
   }
+
+  const isProjectMember = participants.some(p => p.user_id === user?.id);
+  const canParticipate = !isStudent || isProjectMember;
 
   if (!project) {
     return (
@@ -747,12 +768,14 @@ const ProjectBoard = () => {
                   })}
                 </div>
 
-                <button
-                  onClick={() => { setCreateStatus(col.status); setCreateOpen(true); }}
-                  className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border text-xs font-mono text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-                >
-                  <Plus className="h-3 w-3" /> Add task
-                </button>
+                {canParticipate && (
+                  <button
+                    onClick={() => { setCreateStatus(col.status); setCreateOpen(true); }}
+                    className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-border text-xs font-mono text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    <Plus className="h-3 w-3" /> Add task
+                  </button>
+                )}
               </div>
             );
           })}
