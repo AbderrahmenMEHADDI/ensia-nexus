@@ -10,6 +10,7 @@ import {
 } from '@/lib/projectAccess';
 import type {
   ProjectApplication,
+  ProjectApplicationReviewerRatingInput,
   User,
   Project,
   ResearchGroup,
@@ -31,6 +32,9 @@ const Applications = () => {
   const [selectedApp, setSelectedApp] = useState<number | null>(null);
   const [reviewingAppId, setReviewingAppId] = useState<number | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState<number | 'all'>('all');
+  const [ratingDrafts, setRatingDrafts] = useState<Record<number, ProjectApplicationReviewerRatingInput>>({});
+  const [savingRatingAppId, setSavingRatingAppId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [projectDecisionNote, setProjectDecisionNote] = useState('');
   const [reviewingProjectId, setReviewingProjectId] = useState<number | null>(null);
@@ -74,6 +78,98 @@ const Applications = () => {
     [groups, projects, user?.id]
   );
 
+  const sortedApps = useMemo(
+    () => {
+      const filtered = filterProjectId === 'all' 
+        ? apps 
+        : apps.filter(a => a.project_id === filterProjectId);
+
+      return [...filtered].sort((a, b) => {
+        const rankA = a.ranking?.rank_position ?? 999999;
+        const rankB = b.ranking?.rank_position ?? 999999;
+        if (rankA !== rankB) return rankA - rankB;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    },
+    [apps, filterProjectId]
+  );
+  
+  const uniqueProjectIdsInApps = useMemo(() => Array.from(new Set(apps.map(a => a.project_id))), [apps]);
+
+  const getDefaultRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
+    const myRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
+    if (myRating) {
+      return {
+        technical_fit: myRating.technical_fit,
+        research_fit: myRating.research_fit,
+        communication: myRating.communication,
+        reliability_potential: myRating.reliability_potential,
+        note: myRating.note || '',
+      };
+    }
+    return {
+      technical_fit: 3,
+      research_fit: 3,
+      communication: 3,
+      reliability_potential: 3,
+      note: '',
+    };
+  };
+
+  const getRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
+    return ratingDrafts[app.id] || getDefaultRatingDraft(app);
+  };
+
+  const updateRatingDraft = (
+    appId: number,
+    key: keyof ProjectApplicationReviewerRatingInput,
+    value: number | string
+  ) => {
+    setRatingDrafts(prev => {
+      const current = prev[appId] || {
+        technical_fit: 3,
+        research_fit: 3,
+        communication: 3,
+        reliability_potential: 3,
+        note: '',
+      };
+      return {
+        ...prev,
+        [appId]: {
+          ...current,
+          [key]: value,
+        },
+      };
+    });
+  };
+
+  const handleSaveMyRating = async (app: ProjectApplication) => {
+    setSavingRatingAppId(app.id);
+    try {
+      const draft = getRatingDraft(app);
+      const saved = await apiRepository.upsertMyApplicationRating(app.id, draft);
+      const refreshedRanking = await apiRepository.getApplicationRanking(app.id);
+
+      setApps(prev =>
+        prev.map(item => {
+          if (item.id !== app.id) return item;
+          const others = (item.reviewer_ratings || []).filter(r => r.reviewer_user_id !== saved.reviewer_user_id);
+          return {
+            ...item,
+            reviewer_ratings: [saved, ...others],
+            ranking: refreshedRanking,
+          };
+        })
+      );
+
+      toast({ title: 'Evaluation saved' });
+    } catch (e) {
+      toast({ title: 'Failed to save evaluation', variant: 'destructive' });
+    } finally {
+      setSavingRatingAppId(null);
+    }
+  };
+
   const handleReview = async (appId: number, decision: 'ACCEPTED' | 'REJECTED') => {
     setReviewingAppId(appId);
     try {
@@ -81,8 +177,13 @@ const Applications = () => {
         status: decision,
         decision_note: decisionNote.trim() || undefined,
       });
-      setApps(prev => prev.map(a => a.id === appId ? updated : a));
-      toast({ title: `Application ${decision.toLowerCase()}` });
+      if (decision === 'REJECTED') {
+        setApps(prev => prev.filter(a => a.id !== appId));
+        toast({ title: 'Application rejected and removed' });
+      } else {
+        setApps(prev => prev.map(a => a.id === appId ? updated : a));
+        toast({ title: `Application ${decision.toLowerCase()}` });
+      }
     } catch (e) {
       toast({ title: 'Review failed', variant: 'destructive' });
     } finally {
@@ -121,7 +222,7 @@ const Applications = () => {
   return (
     <div className="container py-10">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <span className="text-xs font-mono text-primary uppercase tracking-wider">Applications</span>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">
@@ -131,6 +232,26 @@ const Applications = () => {
               You can review applications only if you are a group leader or a project participant with LEAD/REVIEWER role.
             </p>
           </div>
+          {uniqueProjectIdsInApps.length > 0 && (
+            <div className="flex flex-col gap-1.5 md:w-64">
+              <label className="text-xs font-mono text-muted-foreground">Filter by Project</label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                value={filterProjectId}
+                onChange={e => setFilterProjectId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              >
+                <option value="all">All Projects</option>
+                {uniqueProjectIdsInApps.map(id => {
+                  const p = getProjectById(id);
+                  return (
+                    <option key={id} value={id}>
+                      {p ? p.title : `Project #${id}`}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
         </div>
 
         {pendingProjectsForReview.length > 0 && (
@@ -221,7 +342,7 @@ const Applications = () => {
 
         {/* Applications list */}
         <div className="space-y-4">
-          {apps.map((app, i) => {
+          {sortedApps.map((app, i) => {
             const student = getUserById(app.student_user_id);
             const project = getProjectById(app.project_id);
             const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
@@ -229,6 +350,12 @@ const Applications = () => {
             const canReviewThisApp = project
               ? canUserReviewProjectApplication(user?.id, project, groups, participants)
               : false;
+            const canRateAcceptedApp = project
+              ? participants.some(p => p.project_id === project.id && p.user_id === user?.id)
+                || groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id)
+              : false;
+            const draft = getRatingDraft(app);
+            const myExistingRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
 
             return (
               <motion.div
@@ -244,7 +371,6 @@ const Applications = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-medium text-foreground">{project?.title || 'Unknown Project'}</h3>
                         <ApplicationStatusBadge status={app.status} />
-                        {project && <ProjectStatusBadge status={getProjectStatus(project)} />}
                       </div>
                       <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                         <span>by {student?.full_name}</span>
@@ -261,10 +387,86 @@ const Applications = () => {
                     </div>
                   </div>
 
+                  <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 mb-3">
+                    <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+                      <span className="text-primary">Rank #{app.ranking?.rank_position ?? '-'}</span>
+                      <span className="text-foreground">Final: {app.ranking?.final_score != null ? app.ranking.final_score.toFixed(2) : '-'} / 100</span>
+                      <span className="text-muted-foreground">Model: {app.ranking?.model_score != null ? app.ranking.model_score.toFixed(2) : '-'}</span>
+                      <span className="text-muted-foreground">Member eval: {app.ranking?.reviewer_score != null ? app.ranking.reviewer_score.toFixed(2) : '-'}</span>
+                    </div>
+                    {app.ranking?.explanation && (
+                      <p className="text-xs text-muted-foreground mt-2">{app.ranking.explanation}</p>
+                    )}
+                  </div>
+
                   {app.decision_note && (
                     <div className="p-3 rounded-lg bg-muted/50 mb-3 text-sm">
                       <span className="text-xs font-mono text-muted-foreground">Decision note by {reviewer?.full_name}:</span>
                       <p className="text-foreground/80 mt-1">{app.decision_note}</p>
+                    </div>
+                  )}
+
+                  {canRateAcceptedApp && app.status === 'ACCEPTED' && (
+                    <div className="mb-3 p-3 rounded-lg border border-border bg-background/50">
+                      <div className="text-xs font-mono text-muted-foreground mb-2">
+                        Post-acceptance Member Evaluation {myExistingRating ? '(your evaluation is saved)' : ''}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                        <label className="text-xs text-muted-foreground">
+                          Technical Fit
+                          <select
+                            value={draft.technical_fit}
+                            onChange={e => updateRatingDraft(app.id, 'technical_fit', Number(e.target.value))}
+                            className="mt-1 w-full px-2 py-2 rounded-md border border-border bg-background text-sm"
+                          >
+                            {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          Research Fit
+                          <select
+                            value={draft.research_fit}
+                            onChange={e => updateRatingDraft(app.id, 'research_fit', Number(e.target.value))}
+                            className="mt-1 w-full px-2 py-2 rounded-md border border-border bg-background text-sm"
+                          >
+                            {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          Communication
+                          <select
+                            value={draft.communication}
+                            onChange={e => updateRatingDraft(app.id, 'communication', Number(e.target.value))}
+                            className="mt-1 w-full px-2 py-2 rounded-md border border-border bg-background text-sm"
+                          >
+                            {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </label>
+                        <label className="text-xs text-muted-foreground">
+                          Reliability Potential
+                          <select
+                            value={draft.reliability_potential}
+                            onChange={e => updateRatingDraft(app.id, 'reliability_potential', Number(e.target.value))}
+                            className="mt-1 w-full px-2 py-2 rounded-md border border-border bg-background text-sm"
+                          >
+                            {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                      <textarea
+                        value={draft.note || ''}
+                        onChange={e => updateRatingDraft(app.id, 'note', e.target.value)}
+                        rows={2}
+                        placeholder="Optional reviewer note..."
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none mb-2"
+                      />
+                      <button
+                        onClick={() => handleSaveMyRating(app)}
+                        disabled={savingRatingAppId === app.id}
+                        className="px-3 py-2 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 transition-colors disabled:opacity-60"
+                      >
+                        {savingRatingAppId === app.id ? 'Saving...' : 'Save Evaluation'}
+                      </button>
                     </div>
                   )}
 

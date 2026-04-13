@@ -180,6 +180,43 @@ export interface ProjectApplication {
   reviewed_at?: string;
   decision_note?: string;
   created_at: string;
+  ranking?: ProjectApplicationRanking;
+  reviewer_ratings?: ProjectApplicationReviewerRating[];
+}
+
+export interface ProjectApplicationRanking {
+  application_id: number;
+  model_score: number;
+  reviewer_score?: number | null;
+  final_score: number;
+  rank_position?: number | null;
+  model_version: string;
+  score_breakdown?: Record<string, number> | null;
+  explanation?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProjectApplicationReviewerRating {
+  id: number;
+  application_id: number;
+  reviewer_user_id: number;
+  technical_fit: number;
+  research_fit: number;
+  communication: number;
+  reliability_potential: number;
+  note?: string;
+  overall_score: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProjectApplicationReviewerRatingInput {
+  technical_fit: number;
+  research_fit: number;
+  communication: number;
+  reliability_potential: number;
+  note?: string;
 }
 
 export interface Task {

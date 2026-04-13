@@ -233,13 +233,16 @@ const CollaborationForms = () => {
                     No approved public projects are available for applications right now.
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground mt-2">
+                  Note: The AI ranking model evaluates your application using your Motivation, Profile Skills/Bio/Interests, CV records, and Previous Projects. Make sure your profile is fully updated!
+                </p>
               </div>
               <div className="space-y-2">
                 <Label>Motivation</Label>
                 <Textarea
                   value={motivation}
                   onChange={e => setMotivation(e.target.value)}
-                  placeholder="Describe why you want to join this project"
+                  placeholder="Describe why your skills and experience make you a good fit. (Include details relevant to the project)"
                   rows={4}
                 />
               </div>
