@@ -168,9 +168,12 @@ export const apiRepository = {
   // ── Announcements ────────────────────────────────────────────────────────
   getAnnouncements: () => api.get<Announcement[]>('/announcements/'),
   createAnnouncement: (data: Partial<Announcement>) => api.post<Announcement>('/announcements/', data),
+  deleteAnnouncement: (id: number) => api.delete<void>(`/announcements/${id}`),
   getInteractions: (id: number) => api.get<Announcement['interactions']>(`/announcements/${id}/interactions`),
   getComments: (id: number) => api.get<Comment[]>(`/announcements/${id}/comments`),
   createComment: (id: number, data: Partial<Comment>) => api.post<Comment>(`/announcements/${id}/comments`, data),
+  deleteComment: (announcementId: number, commentId: number) =>
+    api.delete<void>(`/announcements/${announcementId}/comments/${commentId}`),
   reactToAnnouncement: (id: number, data: Partial<Reaction>) => api.post<{status: string, reaction: string | null}>(`/announcements/${id}/react`, data),
 
   // ── Auth utility endpoints ───────────────────────────────────────────────
