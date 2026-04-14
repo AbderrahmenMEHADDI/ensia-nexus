@@ -53,6 +53,7 @@ const AdminPanel = () => {
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupLab, setNewGroupLab] = useState('');
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [selectedLeader, setSelectedLeader] = useState('');
   const [newAdminUser, setNewAdminUser] = useState(''); // this state will hold the user ID of the new admin we want to add to a lab
   const [editLabName, setEditLabName] = useState(''); // this state will hold the edited lab name when we are in the edit lab dialog
@@ -61,12 +62,22 @@ const AdminPanel = () => {
   const [newAdminFullName, setNewAdminFullName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('admin');
+  const [validatingGroupIds, setValidatingGroupIds] = useState<number[]>([]);
+  const [deletingGroupIds, setDeletingGroupIds] = useState<number[]>([]);
+  const [isAssigningMembers, setIsAssigningMembers] = useState(false);
+  const [isAssigningLeader, setIsAssigningLeader] = useState(false);
+  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+  const [removingAdminKeys, setRemovingAdminKeys] = useState<string[]>([]);
+  const [isSavingLab, setIsSavingLab] = useState(false);
+  const [isDeletingLab, setIsDeletingLab] = useState(false);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const [selectedAssignmentGroups, setSelectedAssignmentGroups] = useState<number[]>([]);
   const [selectedAssignmentTeachers, setSelectedAssignmentTeachers] = useState<number[]>([]);
   const [assignGroupSearch, setAssignGroupSearch] = useState('');
   const [assignTeacherSearch, setAssignTeacherSearch] = useState('');
 
   const isPlatformAdmin = isAdmin;
+  const adminRemovalKey = (labId: number, userId: number) => `${labId}-${userId}`;
   const sortLabsByNewest = (items: ResearchLab[]) => (
     [...items].sort((a, b) => {
       const aTime = new Date(a.created_at).getTime();
@@ -202,6 +213,7 @@ const AdminPanel = () => {
   };
 
   const handleBulkAssignMembers = async () => {
+    if (isAssigningMembers) return;
     if (selectedAssignmentGroups.length === 0 || selectedAssignmentTeachers.length === 0) {
       toast({ title: 'Select groups and teachers', variant: 'destructive' });
       return;
@@ -211,6 +223,7 @@ const AdminPanel = () => {
       toast({ title: 'Selected teachers are already leaders in these groups', variant: 'destructive' });
       return;
     }
+    setIsAssigningMembers(true);
     try {
       const assigned = await apiRepository.bulkAssignGroupMembers({
         group_ids: selectedAssignmentGroups,
@@ -228,6 +241,8 @@ const AdminPanel = () => {
     } catch (e) {
       console.error('Bulk assign failed', e);
       toast({ title: 'Failed to assign teachers', variant: 'destructive' });
+    } finally {
+      setIsAssigningMembers(false);
     }
   };
     const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
@@ -237,12 +252,16 @@ const AdminPanel = () => {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
     }
+    if (validatingGroupIds.includes(groupId) || deletingGroupIds.includes(groupId)) return;
+    setValidatingGroupIds(prev => [...prev, groupId]);
     try {
       const updated = await apiRepository.validateGroup(groupId);
       setGroups(prev => prev.map(g => g.id === groupId ? updated : g));
       toast({ title: 'Group validated' });
     } catch {
       toast({ title: 'Validation failed', variant: 'destructive' });
+    } finally {
+      setValidatingGroupIds(prev => prev.filter(id => id !== groupId));
     }
   };
 
@@ -252,12 +271,16 @@ const AdminPanel = () => {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
     }
+    if (deletingGroupIds.includes(groupId) || validatingGroupIds.includes(groupId)) return;
+    setDeletingGroupIds(prev => [...prev, groupId]);
     try {
       await apiRepository.deleteGroup(groupId);
       setGroups(prev => prev.filter(g => g.id !== groupId));
       toast({ title: 'Group deleted' });
     } catch {
       toast({ title: 'Delete failed', variant: 'destructive' });
+    } finally {
+      setDeletingGroupIds(prev => prev.filter(id => id !== groupId));
     }
   };
 
@@ -286,12 +309,13 @@ const AdminPanel = () => {
   };
 
   const handleAddGroup = async () => {
-    if (!newGroupName.trim() || !newGroupLab) return;
+    if (!newGroupName.trim() || !newGroupLab || isCreatingGroup) return;
     const labId = parseInt(newGroupLab);
     if (!canManageLab(labId)) {
       toast({ title: 'Not authorized to create group for this lab', variant: 'destructive' });
       return;
     }
+    setIsCreatingGroup(true);
     const isCreatorLabAdmin = canManageLab(labId);
     try {
       const created = await apiRepository.createGroup({
@@ -306,6 +330,8 @@ const AdminPanel = () => {
       toast({ title: 'Group created' });
     } catch {
       toast({ title: 'Failed to create group', variant: 'destructive' });
+    } finally {
+      setIsCreatingGroup(false);
     }
     setNewGroupName(''); setNewGroupDesc(''); setNewGroupLab('');
     setAddGroupOpen(false);
@@ -313,10 +339,12 @@ const AdminPanel = () => {
 
   const handleAssignLeader = async () => {
     if (!selectedGroupForLeader || !selectedLeader) return;
+    if (isAssigningLeader) return;
     if (!canManageLab(selectedGroupForLeader.lab_id)) {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
     }
+    setIsAssigningLeader(true);
     try {
       const updated = await apiRepository.updateGroup(selectedGroupForLeader.id, {
         leader_user_id: parseInt(selectedLeader),
@@ -325,6 +353,8 @@ const AdminPanel = () => {
       toast({ title: 'Leader assigned' });
     } catch {
       toast({ title: 'Assignment failed', variant: 'destructive' });
+    } finally {
+      setIsAssigningLeader(false);
     }
     setSelectedLeader('');
     setAssignLeaderOpen(false);
@@ -343,6 +373,7 @@ const AdminPanel = () => {
 
   const handleAddAdmin = async () => { // to handle adding a new admin to the lab, we check if the selected lab and new admin user ID are valid, then we call the API to add the admin, and if successful we update our local state to reflect the change and show a success toast. if there's an error we show an error toast.
     if (!selectedLabForAdmins || !newAdminUser) return;
+    if (isAddingAdmin) return;
     if (!canManageLab(selectedLabForAdmins.id)) {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
@@ -352,6 +383,7 @@ const AdminPanel = () => {
       toast({ title: 'Already an admin', variant: 'destructive' });
       return;
     }
+    setIsAddingAdmin(true);
     try {
       const created = await apiRepository.addLabAdmin(selectedLabForAdmins.id, userId);
       setLabAdmins(prev => [...prev, created]);
@@ -359,10 +391,14 @@ const AdminPanel = () => {
       setNewAdminUser('');
     } catch {
       toast({ title: 'Failed to add admin', variant: 'destructive' });
+    } finally {
+      setIsAddingAdmin(false);
     }
   };
 
   const handleRemoveAdmin = async (labId: number, userId: number) => { 
+    const key = adminRemovalKey(labId, userId);
+    if (removingAdminKeys.includes(key)) return;
     if (!canManageLab(labId)) {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
@@ -372,12 +408,15 @@ const AdminPanel = () => {
       toast({ title: 'Cannot remove last admin', variant: 'destructive' });
       return;
     }
+    setRemovingAdminKeys(prev => [...prev, key]);
     try {
       await apiRepository.removeLabAdmin(labId, userId);
       setLabAdmins(prev => prev.filter(a => !(a.lab_id === labId && a.user_id === userId)));
       toast({ title: 'Admin removed' });
     } catch {
       toast({ title: 'Failed to remove admin', variant: 'destructive' });
+    } finally {
+      setRemovingAdminKeys(prev => prev.filter(k => k !== key));
     }
   };
 
@@ -398,10 +437,12 @@ const AdminPanel = () => {
 
   const handleSaveLab = async () => {
     if (!selectedLabForEdit) return;
+    if (isSavingLab) return;
     if (!isPlatformAdmin) {
       toast({ title: 'Only platform admins can edit labs', variant: 'destructive' });
       return;
     }
+    setIsSavingLab(true);
     try {
       const updated = await apiRepository.updateLab(selectedLabForEdit.id, {
         name: editLabName,
@@ -412,16 +453,20 @@ const AdminPanel = () => {
       toast({ title: 'Lab updated' });
     } catch {
       toast({ title: 'Failed to update lab', variant: 'destructive' });
+    } finally {
+      setIsSavingLab(false);
     }
     setEditLabOpen(false);
   };
 
   const handleDeleteLab = async () => {
     if (!selectedLabForEdit) return;
+    if (isDeletingLab) return;
     if (!isPlatformAdmin) {
       toast({ title: 'Only platform admins can delete labs', variant: 'destructive' });
       return;
     }
+    setIsDeletingLab(true);
     try {
       await apiRepository.deleteLab(selectedLabForEdit.id);
       setLabs(prev => prev.filter(l => l.id !== selectedLabForEdit.id));
@@ -430,15 +475,19 @@ const AdminPanel = () => {
       toast({ title: 'Lab deleted' });
     } catch {
       toast({ title: 'Failed to delete lab', variant: 'destructive' });
+    } finally {
+      setIsDeletingLab(false);
     }
   };
 
   const handleCreateAdmin = async () => {
+    if (isCreatingAdmin) return;
     if (!isPlatformAdmin) {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
     }
     if (!newAdminFullName.trim() || !newAdminEmail.trim()) return;
+    setIsCreatingAdmin(true);
     try {
       const created = await apiRepository.createUser({
         full_name: newAdminFullName.trim(),
@@ -456,6 +505,8 @@ const AdminPanel = () => {
     } catch (e) {
       console.error('Failed to create admin', e);
       toast({ title: 'Failed to create admin', variant: 'destructive' });
+    } finally {
+      setIsCreatingAdmin(false);
     }
   };
 
@@ -579,11 +630,19 @@ const AdminPanel = () => {
                               <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors">
                                 <UserCog className="h-3.5 w-3.5" /> Assign Leader
                               </button>
-                              <button onClick={() => handleValidate(group.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium hover:bg-primary/25 transition-colors">
-                                <CheckCircle2 className="h-3.5 w-3.5" /> Validate
+                              <button
+                                onClick={() => handleValidate(group.id)}
+                                disabled={validatingGroupIds.includes(group.id) || deletingGroupIds.includes(group.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium hover:bg-primary/25 transition-colors disabled:opacity-60"
+                              >
+                                {validatingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} {validatingGroupIds.includes(group.id) ? 'Validating...' : 'Validate'}
                               </button>
-                              <button onClick={() => handleDeleteGroup(group.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/15 transition-colors">
-                                <Trash2 className="h-3.5 w-3.5" /> Delete
+                              <button
+                                onClick={() => handleDeleteGroup(group.id)}
+                                disabled={deletingGroupIds.includes(group.id) || validatingGroupIds.includes(group.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/15 transition-colors disabled:opacity-60"
+                              >
+                                {deletingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {deletingGroupIds.includes(group.id) ? 'Deleting...' : 'Delete'}
                               </button>
                             </div>
                           )}
@@ -638,8 +697,12 @@ const AdminPanel = () => {
                           <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                             <UserCog className="h-3.5 w-3.5" /> Change Leader
                           </button>
-                          <button onClick={() => handleDeleteGroup(group.id)} className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1">
-                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          <button
+                            onClick={() => handleDeleteGroup(group.id)}
+                            disabled={deletingGroupIds.includes(group.id) || validatingGroupIds.includes(group.id)}
+                            className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1 disabled:opacity-60"
+                          >
+                            {deletingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {deletingGroupIds.includes(group.id) ? 'Deleting...' : 'Delete'}
                           </button>
                         </div>
                       )}
@@ -764,7 +827,7 @@ const AdminPanel = () => {
         </Dialog>
 
         {/* ASSIGN GROUP MEMBERS DIALOG */}
-        <Dialog open={assignMembersOpen} onOpenChange={setAssignMembersOpen}>
+        <Dialog open={assignMembersOpen} onOpenChange={(open) => { if (!isAssigningMembers) setAssignMembersOpen(open); }}>
           <DialogContent className="sm:max-w-[860px]">
             <DialogHeader>
               <DialogTitle>Assign Teachers to Groups</DialogTitle>
@@ -846,19 +909,26 @@ const AdminPanel = () => {
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+              <DialogClose asChild><Button variant="outline" disabled={isAssigningMembers}>Cancel</Button></DialogClose>
               <Button
                 onClick={handleBulkAssignMembers}
-                disabled={!selectedAssignmentGroups.length || !selectedAssignmentTeachers.length}
+                disabled={!selectedAssignmentGroups.length || !selectedAssignmentTeachers.length || isAssigningMembers}
               >
-                Assign Selected
+                {isAssigningMembers ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  'Assign Selected'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* ADD GROUP DIALOG */}
-        <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>
+        <Dialog open={addGroupOpen} onOpenChange={(open) => { if (!isCreatingGroup) setAddGroupOpen(open); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Research Group</DialogTitle>
@@ -886,14 +956,23 @@ const AdminPanel = () => {
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleAddGroup} disabled={!newGroupName.trim() || !newGroupLab}>Create Group</Button>
+              <DialogClose asChild><Button variant="outline" disabled={isCreatingGroup}>Cancel</Button></DialogClose>
+              <Button onClick={handleAddGroup} disabled={!newGroupName.trim() || !newGroupLab || isCreatingGroup}>
+                {isCreatingGroup ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Group'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* ASSIGN LEADER DIALOG */}
-        <Dialog open={assignLeaderOpen} onOpenChange={setAssignLeaderOpen}>
+        <Dialog open={assignLeaderOpen} onOpenChange={(open) => { if (!isAssigningLeader) setAssignLeaderOpen(open); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Assign Group Leader</DialogTitle>
@@ -917,8 +996,17 @@ const AdminPanel = () => {
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleAssignLeader} disabled={!selectedLeader}>Assign Leader</Button>
+              <DialogClose asChild><Button variant="outline" disabled={isAssigningLeader}>Cancel</Button></DialogClose>
+              <Button onClick={handleAssignLeader} disabled={!selectedLeader || isAssigningLeader}>
+                {isAssigningLeader ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Assigning...
+                  </>
+                ) : (
+                  'Assign Leader'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -948,11 +1036,15 @@ const AdminPanel = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          disabled={isOnly}
+                          disabled={isOnly || removingAdminKeys.includes(adminRemovalKey(selectedLabForAdmins.id, admin.user_id))}
                           onClick={() => handleRemoveAdmin(selectedLabForAdmins.id, admin.user_id)}
                           className="h-6 w-6"
                         >
-                          <XCircle className="h-3.5 w-3.5" />
+                          {removingAdminKeys.includes(adminRemovalKey(selectedLabForAdmins.id, admin.user_id)) ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <XCircle className="h-3.5 w-3.5" />
+                          )}
                         </Button>
                       </Badge>
                     );
@@ -976,7 +1068,16 @@ const AdminPanel = () => {
                         ))}
                     </SelectContent>
                   </Select>
-                  <Button onClick={handleAddAdmin} disabled={!newAdminUser || !selectedLabForAdmins}>Add</Button>
+                  <Button onClick={handleAddAdmin} disabled={!newAdminUser || !selectedLabForAdmins || isAddingAdmin}>
+                    {isAddingAdmin ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add'
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1030,14 +1131,23 @@ const AdminPanel = () => {
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleSaveLab} disabled={!editLabName.trim()}>Save</Button>
+              <DialogClose asChild><Button variant="outline" disabled={isSavingLab || isDeletingLab}>Cancel</Button></DialogClose>
+              <Button onClick={handleSaveLab} disabled={!editLabName.trim() || isSavingLab || isDeletingLab}>
+                {isSavingLab ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* CREATE ADMIN DIALOG */}
-        <Dialog open={createAdminOpen} onOpenChange={setCreateAdminOpen}>
+        <Dialog open={createAdminOpen} onOpenChange={(open) => { if (!isCreatingAdmin) setCreateAdminOpen(open); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create Admin</DialogTitle>
@@ -1063,8 +1173,17 @@ const AdminPanel = () => {
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleCreateAdmin} disabled={!newAdminFullName.trim() || !newAdminEmail.trim()}>Create</Button>
+              <DialogClose asChild><Button variant="outline" disabled={isCreatingAdmin}>Cancel</Button></DialogClose>
+              <Button onClick={handleCreateAdmin} disabled={!newAdminFullName.trim() || !newAdminEmail.trim() || isCreatingAdmin}>
+                {isCreatingAdmin ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1078,8 +1197,17 @@ const AdminPanel = () => {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDeleteLab}>Delete lab</Button>
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeletingLab}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDeleteLab} disabled={isDeletingLab}>
+                {isDeletingLab ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete lab'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
