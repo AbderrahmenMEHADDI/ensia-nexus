@@ -71,10 +71,6 @@ const ProjectBoard = () => {
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState<TaskPriority>('MEDIUM');
   const [createLoading, setCreateLoading] = useState(false);
-  const [newAssignee, setNewAssignee] = useState<string>('');
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [editAssignee, setEditAssignee] = useState<string>('');
-  const [editLoading, setEditLoading] = useState(false);
   const [newAssigneeUserId, setNewAssigneeUserId] = useState('none');
   const [editOpen, setEditOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -83,6 +79,7 @@ const ProjectBoard = () => {
   const [editStatus, setEditStatus] = useState<TaskStatus>('TODO');
   const [editPriority, setEditPriority] = useState<TaskPriority>('MEDIUM');
   const [editAssigneeUserId, setEditAssigneeUserId] = useState('none');
+  const [editLoading, setEditLoading] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyProjectId, setApplyProjectId] = useState<number | null>(null);
   const [applyMotivation, setApplyMotivation] = useState('');
@@ -258,12 +255,12 @@ const ProjectBoard = () => {
   };
 
   const handleOpenEdit = (task: Task) => {
-    setEditingTask(task);
+    setEditingTaskId(task.id);
     setEditTitle(task.title);
     setEditDesc(task.description || '');
     setEditStatus(task.status);
     setEditPriority(task.priority);
-    setEditAssignee(task.assignee_user_id ? String(task.assignee_user_id) : '');
+    setEditAssigneeUserId(task.assignee_user_id ? String(task.assignee_user_id) : 'none');
     setEditOpen(true);
   };
 
@@ -276,10 +273,7 @@ const ProjectBoard = () => {
       description: newDesc.trim(),
       status: createStatus,
       priority: newPriority,
-      assignee_user_id: newAssignee ? Number(newAssignee) : null,
-      ...(newAssigneeUserId !== 'none'
-        ? { assignee_user_id: Number(newAssigneeUserId) }
-        : {}),
+      assignee_user_id: newAssigneeUserId !== 'none' ? Number(newAssigneeUserId) : null,
       created_by: user.id,
     };
     try {
@@ -289,23 +283,13 @@ const ProjectBoard = () => {
       setNewTitle('');
       setNewDesc('');
       setNewPriority('MEDIUM');
-      setNewAssignee('');
+      setNewAssigneeUserId('none');
       setCreateOpen(false);
     } catch {
       toast({ title: 'Failed to create task', variant: 'destructive' });
+    } finally {
+      setCreateLoading(false);
     }
-    setNewTitle(''); setNewDesc(''); setNewPriority('MEDIUM'); setNewAssigneeUserId('none');
-    setCreateOpen(false);
-  };
-
-  const openEditTask = (task: Task) => {
-    setEditingTaskId(task.id);
-    setEditTitle(task.title || '');
-    setEditDesc(task.description || '');
-    setEditStatus(task.status);
-    setEditPriority(task.priority);
-    setEditAssigneeUserId(task.assignee_user_id ? String(task.assignee_user_id) : 'none');
-    setEditOpen(true);
   };
 
   const handleUpdateTask = async () => {
@@ -854,10 +838,10 @@ const ProjectBoard = () => {
             </div>
             <div className="space-y-2">
               <Label>Assignee</Label>
-              <Select value={newAssignee} onValueChange={setNewAssignee}>
+              <Select value={newAssigneeUserId} onValueChange={setNewAssigneeUserId}>
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">Unassigned</SelectItem>
                   {participants.map(p => {
                     const u = getUserById(p.user_id);
                     return u ? <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem> : null;
@@ -876,7 +860,6 @@ const ProjectBoard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Task Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -917,20 +900,7 @@ const ProjectBoard = () => {
             </div>
             <div className="space-y-2">
               <Label>Assignee</Label>
-              <Select value={editAssignee} onValueChange={setEditAssignee}>
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {participants.map(p => {
-                    const u = getUserById(p.user_id);
-                    return u ? <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem> : null;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Assignee</Label>
-              <Select value={newAssigneeUserId} onValueChange={setNewAssigneeUserId}>
+              <Select value={editAssigneeUserId} onValueChange={setEditAssigneeUserId}>
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Unassigned</SelectItem>
@@ -949,67 +919,6 @@ const ProjectBoard = () => {
               {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Changes
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Task Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-            <DialogDescription>Update task details.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="edit-task-title">Title</Label>
-              <Input id="edit-task-title" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-task-desc">Description</Label>
-              <Textarea id="edit-task-desc" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={editStatus} onValueChange={v => setEditStatus(v as TaskStatus)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {statusColumns.map(s => <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={editPriority} onValueChange={v => setEditPriority(v as TaskPriority)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">Low</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HIGH">High</SelectItem>
-                    <SelectItem value="URGENT">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Assignee</Label>
-              <Select value={editAssigneeUserId} onValueChange={setEditAssigneeUserId}>
-                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {participants.map(p => {
-                    const pu = getUserById(p.user_id);
-                    if (!pu) return null;
-                    return <SelectItem key={pu.id} value={String(pu.id)}>{pu.full_name}</SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button onClick={handleUpdateTask} disabled={!editTitle.trim()}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
