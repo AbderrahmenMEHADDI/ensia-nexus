@@ -49,6 +49,7 @@ const AdminPanel = () => {
   const [newLabName, setNewLabName] = useState('');
   const [newLabDesc, setNewLabDesc] = useState('');
   const [newLabHead, setNewLabHead] = useState('');
+  const [isCreatingLab, setIsCreatingLab] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupLab, setNewGroupLab] = useState('');
@@ -265,7 +266,8 @@ const AdminPanel = () => {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
     }
-    if (!newLabName.trim() || !newLabHead) return;
+    if (!newLabName.trim() || !newLabHead || isCreatingLab) return;
+    setIsCreatingLab(true);
     try {
       const created = await apiRepository.createLab({
         name: newLabName,
@@ -276,6 +278,8 @@ const AdminPanel = () => {
       toast({ title: 'Lab created' });
     } catch {
       toast({ title: 'Failed to create lab', variant: 'destructive' });
+    } finally {
+      setIsCreatingLab(false);
     }
     setNewLabName(''); setNewLabDesc(''); setNewLabHead('');
     setAddLabOpen(false);
@@ -714,7 +718,7 @@ const AdminPanel = () => {
         </Tabs>
 
         {/* ADD LAB DIALOG */}
-        <Dialog open={addLabOpen} onOpenChange={setAddLabOpen}>
+        <Dialog open={addLabOpen} onOpenChange={(open) => { if (!isCreatingLab) setAddLabOpen(open); }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Research Lab</DialogTitle>
@@ -744,8 +748,17 @@ const AdminPanel = () => {
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-              <Button onClick={handleAddLab} disabled={!newLabName.trim() || !newLabHead}>Create Lab</Button>
+              <DialogClose asChild><Button variant="outline" disabled={isCreatingLab}>Cancel</Button></DialogClose>
+              <Button onClick={handleAddLab} disabled={!newLabName.trim() || !newLabHead || isCreatingLab}>
+                {isCreatingLab ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Lab'
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
