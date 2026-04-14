@@ -17,6 +17,7 @@ import {
   Megaphone,
   FileUser,
   Users,
+  FlaskConical,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -34,6 +35,7 @@ import { Button } from '@/components/ui/button';
 const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRole[] }[] = [
   { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
   { path: '/projects', label: 'Project Board', icon: Kanban },
+  { path: '/my-labs', label: 'My Labs', icon: FlaskConical, allowedRoles: ['TEACHER', 'ADMIN'] },
   { path: '/groups', label: 'Groups', icon: Users, allowedRoles: ['TEACHER'] },
   { path: '/student-cv', label: 'Student CV', icon: FileUser, allowedRoles: ['STUDENT'] },
   { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
@@ -47,18 +49,26 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { user, signOut, hasRole } = useAuth();
   const [hasLeadershipGroups, setHasLeadershipGroups] = useState(false);
+  const [isLabAdminUser, setIsLabAdminUser] = useState(false);
 
   useEffect(() => {
     const load = async () => {
-      if (!user || user.role !== 'TEACHER') {
+      if (!user) {
         setHasLeadershipGroups(false);
+        setIsLabAdminUser(false);
         return;
       }
+
       try {
-        const groups = await apiRepository.getGroups();
-        setHasLeadershipGroups(groups.some(g => g.leader_user_id === user.id));
+        const [groups, labAdmins] = await Promise.all([
+          apiRepository.getGroups(),
+          apiRepository.getLabAdmins(),
+        ]);
+        setHasLeadershipGroups(user.role === 'TEACHER' ? groups.some(g => g.leader_user_id === user.id) : false);
+        setIsLabAdminUser(labAdmins.some(a => a.user_id === user.id));
       } catch {
         setHasLeadershipGroups(false);
+        setIsLabAdminUser(false);
       }
     };
     load();
@@ -87,6 +97,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => {
                 if (item.allowedRoles && !hasRole(item.allowedRoles)) return null;
+                if (item.path === '/my-labs' && !isLabAdminUser) return null;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild>

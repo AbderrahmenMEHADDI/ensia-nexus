@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
@@ -14,7 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge'; // this is for displaying lab admins in the lab cards
 import { Checkbox } from '@/components/ui/checkbox';
 
-const AdminPanel = () => {
+type AdminPanelProps = {
+  myLabsOnly?: boolean;
+};
+
+const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   const { user, isAdmin } = useAuth();
   const { toast } = useToast();
   const [labs, setLabs] = useState<ResearchLab[]>([]);
@@ -161,8 +166,6 @@ const AdminPanel = () => {
   }, [userPage, roleFilter, userSearch]);
 
   const getUserById = (id: number) => userLookup[id];
-  const pendingGroups = groups.filter(g => !g.is_validated);
-  const validatedGroups = groups.filter(g => g.is_validated);
   const eligibleTeachers = teachers.filter(t => t.grade === 'MCA' || t.grade === 'PROFESSOR');
   const headTeacherUsers = eligibleTeachers
     .map(t => ({ teacher: t, user: userLookup[t.user_id] }))
@@ -172,6 +175,10 @@ const AdminPanel = () => {
     .map(t => userLookup[t.user_id])
     .filter((u): u is User => !!u && u.role === 'TEACHER');
   const manageableGroups = groups.filter(g => canManageLab(g.lab_id));
+  const visibleLabs = myLabsOnly ? manageableLabs : labs;
+  const visibleGroups = myLabsOnly ? manageableGroups : groups;
+  const pendingGroups = visibleGroups.filter(g => !g.is_validated);
+  const validatedGroups = visibleGroups.filter(g => g.is_validated);
   const filteredAssignmentGroups = manageableGroups.filter(g =>
     g.name.toLowerCase().includes(assignGroupSearch.trim().toLowerCase())
   );
@@ -526,29 +533,29 @@ const AdminPanel = () => {
             <Shield className="h-5 w-5 text-destructive" />
           </div>
           <div>
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Administration</span>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Admin Panel</h1>
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">{myLabsOnly ? 'Lab Administration' : 'Administration'}</span>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">{myLabsOnly ? 'My Labs Panel' : 'Admin Panel'}</h1>
           </div>
         </div>
 
-        <Tabs defaultValue="groups" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-xl">
+        <Tabs defaultValue={myLabsOnly ? 'labs' : 'groups'} className="space-y-6">
+          <TabsList className={`grid w-full ${myLabsOnly ? 'grid-cols-2 max-w-md' : 'grid-cols-4 max-w-xl'}`}>
             <TabsTrigger value="labs"><FlaskConical className="h-4 w-4 mr-1.5" />Labs</TabsTrigger>
             <TabsTrigger value="groups"><Building2 className="h-4 w-4 mr-1.5" />Groups</TabsTrigger>
-            <TabsTrigger value="requests"><UserPlus className="h-4 w-4 mr-1.5" />Requests</TabsTrigger>
-            <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />Users</TabsTrigger>
+            {!myLabsOnly && <TabsTrigger value="requests"><UserPlus className="h-4 w-4 mr-1.5" />Requests</TabsTrigger>}
+            {!myLabsOnly && <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />Users</TabsTrigger>}
           </TabsList>
 
           {/* LABS TAB */}
           <TabsContent value="labs" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">Research Labs ({labs.length})</h2>
+              <h2 className="text-xl font-semibold text-foreground">{myLabsOnly ? 'My Labs' : 'Research Labs'} ({visibleLabs.length})</h2>
               {isPlatformAdmin && (
                 <Button onClick={() => setAddLabOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Lab</Button>
               )}
             </div>
             <div className="space-y-3">
-              {labs.map(lab => {
+              {visibleLabs.map(lab => {
                 const head = getUserById(lab.head_teacher_id);
                 const labGroups = groups.filter(g => g.lab_id === lab.id);
                 const admins = labAdminsFor(lab.id);
@@ -561,6 +568,11 @@ const AdminPanel = () => {
                       </div>
                       {(canManageLab(lab.id) || isPlatformAdmin) && (
                         <div className="flex items-center gap-2">
+                          {myLabsOnly && (
+                            <Link to={`/my-labs/labs/${lab.id}`}>
+                              <Button variant="outline" size="sm">Details</Button>
+                            </Link>
+                          )}
                           {isPlatformAdmin && <Button variant="outline" size="sm" onClick={() => handleOpenEditLab(lab)}>Edit</Button>}
                           <Button variant="secondary" size="sm" onClick={() => handleOpenManageAdmins(lab)}>Admins</Button>
                         </div>
@@ -588,13 +600,18 @@ const AdminPanel = () => {
                   </div>
                 );
               })}
+              {visibleLabs.length === 0 && (
+                <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 text-center">
+                  <p className="text-sm text-muted-foreground">You are not assigned as admin to any lab yet.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
           {/* GROUPS TAB */}
           <TabsContent value="groups" className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">Research Groups ({groups.length})</h2>
+              <h2 className="text-xl font-semibold text-foreground">{myLabsOnly ? 'My Lab Groups' : 'Research Groups'} ({visibleGroups.length})</h2>
               <div className="flex items-center gap-2">
                 {manageableGroups.length > 0 && (
                   <Button variant="secondary" onClick={() => setAssignMembersOpen(true)} size="sm">
@@ -694,6 +711,13 @@ const AdminPanel = () => {
                       </div>
                       {canManageLab(group.lab_id) && (
                         <div className="flex items-center gap-2">
+                          {myLabsOnly && (
+                            <Link to={`/my-labs/groups/${group.id}`}>
+                              <button className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                                Details
+                              </button>
+                            </Link>
+                          )}
                           <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                             <UserCog className="h-3.5 w-3.5" /> Change Leader
                           </button>
@@ -714,7 +738,7 @@ const AdminPanel = () => {
           </TabsContent>
 
           {/* REQUESTS TAB */}
-          <TabsContent value="requests" className="space-y-4">
+          {!myLabsOnly && <TabsContent value="requests" className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">Member Join Requests</h2>
             <div className="p-6 rounded-xl border border-border bg-card flex items-start gap-3">
               <Info className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
@@ -722,10 +746,10 @@ const AdminPanel = () => {
                 Group join requests management is not yet available via the API. This feature is coming soon.
               </p>
             </div>
-          </TabsContent>
+          </TabsContent>}
 
           {/* USERS TAB */}
-          <TabsContent value="users" className="space-y-4">
+          {!myLabsOnly && <TabsContent value="users" className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">Users ({userTotal})</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -777,7 +801,7 @@ const AdminPanel = () => {
                 <Button variant="outline" size="sm" onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))} disabled={userPage >= totalUserPages || usersLoading}>Next</Button>
               </div>
             </div>
-          </TabsContent>
+          </TabsContent>}
         </Tabs>
 
         {/* ADD LAB DIALOG */}

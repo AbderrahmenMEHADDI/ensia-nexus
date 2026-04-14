@@ -148,7 +148,7 @@ const Groups = () => {
                         {isExpanded ? 'Hide members' : 'Show members'}
                         <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                       </Button>
-                      <Link to={`/groups/${group.id}`} className="text-xs text-primary hover:underline">Open</Link>
+                      <Link to={`/my-labs/groups/${group.id}`} className="text-xs text-primary hover:underline">Open</Link>
                     </div>
                   </div>
                   {isExpanded && (
@@ -193,7 +193,7 @@ const Groups = () => {
                           <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{memberCountByGroup[group.id] || 0} members</span>
                         </div>
                       </div>
-                      <Link to={`/groups/${group.id}`} className="text-xs text-primary hover:underline">View group</Link>
+                      <Link to={`/my-labs/groups/${group.id}`} className="text-xs text-primary hover:underline">View group</Link>
                     </div>
                     <div className="flex items-center gap-2 mt-4">
                       <Button size="sm" onClick={() => respond(inv, 'ACCEPTED')} disabled={actingId === inv.id}>
