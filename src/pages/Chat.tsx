@@ -579,6 +579,7 @@ const Chat = () => {
                                         onClick={() => handleDeleteMessage(msg.id)}
                                         disabled={isDeleting}
                                         className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                                        aria-label="Delete message"
                                         title="Delete message"
                                       >
                                         {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
