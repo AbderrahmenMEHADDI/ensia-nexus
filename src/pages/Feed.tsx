@@ -263,6 +263,7 @@ const PostCard = ({
                                 disabled={isDeletingComment}
                                 className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
                                 title="Delete comment"
+                                aria-label="Delete comment"
                               >
                                 {isDeletingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                               </button>
