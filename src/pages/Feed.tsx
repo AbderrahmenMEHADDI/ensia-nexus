@@ -440,8 +440,13 @@ const Feed = () => {
 
   const handleDeleteComment = async (postId: number, commentId: number) => {
     await apiRepository.deleteComment(postId, commentId);
-    const newItem = await apiRepository.getInteractions(postId);
-    setAnnouncements(prev => prev.map(a => a.id === postId ? { ...a, interactions: newItem } : a));
+
+    try {
+      const newItem = await apiRepository.getInteractions(postId);
+      setAnnouncements(prev => prev.map(a => a.id === postId ? { ...a, interactions: newItem } : a));
+    } catch {
+      // The delete already succeeded; treat the interactions refresh as best-effort.
+    }
   };
 
   // Stats
