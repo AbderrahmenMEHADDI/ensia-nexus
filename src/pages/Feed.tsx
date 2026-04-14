@@ -45,6 +45,7 @@ const PostCard = ({
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
   const [newComment, setNewComment] = useState('');
   const { toast } = useToast();
 
@@ -69,17 +70,25 @@ const PostCard = ({
   };
 
   const submitComment = async () => {
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim() || !user || postingComment) return;
+    setPostingComment(true);
     try {
       await onAddComment(post.id, newComment.trim());
       // Refresh comments if shown
       if (showComments) {
-        const res = await apiRepository.getComments(post.id);
-        setComments(res);
+        try {
+          setLoadingComments(true);
+          const res = await apiRepository.getComments(post.id);
+          setComments(res);
+        } finally {
+          setLoadingComments(false);
+        }
       }
       setNewComment('');
     } catch {
       toast({ title: 'Failed to post comment', variant: 'destructive' });
+    } finally {
+      setPostingComment(false);
     }
   };
 
@@ -163,8 +172,8 @@ const PostCard = ({
           onClick={toggleComments}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
         >
-          <MessageCircle className="h-4 w-4" />
-          Comment
+          {loadingComments ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+          {loadingComments ? 'Loading...' : 'Comment'}
         </button>
         <button
           className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
@@ -220,12 +229,13 @@ const PostCard = ({
                     <input
                       value={newComment}
                       onChange={e => setNewComment(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && submitComment()}
+                      onKeyDown={e => e.key === 'Enter' && !postingComment && submitComment()}
                       placeholder="Write a comment..."
+                      disabled={postingComment}
                       className="flex-1 text-xs bg-accent/40 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
                     />
-                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim()}>
-                      <Send className="h-3.5 w-3.5" />
+                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim() || postingComment}>
+                      {postingComment ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
                 </div>
