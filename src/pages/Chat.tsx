@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Hash, Send, Users, FolderOpen, Loader2, Plus, Beaker, Layers, ChevronRight } from 'lucide-react';
+import { Hash, Send, Users, FolderOpen, Loader2, Plus, Beaker, Layers, ChevronRight, Trash2 } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
@@ -31,6 +31,7 @@ const Chat = () => {
   const [labAdmins, setLabAdmins] = useState<ResearchLabAdmin[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [deletingMessageIds, setDeletingMessageIds] = useState<number[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -123,6 +124,10 @@ const Chat = () => {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      if (data?.type === 'message_deleted' && typeof data.id === 'number') {
+        setMessages(prev => prev.filter(m => m.id !== data.id));
+        return;
+      }
       setMessages(prev => {
         // Avoid duplicates if we broadcast to sender too
         if (prev.some(m => m.id === data.id)) return prev;
@@ -152,6 +157,25 @@ const Chat = () => {
     
     ws.current.send(JSON.stringify({ content: newMessage.trim() }));
     setNewMessage('');
+  };
+
+  const canDeleteMessage = (msg: ChatMessage) => {
+    if (!currentUser) return false;
+    return currentUser.role === 'ADMIN' || currentUser.id === msg.sender_user_id;
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (deletingMessageIds.includes(messageId)) return;
+    setDeletingMessageIds(prev => [...prev, messageId]);
+    try {
+      await chatRepository.deleteMessage(messageId);
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      toast.error('Failed to delete message');
+    } finally {
+      setDeletingMessageIds(prev => prev.filter(id => id !== messageId));
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -330,6 +354,8 @@ const Chat = () => {
                             setCreateTarget({ type: 'LAB', id: lab.id, name: lab.name });
                             setIsCreateModalOpen(true);
                           }}
+                          title={`Create lab channel in ${lab.name}`}
+                          aria-label={`Create lab channel in ${lab.name}`}
                           className="opacity-0 group-hover/header:opacity-100 p-0.5 hover:bg-muted rounded transition-all ml-1"
                         >
                           <Plus className="h-3 w-3 text-muted-foreground" />
@@ -388,6 +414,8 @@ const Chat = () => {
                             setCreateTarget({ type: 'GROUP', id: group.id, name: group.name });
                             setIsCreateModalOpen(true);
                           }}
+                          title={`Create group channel in ${group.name}`}
+                          aria-label={`Create group channel in ${group.name}`}
                           className="opacity-0 group-hover/header:opacity-100 p-0.5 hover:bg-muted rounded transition-all ml-1"
                         >
                           <Plus className="h-3 w-3 text-muted-foreground" />
@@ -447,6 +475,8 @@ const Chat = () => {
                             setCreateTarget({ type: 'PROJECT', id: project.id, name: project.title });
                             setIsCreateModalOpen(true);
                           }}
+                          title={`Create project channel in ${project.title}`}
+                          aria-label={`Create project channel in ${project.title}`}
                           className="opacity-0 group-hover/header:opacity-100 p-0.5 hover:bg-muted rounded transition-all ml-1"
                         >
                           <Plus className="h-3 w-3 text-muted-foreground" />
@@ -519,6 +549,8 @@ const Chat = () => {
                           const sameAuthor = prevMsg?.sender_user_id === msg.sender_user_id && 
                                            (new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() < 300000);
                           const isMe = msg.sender_user_id === currentUser?.id;
+                          const canDelete = canDeleteMessage(msg);
+                          const isDeleting = deletingMessageIds.includes(msg.id);
 
                           return (
                             <div key={msg.id} className={`flex gap-4 ${sameAuthor ? 'mt-0.5' : 'mt-6'} group animate-in fade-in slide-in-from-bottom-2 duration-300`}>
@@ -542,6 +574,16 @@ const Chat = () => {
                                       {msg.sender_name}
                                     </span>
                                     <span className="text-[10px] font-medium text-muted-foreground/70">{formatTime(msg.created_at)}</span>
+                                    {canDelete && (
+                                      <button
+                                        onClick={() => handleDeleteMessage(msg.id)}
+                                        disabled={isDeleting}
+                                        className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                                        title="Delete message"
+                                      >
+                                        {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                      </button>
+                                    )}
                                   </div>
                                 )}
                                 <div className={`text-sm leading-relaxed ${isMe ? 'text-foreground' : 'text-foreground/90'}`}>

@@ -6,7 +6,7 @@ import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import {
   Heart, Bookmark, MessageCircle, Send, MoreHorizontal,
-  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon
+  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +32,9 @@ const PostCard = ({
   user,
   getUserById,
   onReact,
-  onAddComment
+  onAddComment,
+  onDeletePost,
+  onDeleteComment
 }: {
   post: Announcement;
   index: number;
@@ -40,18 +42,35 @@ const PostCard = ({
   getUserById: (id: number) => User | undefined;
   onReact: (id: number, type: string) => Promise<void>;
   onAddComment: (id: number, text: string) => Promise<void>;
+  onDeletePost: (id: number) => Promise<void>;
+  onDeleteComment: (postId: number, commentId: number) => Promise<void>;
 }) => {
   const author = getUserById(post.author_user_id);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
+  const [deletingPost, setDeletingPost] = useState(false);
+  const [deletingCommentIds, setDeletingCommentIds] = useState<number[]>([]);
   const [newComment, setNewComment] = useState('');
   const { toast } = useToast();
 
   const isLiked = post.interactions?.user_reacted === 'like';
   const reactionsCount = post.interactions?.reactions_count || 0;
   const commentsCount = post.interactions?.comments_count || 0;
+  const canDeletePost = !!user && (user.role === 'ADMIN' || user.id === post.author_user_id);
+
+  const handleDeletePost = async () => {
+    if (!canDeletePost || deletingPost) return;
+    setDeletingPost(true);
+    try {
+      await onDeletePost(post.id);
+    } catch {
+      toast({ title: 'Failed to delete post', variant: 'destructive' });
+    } finally {
+      setDeletingPost(false);
+    }
+  };
 
   const toggleComments = async () => {
     const nextShow = !showComments;
@@ -92,6 +111,22 @@ const PostCard = ({
     }
   };
 
+  const handleDeleteComment = async (comment: Comment) => {
+    if (!user) return;
+    const canDeleteComment = user.role === 'ADMIN' || user.id === comment.author_user_id;
+    if (!canDeleteComment || deletingCommentIds.includes(comment.id)) return;
+
+    setDeletingCommentIds(prev => [...prev, comment.id]);
+    try {
+      await onDeleteComment(post.id, comment.id);
+      setComments(prev => prev.filter(c => c.id !== comment.id));
+    } catch {
+      toast({ title: 'Failed to delete comment', variant: 'destructive' });
+    } finally {
+      setDeletingCommentIds(prev => prev.filter(id => id !== comment.id));
+    }
+  };
+
   if (!author) return null;
 
   const tags = post.tags ? (Array.isArray(post.tags) ? post.tags : (post.tags as string).split(',').filter(Boolean)) : [];
@@ -115,6 +150,16 @@ const PostCard = ({
             <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border bg-accent/50 border-border`}>
               {post.category}
             </span>
+            {canDeletePost && (
+              <button
+                onClick={handleDeletePost}
+                disabled={deletingPost}
+                className="ml-auto text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                title="Delete post"
+              >
+                {deletingPost ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
@@ -200,6 +245,8 @@ const PostCard = ({
                 comments.map(comment => {
                   const cAuthor = getUserById(comment.author_user_id);
                   if (!cAuthor) return null;
+                  const canDeleteComment = !!user && (user.role === 'ADMIN' || user.id === comment.author_user_id);
+                  const isDeletingComment = deletingCommentIds.includes(comment.id);
                   return (
                     <div key={comment.id} className="flex gap-2.5">
                       <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
@@ -210,6 +257,16 @@ const PostCard = ({
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-foreground">{cAuthor.full_name}</span>
                             <span className="text-[11px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
+                            {canDeleteComment && (
+                              <button
+                                onClick={() => handleDeleteComment(comment)}
+                                disabled={isDeletingComment}
+                                className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                                title="Delete comment"
+                              >
+                                {isDeletingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                              </button>
+                            )}
                           </div>
                           <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
                         </div>
@@ -374,6 +431,18 @@ const Feed = () => {
     }
   };
 
+  const handleDeletePost = async (id: number) => {
+    await apiRepository.deleteAnnouncement(id);
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    toast({ title: 'Post deleted' });
+  };
+
+  const handleDeleteComment = async (postId: number, commentId: number) => {
+    await apiRepository.deleteComment(postId, commentId);
+    const newItem = await apiRepository.getInteractions(postId);
+    setAnnouncements(prev => prev.map(a => a.id === postId ? { ...a, interactions: newItem } : a));
+  };
+
   // Stats
   const activeTasks = tasks.filter(t => (t.assignee_user_id === user?.id) && (t.status === 'IN_PROGRESS' || t.status === 'TODO'));
   const myGroups = groups.filter(g => g.leader_user_id === user?.id); // Should ideally check group members too
@@ -447,6 +516,8 @@ const Feed = () => {
                   getUserById={getUserById}
                   onReact={handleReact}
                   onAddComment={handleAddComment}
+                  onDeletePost={handleDeletePost}
+                  onDeleteComment={handleDeleteComment}
                 />
               ))
             ) : (
