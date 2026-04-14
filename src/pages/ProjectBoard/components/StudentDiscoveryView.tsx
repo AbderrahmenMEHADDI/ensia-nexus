@@ -36,7 +36,7 @@ export const StudentDiscoveryView = ({
 }: StudentDiscoveryViewProps) => {
   return (
     <div className="container py-10">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         <div className="mb-8">
           <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
           <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">Public Projects</h1>
@@ -90,7 +90,7 @@ export const StudentDiscoveryView = ({
             <DialogTitle>Application for Join Project</DialogTitle>
             <DialogDescription>
               Provide your motivation to apply for this public project.
-              <br/>
+              <br />
               <span className="text-muted-foreground text-xs mt-1 block">
                 Note: The AI ranking model evaluates your application using your Motivation, Profile Skills/Bio/Interests, CV records, and Previous Projects. Make sure your profile is fully updated!
               </span>

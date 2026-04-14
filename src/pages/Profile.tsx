@@ -183,19 +183,19 @@ const Profile = () => {
     <div className="max-w-4xl mx-auto px-6 py-10">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         {/* Header */}
-        <div className="flex items-start justify-between mb-10">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <span className="text-xl font-display font-bold text-primary">
-                {user.full_name.split(' ').map(n => n[0]).join('')}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6 p-6 rounded-2xl border border-border bg-card shadow-sm">
+          <div className="flex items-center gap-5">
+            <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 shadow-inner">
+              <span className="text-2xl font-display font-bold text-primary">
+                {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
               </span>
             </div>
-            <div>
-              <h1 className="text-xl font-display font-semibold text-foreground">{user.full_name}</h1>
-              <div className="flex items-center gap-2 mt-1">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-display font-bold text-foreground leading-tight">{user.full_name}</h1>
+              <div className="flex flex-wrap items-center gap-3">
                 <RoleBadge role={user.role} />
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Mail className="h-3 w-3" /> {user.email}
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                  <Mail className="h-3.5 w-3.5" /> {user.email}
                 </span>
               </div>
             </div>

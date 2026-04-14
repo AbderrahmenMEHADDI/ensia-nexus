@@ -28,9 +28,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { ChevronUp, MoreHorizontal } from 'lucide-react';
 
 const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRole[] }[] = [
   { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
@@ -77,19 +86,23 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-        {/* Logo */}
-        <div className="p-4 flex items-center gap-3">
-          <Link to="/dashboard" className="flex items-center gap-3 min-w-0">
-            <div className="h-8 w-8 shrink-0 flex items-center justify-center">
-              <img src="/logo_small.svg" alt="Logo" className="h-full w-full object-contain" />
-            </div>
-            {!collapsed && (
-              <span className="text-sm font-display font-semibold text-foreground truncate">
-                ENSIA Research Hub
-              </span>
-            )}
-          </Link>
-        </div>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link to="/dashboard">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <img src="/logo_small.svg" alt="Logo" className="size-6 object-contain brightness-0 invert" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold text-foreground">ENSIA Research Hub</span>
+                  <span className="truncate text-xs text-muted-foreground italic font-mono uppercase tracking-tighter">Innovate · Discover</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
 
         {/* Navigation */}
         <SidebarGroup>
@@ -98,33 +111,26 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 if (item.allowedRoles && !hasRole(item.allowedRoles)) return null;
                 if (item.path === '/my-labs' && !isLabAdminUser) return null;
+                const isActive = window.location.pathname === item.path || (item.path !== '/dashboard' && window.location.pathname.startsWith(item.path));
+                
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.path}
-                        end={item.path === '/dashboard'}
-                        className="hover:bg-sidebar-accent"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>{item.label}</span>}
-                      </NavLink>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                      <Link to={item.path}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
               {hasLeadershipGroups && (
                 <SidebarMenuItem key="/group-leadership">
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to="/group-leadership"
-                      className="hover:bg-sidebar-accent"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>Group Leadership</span>}
-                    </NavLink>
+                  <SidebarMenuButton asChild isActive={window.location.pathname === "/group-leadership"} tooltip="Group Leadership">
+                    <Link to="/group-leadership">
+                      <FileText />
+                      <span>Group Leadership</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
@@ -134,42 +140,65 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="border-t border-sidebar-border p-3 space-y-2">
-        {!collapsed && (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <NavLink to="/settings" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
-        {user && (
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-              {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{user.full_name}</p>
-                <RoleBadge role={user.role} />
-              </div>
-            )}
-            {!collapsed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={signOut}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-1 ring-primary/20">
+                    {user?.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold text-foreground">{user?.full_name}</span>
+                    <span className="truncate text-xs text-muted-foreground capitalize">{user?.role.toLowerCase()}</span>
+                  </div>
+                  <MoreHorizontal className="ml-auto size-4 text-muted-foreground" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                side={collapsed ? "right" : "top"}
+                align="end"
+                sideOffset={4}
               >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        )}
+                <div className="flex items-center gap-2 p-2">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    {user?.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold text-foreground">{user?.full_name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="w-full flex items-center gap-2 cursor-pointer">
+                    <User className="size-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="w-full flex items-center gap-2 cursor-pointer">
+                    <Settings className="size-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={signOut}
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer flex items-center gap-2"
+                >
+                  <LogOut className="size-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );

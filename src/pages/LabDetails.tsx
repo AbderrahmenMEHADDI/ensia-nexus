@@ -19,12 +19,12 @@ const LabDetails = () => {
       try {
         const labData = await apiRepository.getLab(parseInt(labId));
         setLab(labData);
-        
+
         const [groupsData, userData] = await Promise.all([
           apiRepository.getGroups(parseInt(labId)),
           apiRepository.getUser(labData.head_teacher_id)
         ]);
-        
+
         setGroups(groupsData);
         setHeadUser(userData);
       } catch (e) {
@@ -48,7 +48,7 @@ const LabDetails = () => {
 
   return (
     <div className="container py-10 max-w-5xl">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mb-6">
           <Link to="/labs" className="hover:text-primary transition-colors">Labs</Link>
@@ -61,7 +61,7 @@ const LabDetails = () => {
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <img src="/logo_small.svg" alt="" className="w-[200px] h-[200px] object-contain" />
           </div>
-          
+
           <div className="relative z-10 max-w-2xl">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-lg shadow-primary/5">
               <img src="/logo_small.svg" alt="Lab" className="h-8 w-8 object-contain" />
@@ -72,7 +72,7 @@ const LabDetails = () => {
             <p className="text-lg text-muted-foreground leading-relaxed mb-8">
               {lab.description}
             </p>
-            
+
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-card border border-border shadow-sm">
                 <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
@@ -83,7 +83,7 @@ const LabDetails = () => {
                   <span className="text-sm font-semibold text-foreground">{headUser?.full_name}</span>
                 </div>
               </div>
-              
+
               <Button variant="outline" className="h-auto py-3 px-6 rounded-2xl gap-2 font-medium">
                 <Mail className="h-4 w-4" /> Contact
               </Button>
@@ -121,14 +121,14 @@ const LabDetails = () => {
                     </Button>
                   </Link>
                 </div>
-                
+
                 <h3 className="text-xl font-display font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
                   {group.name}
                 </h3>
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-6">
                   {group.description}
                 </p>
-                
+
                 <Link to={`/groups/${group.id}`} className="inline-flex items-center text-sm font-semibold text-primary hover:underline gap-1.5">
                   View Group Details <ChevronRight className="h-4 w-4" />
                 </Link>

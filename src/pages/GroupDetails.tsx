@@ -35,7 +35,7 @@ const GroupDetails = () => {
         setMembers(m);
         setProjects(p);
         setUsers(u);
-        
+
         const parentLab = labs.find(l => l.id === g.lab_id);
         if (parentLab) setLab(parentLab);
       } catch (e) {
@@ -76,7 +76,7 @@ const GroupDetails = () => {
         </Link>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         <div className="flex flex-col md:flex-row gap-8 mb-12">
           {/* Header Info */}
           <div className="flex-1">
@@ -89,7 +89,7 @@ const GroupDetails = () => {
             <p className="text-muted-foreground leading-relaxed mb-6">
               {group.description}
             </p>
-            
+
             <div className="flex items-center gap-6">
               <div className="flex flex-col">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Group Leader</span>
