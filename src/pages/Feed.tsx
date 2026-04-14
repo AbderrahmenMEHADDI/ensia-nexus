@@ -155,6 +155,7 @@ const PostCard = ({
                 onClick={handleDeletePost}
                 disabled={deletingPost}
                 className="ml-auto text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                aria-label="Delete post"
                 title="Delete post"
               >
                 {deletingPost ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
