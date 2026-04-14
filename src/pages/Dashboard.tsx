@@ -141,7 +141,7 @@ const Dashboard = () => {
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">My Projects</h2>
-            <Link to="/labs" className="text-xs text-primary hover:underline">Browse all</Link>
+            <Link to="/my-labs" className="text-xs text-primary hover:underline">Browse all</Link>
           </div>
           <div className="space-y-2">
             {myProjects.map(project => {

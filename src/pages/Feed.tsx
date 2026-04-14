@@ -6,7 +6,7 @@ import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import {
   Heart, Bookmark, MessageCircle, Send, MoreHorizontal,
-  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon
+  Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -32,7 +32,9 @@ const PostCard = ({
   user,
   getUserById,
   onReact,
-  onAddComment
+  onAddComment,
+  onDeletePost,
+  onDeleteComment
 }: {
   post: Announcement;
   index: number;
@@ -40,17 +42,35 @@ const PostCard = ({
   getUserById: (id: number) => User | undefined;
   onReact: (id: number, type: string) => Promise<void>;
   onAddComment: (id: number, text: string) => Promise<void>;
+  onDeletePost: (id: number) => Promise<void>;
+  onDeleteComment: (postId: number, commentId: number) => Promise<void>;
 }) => {
   const author = getUserById(post.author_user_id);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
+  const [deletingPost, setDeletingPost] = useState(false);
+  const [deletingCommentIds, setDeletingCommentIds] = useState<number[]>([]);
   const [newComment, setNewComment] = useState('');
   const { toast } = useToast();
 
   const isLiked = post.interactions?.user_reacted === 'like';
   const reactionsCount = post.interactions?.reactions_count || 0;
   const commentsCount = post.interactions?.comments_count || 0;
+  const canDeletePost = !!user && (user.role === 'ADMIN' || user.id === post.author_user_id);
+
+  const handleDeletePost = async () => {
+    if (!canDeletePost || deletingPost) return;
+    setDeletingPost(true);
+    try {
+      await onDeletePost(post.id);
+    } catch {
+      toast({ title: 'Failed to delete post', variant: 'destructive' });
+    } finally {
+      setDeletingPost(false);
+    }
+  };
 
   const toggleComments = async () => {
     const nextShow = !showComments;
@@ -69,17 +89,41 @@ const PostCard = ({
   };
 
   const submitComment = async () => {
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim() || !user || postingComment) return;
+    setPostingComment(true);
     try {
       await onAddComment(post.id, newComment.trim());
       // Refresh comments if shown
       if (showComments) {
-        const res = await apiRepository.getComments(post.id);
-        setComments(res);
+        try {
+          setLoadingComments(true);
+          const res = await apiRepository.getComments(post.id);
+          setComments(res);
+        } finally {
+          setLoadingComments(false);
+        }
       }
       setNewComment('');
     } catch {
       toast({ title: 'Failed to post comment', variant: 'destructive' });
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (comment: Comment) => {
+    if (!user) return;
+    const canDeleteComment = user.role === 'ADMIN' || user.id === comment.author_user_id;
+    if (!canDeleteComment || deletingCommentIds.includes(comment.id)) return;
+
+    setDeletingCommentIds(prev => [...prev, comment.id]);
+    try {
+      await onDeleteComment(post.id, comment.id);
+      setComments(prev => prev.filter(c => c.id !== comment.id));
+    } catch {
+      toast({ title: 'Failed to delete comment', variant: 'destructive' });
+    } finally {
+      setDeletingCommentIds(prev => prev.filter(id => id !== comment.id));
     }
   };
 
@@ -106,6 +150,17 @@ const PostCard = ({
             <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border bg-accent/50 border-border`}>
               {post.category}
             </span>
+            {canDeletePost && (
+              <button
+                onClick={handleDeletePost}
+                disabled={deletingPost}
+                className="ml-auto text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                aria-label="Delete post"
+                title="Delete post"
+              >
+                {deletingPost ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
@@ -163,8 +218,8 @@ const PostCard = ({
           onClick={toggleComments}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
         >
-          <MessageCircle className="h-4 w-4" />
-          Comment
+          {loadingComments ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+          {loadingComments ? 'Loading...' : 'Comment'}
         </button>
         <button
           className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
@@ -191,6 +246,8 @@ const PostCard = ({
                 comments.map(comment => {
                   const cAuthor = getUserById(comment.author_user_id);
                   if (!cAuthor) return null;
+                  const canDeleteComment = !!user && (user.role === 'ADMIN' || user.id === comment.author_user_id);
+                  const isDeletingComment = deletingCommentIds.includes(comment.id);
                   return (
                     <div key={comment.id} className="flex gap-2.5">
                       <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
@@ -201,6 +258,17 @@ const PostCard = ({
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-foreground">{cAuthor.full_name}</span>
                             <span className="text-[11px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
+                            {canDeleteComment && (
+                              <button
+                                onClick={() => handleDeleteComment(comment)}
+                                disabled={isDeletingComment}
+                                className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                                title="Delete comment"
+                                aria-label="Delete comment"
+                              >
+                                {isDeletingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                              </button>
+                            )}
                           </div>
                           <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
                         </div>
@@ -220,12 +288,13 @@ const PostCard = ({
                     <input
                       value={newComment}
                       onChange={e => setNewComment(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && submitComment()}
+                      onKeyDown={e => e.key === 'Enter' && !postingComment && submitComment()}
                       placeholder="Write a comment..."
+                      disabled={postingComment}
                       className="flex-1 text-xs bg-accent/40 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
                     />
-                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim()}>
-                      <Send className="h-3.5 w-3.5" />
+                    <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim() || postingComment}>
+                      {postingComment ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     </Button>
                   </div>
                 </div>
@@ -250,7 +319,11 @@ const Feed = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostTitle, setNewPostTitle] = useState('');
 
-  const loadData = async () => {
+  const sortAnnouncementsByNewest = (items: Announcement[]) => (
+    [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  );
+
+  const loadData = async ({ silent = false }: { silent?: boolean } = {}) => {
     try {
       const [ann, u, g, p, t] = await Promise.all([
         apiRepository.getAnnouncements(),
@@ -268,14 +341,16 @@ const Feed = () => {
         } catch { return a; }
       }));
 
-      setAnnouncements(richAnn);
+      setAnnouncements(sortAnnouncementsByNewest(richAnn));
       setUsers(u);
       setGroups(g);
       setProjects(p);
       setTasks(t);
     } catch (e) {
       console.error('Feed data load error:', e);
-      toast({ title: 'Failed to synchronize feed', variant: 'destructive' });
+      if (!silent) {
+        toast({ title: 'Failed to synchronize feed', variant: 'destructive' });
+      }
     } finally {
       setLoading(false);
     }
@@ -283,6 +358,11 @@ const Feed = () => {
 
   useEffect(() => {
     loadData();
+    const intervalId = window.setInterval(() => {
+      loadData({ silent: true });
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const getUserById = (id: number) => users.find(u => u.id === id);
@@ -328,13 +408,45 @@ const Feed = () => {
         category: 'RESEARCH',
         author_user_id: user.id,
       });
+
+      const createdWithInteractions: Announcement = {
+        ...created,
+        interactions: {
+          comments_count: 0,
+          reactions_count: 0,
+          reactions_by_type: {}
+        }
+      };
+
+      // Show the newly created post immediately without waiting for a full reload.
+      setAnnouncements(prev => sortAnnouncementsByNewest([
+        createdWithInteractions,
+        ...prev.filter(a => a.id !== created.id)
+      ]));
+
       toast({ title: 'Announcement posted' });
       setNewPostContent('');
       setNewPostTitle('');
-      // Reload feed
-      loadData();
+      loadData({ silent: true });
     } catch {
       toast({ title: 'Failed to post', variant: 'destructive' });
+    }
+  };
+
+  const handleDeletePost = async (id: number) => {
+    await apiRepository.deleteAnnouncement(id);
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    toast({ title: 'Post deleted' });
+  };
+
+  const handleDeleteComment = async (postId: number, commentId: number) => {
+    await apiRepository.deleteComment(postId, commentId);
+
+    try {
+      const newItem = await apiRepository.getInteractions(postId);
+      setAnnouncements(prev => prev.map(a => a.id === postId ? { ...a, interactions: newItem } : a));
+    } catch {
+      // The delete already succeeded; treat the interactions refresh as best-effort.
     }
   };
 
@@ -411,6 +523,8 @@ const Feed = () => {
                   getUserById={getUserById}
                   onReact={handleReact}
                   onAddComment={handleAddComment}
+                  onDeletePost={handleDeletePost}
+                  onDeleteComment={handleDeleteComment}
                 />
               ))
             ) : (

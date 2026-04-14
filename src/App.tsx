@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
+import { apiRepository } from "@/repositories/apiRepository";
 import { type UserRole } from "@/types";
+import { useEffect, useState } from "react";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -13,18 +15,17 @@ import CompleteRegistration from "./pages/CompleteRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Feed from "./pages/Feed";
-import LabExplorer from "./pages/LabExplorer";
 import ProjectBoard from "./pages/ProjectBoard";
 import Chat from "./pages/Chat";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AdminPanel from "./pages/AdminPanel";
-import LabDetails from "./pages/LabDetails";
-import GroupDetails from "./pages/GroupDetails";
 import Groups from "./pages/Groups";
 import GroupLeadership from "./pages/GroupLeadership";
 import StudentCV from "./pages/StudentCV";
+import MyLabDetails from "./pages/MyLabDetails";
+import MyLabGroupDetails from "./pages/MyLabGroupDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,37 @@ const RoleProtectedRoute = ({ children, allowedRoles }: { children: React.ReactN
   return <>{children}</>;
 };
 
+const LabAdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isInitialLoading, user } = useAuth();
+  const location = useLocation();
+  const [checking, setChecking] = useState(true);
+  const [isLabAdmin, setIsLabAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!isAuthenticated || !user) {
+        setIsLabAdmin(false);
+        setChecking(false);
+        return;
+      }
+      try {
+        const admins = await apiRepository.getLabAdmins();
+        setIsLabAdmin(admins.some(a => a.user_id === user.id));
+      } catch {
+        setIsLabAdmin(false);
+      } finally {
+        setChecking(false);
+      }
+    };
+    checkMembership();
+  }, [isAuthenticated, user?.id]);
+
+  if (isInitialLoading || checking) return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  if (!isAuthenticated) return <Navigate to="/signin" replace state={{ from: location }} />;
+  if (!isLabAdmin) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const AppRoutes = () => (
   <Layout>
     <Routes>
@@ -62,19 +94,19 @@ const AppRoutes = () => (
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-      <Route path="/labs" element={<ProtectedRoute><LabExplorer /></ProtectedRoute>} />
       <Route path="/projects" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/applications" element={<RoleProtectedRoute allowedRoles={['TEACHER', 'ADMIN', 'PARTNER']}><Applications /></RoleProtectedRoute>} />
       <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/labs/:labId" element={<ProtectedRoute><LabDetails /></ProtectedRoute>} />
-      <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDetails /></ProtectedRoute>} />
       <Route path="/groups" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><Groups /></RoleProtectedRoute>} />
       <Route path="/group-leadership" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><GroupLeadership /></RoleProtectedRoute>} />
       <Route path="/student-cv" element={<RoleProtectedRoute allowedRoles={['STUDENT']}><StudentCV /></RoleProtectedRoute>} />
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
+      <Route path="/my-labs" element={<LabAdminProtectedRoute><AdminPanel myLabsOnly /></LabAdminProtectedRoute>} />
+      <Route path="/my-labs/labs/:labId" element={<LabAdminProtectedRoute><MyLabDetails /></LabAdminProtectedRoute>} />
+      <Route path="/my-labs/groups/:groupId" element={<LabAdminProtectedRoute><MyLabGroupDetails /></LabAdminProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>

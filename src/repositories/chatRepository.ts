@@ -12,6 +12,7 @@ export const chatRepository = {
 
   // Messages
   getMessages: (roomId: number) => api.get<ChatMessage[]>(`/chat/rooms/${roomId}/messages`),
+  deleteMessage: (messageId: number) => api.delete<void>(`/chat/messages/${messageId}`),
 
   // WebSocket URL helper
   getWsUrl: (roomId: number) => {
