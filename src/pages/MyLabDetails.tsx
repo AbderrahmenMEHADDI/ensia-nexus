@@ -52,7 +52,7 @@ const MyLabDetails = () => {
 
   return (
     <div className="container py-10 max-w-5xl">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mb-6">
           <Link to="/my-labs" className="hover:text-primary transition-colors">My Labs</Link>

@@ -59,7 +59,7 @@ const LabExplorer = () => {
 
   return (
     <div className="container py-10">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         <span className="text-xs font-mono text-primary uppercase tracking-wider">Explorer</span>
         <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1 mb-8">Labs &amp; Research Groups</h1>
 
@@ -116,7 +116,7 @@ const LabExplorer = () => {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                              <h3 className="font-medium text-foreground">{group.name}</h3>
+                                <h3 className="font-medium text-foreground">{group.name}</h3>
                                 {group.is_validated ? (
                                   <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
                                 ) : (

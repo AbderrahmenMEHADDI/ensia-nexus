@@ -80,7 +80,7 @@ const MyLabGroupDetails = () => {
         </Link>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         <div className="flex flex-col md:flex-row gap-8 mb-12">
           {/* Header Info */}
           <div className="flex-1">

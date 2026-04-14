@@ -252,7 +252,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
       setIsAssigningMembers(false);
     }
   };
-    const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
+  const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
   const handleValidate = async (groupId: number) => {
     const target = groups.find(g => g.id === groupId);
     if (!target || !canManageLab(target.lab_id)) {
@@ -367,7 +367,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     setAssignLeaderOpen(false);
   };
   // we need to add functions to handle adding and removing lab admins, as well as opening the manage admins dialog with the correct lab information. we also need to add functions to handle opening the edit lab dialog and saving the edited lab details.
-  
+
   const handleOpenManageAdmins = (lab: ResearchLab) => { // to handle opening the manage admins dialog, we set the selected lab for admins to the lab we want to manage, this will allow us to display the correct admins in the dialog and perform add/remove actions on the correct lab
     if (!canManageLab(lab.id)) {
       toast({ title: 'Not authorized', variant: 'destructive' });
@@ -403,7 +403,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     }
   };
 
-  const handleRemoveAdmin = async (labId: number, userId: number) => { 
+  const handleRemoveAdmin = async (labId: number, userId: number) => {
     const key = adminRemovalKey(labId, userId);
     if (removingAdminKeys.includes(key)) return;
     if (!canManageLab(labId)) {
@@ -527,7 +527,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
 
   return (
     <div className="container py-10">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div>
         <div className="flex items-center gap-3 mb-8">
           <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
             <Shield className="h-5 w-5 text-destructive" />
@@ -633,7 +633,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                   {pendingGroups.map(group => {
                     const leader = getUserById(group.leader_user_id);
                     const lab = labs.find(l => l.id === group.lab_id);
-                    const requesterId = group.requested_by_user_id ;
+                    const requesterId = group.requested_by_user_id;
                     const requester = requesterId ? getUserById(requesterId) : undefined;
                     return (
                       <div key={group.id} className="p-4 rounded-xl border border-primary/20 bg-card">
@@ -644,23 +644,32 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                           </div>
                           {canManageLab(group.lab_id) && (
                             <div className="flex items-center gap-2">
-                              <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-medium hover:bg-secondary/80 transition-colors">
+                              <Button 
+                                variant="secondary" 
+                                size="sm" 
+                                onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
+                                className="h-8 gap-1.5"
+                              >
                                 <UserCog className="h-3.5 w-3.5" /> Assign Leader
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleValidate(group.id)}
                                 disabled={validatingGroupIds.includes(group.id) || deletingGroupIds.includes(group.id)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/15 text-primary text-xs font-medium hover:bg-primary/25 transition-colors disabled:opacity-60"
+                                className="h-8 gap-1.5 border-primary/20 hover:bg-primary/10 text-primary"
                               >
                                 {validatingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} {validatingGroupIds.includes(group.id) ? 'Validating...' : 'Validate'}
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
                                 onClick={() => handleDeleteGroup(group.id)}
                                 disabled={deletingGroupIds.includes(group.id) || validatingGroupIds.includes(group.id)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-medium hover:bg-destructive/15 transition-colors disabled:opacity-60"
+                                className="h-8 gap-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 border-none shadow-none"
                               >
                                 {deletingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {deletingGroupIds.includes(group.id) ? 'Deleting...' : 'Delete'}
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -712,22 +721,29 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                       {canManageLab(group.lab_id) && (
                         <div className="flex items-center gap-2">
                           {myLabsOnly && (
-                            <Link to={`/my-labs/groups/${group.id}`}>
-                              <button className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-normal text-muted-foreground hover:text-foreground">
+                              <Link to={`/my-labs/groups/${group.id}`}>
                                 Details
-                              </button>
-                            </Link>
+                              </Link>
+                            </Button>
                           )}
-                          <button onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
+                            className="h-8 text-xs font-normal text-muted-foreground hover:text-foreground gap-1"
+                          >
                             <UserCog className="h-3.5 w-3.5" /> Change Leader
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleDeleteGroup(group.id)}
                             disabled={deletingGroupIds.includes(group.id) || validatingGroupIds.includes(group.id)}
-                            className="text-xs text-destructive hover:text-destructive/80 transition-colors flex items-center gap-1 disabled:opacity-60"
+                            className="h-8 text-xs font-normal text-destructive hover:bg-destructive/10 hover:text-destructive gap-1"
                           >
                             {deletingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {deletingGroupIds.includes(group.id) ? 'Deleting...' : 'Delete'}
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -1142,7 +1158,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                 </Select>
               </div>
               <div className="space-y-2">
-                
+
                 <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
                   <div>
                     <p className="text-sm font-medium text-foreground">Delete lab</p>

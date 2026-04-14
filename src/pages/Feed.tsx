@@ -9,6 +9,8 @@ import {
   Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Announcement, User, Project, ResearchGroup, Task, Comment } from '@/types';
 
@@ -151,15 +153,17 @@ const PostCard = ({
               {post.category}
             </span>
             {canDeletePost && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleDeletePost}
                 disabled={deletingPost}
-                className="ml-auto text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
                 aria-label="Delete post"
                 title="Delete post"
               >
                 {deletingPost ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-              </button>
+              </Button>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
@@ -195,38 +199,43 @@ const PostCard = ({
             )}
           </div>
           {commentsCount > 0 && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={toggleComments}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground hover:bg-transparent transition-colors"
             >
               {commentsCount} comment{commentsCount > 1 ? 's' : ''}
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {/* Action buttons */}
       <div className="flex items-center border-t border-border">
-        <button
+        <Button
+          variant="ghost"
           onClick={() => onReact(post.id, 'like')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors hover:bg-accent/50 ${isLiked ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`flex-1 flex items-center justify-center gap-2 rounded-none py-6 text-sm font-medium transition-colors hover:bg-accent/50 ${isLiked ? 'text-primary hover:text-primary' : 'text-muted-foreground'}`}
         >
           <Heart className={`h-4 w-4 ${isLiked ? 'fill-primary' : ''}`} />
           Like
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={toggleComments}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
+          className="flex-1 flex items-center justify-center gap-2 rounded-none py-6 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
         >
           {loadingComments ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
           {loadingComments ? 'Loading...' : 'Comment'}
-        </button>
-        <button
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
+        </Button>
+        <Button
+          variant="ghost"
+          className="flex-1 flex items-center justify-center gap-2 rounded-none py-6 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
         >
           <Bookmark className="h-4 w-4" />
           Save
-        </button>
+        </Button>
       </div>
 
       {/* Comments section */}
@@ -259,15 +268,17 @@ const PostCard = ({
                             <span className="text-xs font-semibold text-foreground">{cAuthor.full_name}</span>
                             <span className="text-[11px] text-muted-foreground">{timeAgo(comment.created_at)}</span>
                             {canDeleteComment && (
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleDeleteComment(comment)}
                                 disabled={isDeletingComment}
-                                className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                                className="ml-auto h-7 w-7 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
                                 title="Delete comment"
                                 aria-label="Delete comment"
                               >
                                 {isDeletingComment ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                              </button>
+                              </Button>
                             )}
                           </div>
                           <p className="text-xs text-foreground mt-1 leading-relaxed">{comment.content}</p>
@@ -285,13 +296,13 @@ const PostCard = ({
                     {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
                   <div className="flex-1 flex gap-2">
-                    <input
+                    <Input
                       value={newComment}
                       onChange={e => setNewComment(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && !postingComment && submitComment()}
                       placeholder="Write a comment..."
                       disabled={postingComment}
-                      className="flex-1 text-xs bg-accent/40 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className="flex-1 text-xs bg-accent/40 rounded-lg h-9 border-border focus:ring-1 focus:ring-primary/30"
                     />
                     <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={submitComment} disabled={!newComment.trim() || postingComment}>
                       {postingComment ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
@@ -485,18 +496,18 @@ const Feed = () => {
                     {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
                   <div className="flex-1 space-y-2">
-                    <input
+                    <Input
                       value={newPostTitle}
                       onChange={e => setNewPostTitle(e.target.value)}
                       placeholder="Title (optional)"
-                      className="w-full text-sm font-semibold bg-transparent text-foreground placeholder:text-muted-foreground border-none focus:outline-none"
+                      className="w-full text-sm font-semibold bg-transparent text-foreground placeholder:text-muted-foreground border-none focus-visible:ring-0 px-0 h-auto"
                     />
-                    <textarea
+                    <Textarea
                       value={newPostContent}
                       onChange={e => setNewPostContent(e.target.value)}
                       placeholder="Share an update, insight, or milestone..."
                       rows={3}
-                      className="w-full text-sm bg-transparent text-foreground placeholder:text-muted-foreground resize-none focus:outline-none"
+                      className="w-full text-sm bg-transparent text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-none px-0 min-h-[80px]"
                     />
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">

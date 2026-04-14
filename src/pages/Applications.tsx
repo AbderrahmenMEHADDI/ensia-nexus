@@ -80,8 +80,8 @@ const Applications = () => {
 
   const sortedApps = useMemo(
     () => {
-      const filtered = filterProjectId === 'all' 
-        ? apps 
+      const filtered = filterProjectId === 'all'
+        ? apps
         : apps.filter(a => a.project_id === filterProjectId);
 
       return [...filtered].sort((a, b) => {
@@ -93,7 +93,7 @@ const Applications = () => {
     },
     [apps, filterProjectId]
   );
-  
+
   const uniqueProjectIdsInApps = useMemo(() => Array.from(new Set(apps.map(a => a.project_id))), [apps]);
 
   const getDefaultRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
@@ -221,7 +221,7 @@ const Applications = () => {
 
   return (
     <div className="container py-10">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
             <span className="text-xs font-mono text-primary uppercase tracking-wider">Applications</span>
@@ -352,7 +352,7 @@ const Applications = () => {
               : false;
             const canRateAcceptedApp = project
               ? participants.some(p => p.project_id === project.id && p.user_id === user?.id)
-                || groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id)
+              || groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id)
               : false;
             const draft = getRatingDraft(app);
             const myExistingRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);

@@ -60,7 +60,7 @@ const ProjectBoard = () => {
   if (!board.project) {
     return (
       <div className="container py-10">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div >
           <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
             <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-2">No projects yet</h1>
@@ -110,7 +110,7 @@ const ProjectBoard = () => {
 
   return (
     <div className="container py-10">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <motion.div >
         <ProjectBoardHeader
           project={board.project}
           projects={board.projects}
