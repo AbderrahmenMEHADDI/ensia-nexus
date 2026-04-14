@@ -250,7 +250,11 @@ const Feed = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostTitle, setNewPostTitle] = useState('');
 
-  const loadData = async () => {
+  const sortAnnouncementsByNewest = (items: Announcement[]) => (
+    [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  );
+
+  const loadData = async ({ silent = false }: { silent?: boolean } = {}) => {
     try {
       const [ann, u, g, p, t] = await Promise.all([
         apiRepository.getAnnouncements(),
@@ -268,14 +272,16 @@ const Feed = () => {
         } catch { return a; }
       }));
 
-      setAnnouncements(richAnn);
+      setAnnouncements(sortAnnouncementsByNewest(richAnn));
       setUsers(u);
       setGroups(g);
       setProjects(p);
       setTasks(t);
     } catch (e) {
       console.error('Feed data load error:', e);
-      toast({ title: 'Failed to synchronize feed', variant: 'destructive' });
+      if (!silent) {
+        toast({ title: 'Failed to synchronize feed', variant: 'destructive' });
+      }
     } finally {
       setLoading(false);
     }
@@ -283,6 +289,11 @@ const Feed = () => {
 
   useEffect(() => {
     loadData();
+    const intervalId = window.setInterval(() => {
+      loadData({ silent: true });
+    }, 10000);
+
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const getUserById = (id: number) => users.find(u => u.id === id);
@@ -328,11 +339,26 @@ const Feed = () => {
         category: 'RESEARCH',
         author_user_id: user.id,
       });
+
+      const createdWithInteractions: Announcement = {
+        ...created,
+        interactions: {
+          comments_count: 0,
+          reactions_count: 0,
+          reactions_by_type: {}
+        }
+      };
+
+      // Show the newly created post immediately without waiting for a full reload.
+      setAnnouncements(prev => sortAnnouncementsByNewest([
+        createdWithInteractions,
+        ...prev.filter(a => a.id !== created.id)
+      ]));
+
       toast({ title: 'Announcement posted' });
       setNewPostContent('');
       setNewPostTitle('');
-      // Reload feed
-      loadData();
+      loadData({ silent: true });
     } catch {
       toast({ title: 'Failed to post', variant: 'destructive' });
     }
