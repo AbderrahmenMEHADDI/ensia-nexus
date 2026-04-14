@@ -188,6 +188,13 @@ const ProjectBoard = () => {
     : [];
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
   const validatedGroups = groups.filter(g => g.is_validated);
+  const myValidatedGroups = user
+    ? validatedGroups.filter(g =>
+        groupMembers.some(
+          gm => gm.group_id === g.id && gm.user_id === user.id && gm.is_active
+        )
+      )
+    : [];
   const canReviewSelectedProject = Boolean(
     project &&
     getProjectStatus(project) === 'PENDING' &&
@@ -450,12 +457,12 @@ const ProjectBoard = () => {
                   <SelectValue placeholder="Select group" />
                 </SelectTrigger>
                 <SelectContent>
-                  {validatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                  {myValidatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {validatedGroups.length === 0 && (
+              {myValidatedGroups.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  No validated groups are available for project creation.
+                  You can only create projects for validated groups where you are an active member.
                 </p>
               )}
             </div>

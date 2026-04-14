@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { isProjectOpenForStudentApplications } from '@/lib/projectAccess';
-import type { ParticipantRole, Project, ResearchGroup, Student, User, Visibility } from '@/types';
+import type { GroupMember, ParticipantRole, Project, ResearchGroup, Student, User, Visibility } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,7 @@ const CollaborationForms = () => {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   const [applicationProjectId, setApplicationProjectId] = useState('');
@@ -47,18 +48,27 @@ const CollaborationForms = () => {
   const [cvUrl, setCvUrl] = useState('');
   const availableApplicationProjects = projects.filter(isProjectOpenForStudentApplications);
   const validatedGroups = groups.filter(group => group.is_validated);
+  const myValidatedGroups = user
+    ? validatedGroups.filter(group =>
+        groupMembers.some(
+          member => member.group_id === group.id && member.user_id === user.id && member.is_active
+        )
+      )
+    : [];
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [allProjects, allGroups, allUsers] = await Promise.all([
+        const [allProjects, allGroups, allGroupMembers, allUsers] = await Promise.all([
           apiRepository.getProjects(),
           apiRepository.getGroups(),
+          apiRepository.getGroupMembers(),
           apiRepository.getUsers(),
         ]);
 
         setProjects(allProjects);
         setGroups(allGroups);
+        setGroupMembers(allGroupMembers);
         setUsers(allUsers);
 
         if (user?.role === 'STUDENT') {
@@ -280,14 +290,14 @@ const CollaborationForms = () => {
                       <SelectValue placeholder="Select group" />
                     </SelectTrigger>
                     <SelectContent>
-                      {validatedGroups.map(group => (
+                      {myValidatedGroups.map(group => (
                         <SelectItem key={group.id} value={String(group.id)}>{group.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {validatedGroups.length === 0 && (
+                  {myValidatedGroups.length === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      No validated groups are available for project creation.
+                      You can only create projects for validated groups where you are an active member.
                     </p>
                   )}
                 </div>
