@@ -66,6 +66,14 @@ const AdminPanel = () => {
   const [assignTeacherSearch, setAssignTeacherSearch] = useState('');
 
   const isPlatformAdmin = isAdmin;
+  const sortLabsByNewest = (items: ResearchLab[]) => (
+    [...items].sort((a, b) => {
+      const aTime = new Date(a.created_at).getTime();
+      const bTime = new Date(b.created_at).getTime();
+      if (bTime !== aTime) return bTime - aTime;
+      return b.id - a.id;
+    })
+  );
   const canManageLab = (labId: number) => isPlatformAdmin || labAdmins.some(a => a.lab_id === labId && a.user_id === user?.id);
   const manageableLabs = isPlatformAdmin ? labs : labs.filter(l => canManageLab(l.id));
   const mergeUsersIntoLookup = (list: User[]) => setUserLookup(prev => {
@@ -98,7 +106,7 @@ const AdminPanel = () => {
           apiRepository.getUsers({ limit: 1000 }),
           apiRepository.getGroupMembers(),
         ]);
-        setLabs(l);
+        setLabs(sortLabsByNewest(l));
         setGroups(g);
         setLabAdmins(la); // i added this so we can use it to display admins in the lab cards and manage them in the manage admins dialog
         setTeachers(t);
@@ -264,7 +272,7 @@ const AdminPanel = () => {
         description: newLabDesc,
         head_teacher_id: parseInt(newLabHead),
       });
-      setLabs(prev => [...prev, created]);
+      setLabs(prev => sortLabsByNewest([created, ...prev.filter(l => l.id !== created.id)]));
       toast({ title: 'Lab created' });
     } catch {
       toast({ title: 'Failed to create lab', variant: 'destructive' });
