@@ -59,6 +59,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuth();
   }, [checkAuth]);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      // Clear auth state to force redirect to signin
+      setState(s => ({
+        ...s,
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        isInitialLoading: false,
+      }));
+    };
+    
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
   const signIn = useCallback(async (credentials: { email: string; password: string }) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
