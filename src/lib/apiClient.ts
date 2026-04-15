@@ -23,6 +23,9 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
     const errorData = await response.json().catch(() => ({}));
     const detail =
       typeof errorData?.detail === 'string'
