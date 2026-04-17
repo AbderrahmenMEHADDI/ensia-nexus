@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Loader2, Plus, ExternalLink, FileText, GitBranch, Database } from 'lucide-react';
+import { Loader2, Plus, ExternalLink, FileText, GitBranch, Database, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProjectBoard } from './ProjectBoard/hooks/useProjectBoard';
 import { ProjectBoardHeader } from './ProjectBoard/components/ProjectBoardHeader';
@@ -7,6 +7,7 @@ import { KanbanBoard } from './ProjectBoard/components/KanbanBoard';
 import { TaskDialogs } from './ProjectBoard/components/TaskDialogs';
 import { ProjectDialogs } from './ProjectBoard/components/ProjectDialogs';
 import { StudentDiscoveryView } from './ProjectBoard/components/StudentDiscoveryView';
+import { ResourceDialogs } from './ProjectBoard/components/ResourceDialogs';
 import type { TaskStatus } from '@/types';
 
 const statusColumns: { status: TaskStatus; label: string; color: string }[] = [
@@ -147,35 +148,56 @@ const ProjectBoard = () => {
         />
 
         {/* Resources */}
-        {board.resources.length > 0 && (
-          <div>
-            <h2 className="text-xl font-serif font-semibold text-foreground mb-4">Resources</h2>
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-serif font-semibold text-foreground">Resources</h2>
+            {(!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
+              <Button size="sm" variant="outline" onClick={() => board.setResourceFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Add Resource
+              </Button>
+            )}
+          </div>
+          
+          {board.resources.length > 0 ? (
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
               {board.resources.map(res => {
                 const Icon = resourceIcons[res.resource_type] || ExternalLink;
-                const creator = board.getUserById(res.created_by);
+                const creator = board.getUserById(res.created_by || NaN);
                 return (
-                  <a
-                    key={res.id}
-                    href={res.url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors"
-                  >
-                    <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      <Icon className="h-4 w-4 text-secondary-foreground" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium text-foreground block truncate">{res.title}</span>
-                      <span className="text-xs font-mono text-muted-foreground">{res.resource_type.replace('_', ' ')} · {creator?.full_name}</span>
-                    </div>
-                    <ExternalLink className="h-3 w-3 text-muted-foreground ml-auto shrink-0" />
-                  </a>
+                  <div key={res.id} className="relative group p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+                    <a
+                      href={res.url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 pr-6 block h-full w-full"
+                    >
+                      <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                        <Icon className="h-4 w-4 text-secondary-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-medium text-foreground block truncate" title={res.title}>{res.title}</span>
+                        <span className="text-xs font-mono text-muted-foreground truncate block">{res.resource_type.replace('_', ' ')} · {creator?.full_name || 'System'}</span>
+                      </div>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                    
+                    {(board.canManageProjects || board.user?.id === res.created_by) && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); board.handleDeleteResource(res.id); }}
+                        className="absolute top-2 right-2 p-1.5 bg-destructive/10 text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground focus:opacity-100"
+                        title="Delete resource"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
-          </div>
-        )}
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No resources added yet.</p>
+          )}
+        </div>
       </motion.div>
 
       <TaskDialogs
@@ -238,6 +260,19 @@ const ProjectBoard = () => {
         handleAddMemberFromForm={board.handleAddMemberFromForm}
         projects={board.projects}
         availableMemberOptions={board.availableMemberOptions}
+      />
+
+      <ResourceDialogs
+        resourceFormOpen={board.resourceFormOpen}
+        setResourceFormOpen={board.setResourceFormOpen}
+        newResourceTitle={board.newResourceTitle}
+        setNewResourceTitle={board.setNewResourceTitle}
+        newResourceType={board.newResourceType}
+        setNewResourceType={board.setNewResourceType}
+        newResourceUrl={board.newResourceUrl}
+        setNewResourceUrl={board.setNewResourceUrl}
+        createResourceLoading={board.createResourceLoading}
+        handleCreateResource={board.handleCreateResource}
       />
     </div>
   );

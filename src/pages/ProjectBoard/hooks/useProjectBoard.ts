@@ -84,6 +84,12 @@ export const useProjectBoard = () => {
 
   const [projectReviewLoading, setProjectReviewLoading] = useState<'APPROVED' | 'REJECTED' | null>(null);
 
+  const [resourceFormOpen, setResourceFormOpen] = useState(false);
+  const [newResourceTitle, setNewResourceTitle] = useState('');
+  const [newResourceType, setNewResourceType] = useState('PAPER_DOC');
+  const [newResourceUrl, setNewResourceUrl] = useState('');
+  const [createResourceLoading, setCreateResourceLoading] = useState(false);
+
   const fetchAllUsers = async () => {
     const pageSize = 500;
     let all: User[] = [];
@@ -397,6 +403,40 @@ export const useProjectBoard = () => {
     }
   };
 
+  const handleCreateResource = async () => {
+    if (!user || !selectedProjectId || !newResourceTitle.trim() || !newResourceType) return;
+    setCreateResourceLoading(true);
+    try {
+      const created = await apiRepository.createProjectResource({
+        project_id: selectedProjectId,
+        title: newResourceTitle.trim(),
+        resource_type: newResourceType as any,
+        url: newResourceUrl.trim() || undefined,
+        created_by: user.id
+      });
+      setResources(prev => [...prev, created]);
+      setResourceFormOpen(false);
+      setNewResourceTitle('');
+      setNewResourceType('PAPER_DOC');
+      setNewResourceUrl('');
+      toast({ title: 'Resource added' });
+    } catch {
+      toast({ title: 'Failed to add resource', variant: 'destructive' });
+    } finally {
+      setCreateResourceLoading(false);
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: number) => {
+    try {
+      await apiRepository.deleteProjectResource(resourceId);
+      setResources(prev => prev.filter(r => r.id !== resourceId));
+      toast({ title: 'Resource deleted' });
+    } catch {
+      toast({ title: 'Failed to delete resource', variant: 'destructive' });
+    }
+  };
+
   return {
     user,
     isStudent,
@@ -493,5 +533,16 @@ export const useProjectBoard = () => {
     handleReviewSelectedProject,
     getApplyButtonLabel,
     getBlockingApplication,
+    resourceFormOpen,
+    setResourceFormOpen,
+    newResourceTitle,
+    setNewResourceTitle,
+    newResourceType,
+    setNewResourceType,
+    newResourceUrl,
+    setNewResourceUrl,
+    createResourceLoading,
+    handleCreateResource,
+    handleDeleteResource,
   };
 };
