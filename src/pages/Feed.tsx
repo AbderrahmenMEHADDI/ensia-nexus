@@ -92,22 +92,32 @@ const PostCard = ({
 
   const submitComment = async () => {
     if (!newComment.trim() || !user || postingComment) return;
+    
+    const commentText = newComment.trim();
+    setNewComment('');
     setPostingComment(true);
+
+    // Optimistic UI for the comment list
+    const tempId = -Math.floor(Math.random() * 1000000);
+    const optimisticComment: Comment = {
+      id: tempId,
+      content: commentText,
+      announcement_id: post.id,
+      author_user_id: user.id,
+      created_at: new Date().toISOString()
+    };
+    
+    setComments(prev => [...prev, optimisticComment]);
+
     try {
-      await onAddComment(post.id, newComment.trim());
-      // Refresh comments if shown
-      if (showComments) {
-        try {
-          setLoadingComments(true);
-          const res = await apiRepository.getComments(post.id);
-          setComments(res);
-        } finally {
-          setLoadingComments(false);
-        }
-      }
-      setNewComment('');
+      await onAddComment(post.id, commentText);
+      // On success, we refresh to get the real ID and timestamps
+      const res = await apiRepository.getComments(post.id);
+      setComments(res);
     } catch {
       toast({ title: 'Failed to post comment', variant: 'destructive' });
+      setComments(prev => prev.filter(c => c.id !== tempId));
+      setNewComment(commentText); // Restore input
     } finally {
       setPostingComment(false);
     }
@@ -330,6 +340,8 @@ const Feed = () => {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostTitle, setNewPostTitle] = useState('');
 
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
+
   const sortAnnouncementsByNewest = (items: Announcement[]) => (
     [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   );
@@ -347,12 +359,26 @@ const Feed = () => {
       // Fetch interactions for announcements
       const richAnn = await Promise.all(ann.map(async (a) => {
         try {
+          // If we are currently performing an optimistic update on this ID,
+          // we might want to skip fetching its interactions to avoid flicker,
+          // or merge them carefully. For now, we fetch but will filter in setAnnouncements.
           const interactions = await apiRepository.getInteractions(a.id);
           return { ...a, interactions };
         } catch { return a; }
       }));
 
-      setAnnouncements(sortAnnouncementsByNewest(richAnn));
+      setAnnouncements(prev => {
+        const sorted = sortAnnouncementsByNewest(richAnn);
+        // Don't overwrite announcements that have a pending interaction change
+        return sorted.map(newA => {
+          if (pendingIds.has(newA.id)) {
+            const existing = prev.find(p => p.id === newA.id);
+            return existing ? { ...newA, interactions: existing.interactions } : newA;
+          }
+          return newA;
+        });
+      });
+      
       setUsers(u);
       setGroups(g);
       setProjects(p);
@@ -379,34 +405,100 @@ const Feed = () => {
   const getUserById = (id: number) => users.find(u => u.id === id);
 
   const handleReact = async (id: number, type: string) => {
-    if (!user) return;
+    if (!user || pendingIds.has(id)) return;
+
+    // 1. Optimistic Update
+    const originalAnnouncement = announcements.find(a => a.id === id);
+    if (!originalAnnouncement) return;
+
+    const currentInteractions = originalAnnouncement.interactions || {
+      comments_count: 0,
+      reactions_count: 0,
+      reactions_by_type: {},
+      user_reacted: undefined
+    };
+
+    const isRemoving = currentInteractions.user_reacted === type;
+    const newReactionsByType = { ...currentInteractions.reactions_by_type };
+    
+    // Adjust counts and types
+    if (isRemoving) {
+      newReactionsByType[type] = Math.max(0, (newReactionsByType[type] || 0) - 1);
+    } else {
+      // If they had a different reaction before, remove that one first
+      if (currentInteractions.user_reacted) {
+        const oldType = currentInteractions.user_reacted;
+        newReactionsByType[oldType] = Math.max(0, (newReactionsByType[oldType] || 0) - 1);
+      }
+      newReactionsByType[type] = (newReactionsByType[type] || 0) + 1;
+    }
+
+    const optimisticInteractions = {
+      ...currentInteractions,
+      user_reacted: isRemoving ? undefined : type,
+      reactions_count: currentInteractions.reactions_count + (isRemoving ? -1 : (currentInteractions.user_reacted ? 0 : 1)),
+      reactions_by_type: newReactionsByType
+    };
+
+    setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: optimisticInteractions } : a));
+    setPendingIds(prev => new Set(prev).add(id));
+
     try {
-      const res = await apiRepository.reactToAnnouncement(id, {
+      const updatedInteractions = await apiRepository.reactToAnnouncement(id, {
         announcement_id: id,
         user_id: user.id,
         reaction_type: type
       });
-      // Refresh this announcement's interactions
-      const newItem = await apiRepository.getInteractions(id);
-      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: newItem } : a));
+      // Sync with server response
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: updatedInteractions } : a));
     } catch {
       toast({ title: 'Reaction failed', variant: 'destructive' });
+      // Rollback: Fetch fresh interactions
+      try {
+        const fresh = await apiRepository.getInteractions(id);
+        setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: fresh } : a));
+      } catch { /* if this fails too, it will sync on next poll */ }
+    } finally {
+      setPendingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
   const handleAddComment = async (id: number, text: string) => {
     if (!user) return;
+    
+    // Optimistic count update for the parent feed
+    setAnnouncements(prev => prev.map(a => {
+      if (a.id === id) {
+        return {
+          ...a,
+          interactions: {
+            ...a.interactions!,
+            comments_count: (a.interactions?.comments_count || 0) + 1
+          }
+        };
+      }
+      return a;
+    }));
+
     try {
       await apiRepository.createComment(id, {
         announcement_id: id,
         author_user_id: user.id,
         content: text
       });
-      // Refresh interactions for count
+      // The PostCard component handles its own comment list refresh, 
+      // so we just need to make sure the interactions count remains correct.
       const newItem = await apiRepository.getInteractions(id);
       setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: newItem } : a));
-    } catch {
-      throw new Error('Comment failed');
+    } catch (e) {
+      // Rollback count
+      const fresh = await apiRepository.getInteractions(id);
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, interactions: fresh } : a));
+      throw e;
     }
   };
 

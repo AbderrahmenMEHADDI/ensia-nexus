@@ -178,7 +178,7 @@ export const apiRepository = {
   createComment: (id: number, data: Partial<Comment>) => api.post<Comment>(`/announcements/${id}/comments`, data),
   deleteComment: (announcementId: number, commentId: number) =>
     api.delete<void>(`/announcements/${announcementId}/comments/${commentId}`),
-  reactToAnnouncement: (id: number, data: Partial<Reaction>) => api.post<{status: string, reaction: string | null}>(`/announcements/${id}/react`, data),
+  reactToAnnouncement: (id: number, data: Partial<Reaction>) => api.post<Announcement['interactions']>(`/announcements/${id}/react`, data),
 
   // ── Auth utility endpoints ───────────────────────────────────────────────
   forgetPassword: (email: string) =>
