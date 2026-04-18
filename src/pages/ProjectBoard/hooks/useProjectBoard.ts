@@ -186,7 +186,14 @@ export const useProjectBoard = () => {
       )
     : [];
 
-  const publicProjects = projects.filter(isProjectOpenForStudentApplications);
+  const acceptedProjectIds = applications
+    .filter(a => a.status === 'ACCEPTED')
+    .map(a => a.project_id);
+  const hasAccepted = acceptedProjectIds.length > 0;
+
+  const publicProjects = projects.filter(p => 
+    isProjectOpenForStudentApplications(p) && !acceptedProjectIds.includes(Number(p.id))
+  );
   const validatedGroups = groups.filter(g => 
     g.is_validated && (
       g.leader_user_id === user?.id ||
@@ -442,12 +449,16 @@ export const useProjectBoard = () => {
     }
   };
 
+  const displayProjects = isStudent && hasAccepted
+    ? projects.filter(p => acceptedProjectIds.includes(Number(p.id)))
+    : projects;
+
   return {
     user,
     isStudent,
     canManageProjects,
     canCreateProjects,
-    projects,
+    projects: displayProjects,
     applications,
     localTasks,
     participants,

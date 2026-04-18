@@ -19,6 +19,7 @@ interface StudentDiscoveryViewProps {
   setApplyMotivation: (val: string) => void;
   applySubmitting: boolean;
   handleApplyToProject: () => void;
+  className?: string;
 }
 
 export const StudentDiscoveryView = ({
@@ -33,9 +34,10 @@ export const StudentDiscoveryView = ({
   setApplyMotivation,
   applySubmitting,
   handleApplyToProject,
+  className = "container py-10",
 }: StudentDiscoveryViewProps) => {
   return (
-    <div className="container py-10">
+    <div className={className}>
       <motion.div >
         <div className="mb-8">
           <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
