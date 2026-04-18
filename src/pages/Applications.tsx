@@ -19,7 +19,7 @@ import type {
 } from '@/types';
 import { FileText, CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
+import { StudentProfileModal } from '@/components/StudentProfileModal';
 const Applications = () => {
   const { user, isTeacher } = useAuth();
   const { toast } = useToast();
@@ -38,6 +38,7 @@ const Applications = () => {
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [projectDecisionNote, setProjectDecisionNote] = useState('');
   const [reviewingProjectId, setReviewingProjectId] = useState<number | null>(null);
+  const [viewingProfileUser, setViewingProfileUser] = useState<User | null>(null);
 
   const getUserById = (id: number) => users.find(u => u.id === id);
   const getProjectById = (id: number) => projects.find(p => p.id === id);
@@ -373,7 +374,7 @@ const Applications = () => {
                         <ApplicationStatusBadge status={app.status} />
                       </div>
                       <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                        <span>by {student?.full_name}</span>
+                        <span>by <button onClick={() => setViewingProfileUser(student || null)} className="hover:underline hover:text-primary transition-colors focus:outline-none">{student?.full_name || 'Unknown'}</button></span>
                         {student && <RoleBadge role={student.role} />}
                         <span>· Applied {new Date(app.created_at).toLocaleDateString()}</span>
                       </div>
@@ -536,6 +537,7 @@ const Applications = () => {
           )}
         </div>
       </motion.div>
+      <StudentProfileModal user={viewingProfileUser} onClose={() => setViewingProfileUser(null)} />
     </div>
   );
 };

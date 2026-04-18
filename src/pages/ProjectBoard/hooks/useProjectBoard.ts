@@ -187,7 +187,12 @@ export const useProjectBoard = () => {
     : [];
 
   const publicProjects = projects.filter(isProjectOpenForStudentApplications);
-  const validatedGroups = groups.filter(g => g.is_validated);
+  const validatedGroups = groups.filter(g => 
+    g.is_validated && (
+      g.leader_user_id === user?.id ||
+      groupMembers.some(gm => gm.group_id === g.id && gm.user_id === user?.id && gm.is_active)
+    )
+  );
   const canReviewSelectedProject = Boolean(
     project &&
     getProjectStatus(project) === 'PENDING' &&
