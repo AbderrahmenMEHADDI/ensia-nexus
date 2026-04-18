@@ -274,6 +274,25 @@ const ProjectBoard = () => {
         createResourceLoading={board.createResourceLoading}
         handleCreateResource={board.handleCreateResource}
       />
+
+      {board.isStudent && board.publicProjects.length > 0 && (
+        <div className="mt-16 pt-10 border-t border-border/50">
+          <StudentDiscoveryView
+            publicProjects={board.publicProjects}
+            getGroupById={board.getGroupById}
+            getBlockingApplication={board.getBlockingApplication}
+            getApplyButtonLabel={board.getApplyButtonLabel}
+            handleOpenApply={board.handleOpenApply}
+            applyOpen={board.applyOpen}
+            setApplyOpen={board.setApplyOpen}
+            applyMotivation={board.applyMotivation}
+            setApplyMotivation={board.setApplyMotivation}
+            applySubmitting={board.applySubmitting}
+            handleApplyToProject={board.handleApplyToProject}
+            className="w-full"
+          />
+        </div>
+      )}
     </div>
   );
 };
