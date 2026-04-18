@@ -136,6 +136,10 @@ export const apiRepository = {
     api.get<ProjectResource[]>(
       projectId ? `/project-resources/?project_id=${projectId}` : '/project-resources/'
     ),
+  createProjectResource: (data: Partial<ProjectResource>) =>
+    api.post<ProjectResource>('/project-resources/', data),
+  deleteProjectResource: (id: number) =>
+    api.delete<void>(`/project-resources/${id}`),
 
   // ── Tasks ─────────────────────────────────────────────────────────────────
   getTasks: (projectId?: number) =>
