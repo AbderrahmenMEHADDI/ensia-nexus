@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 import type { Announcement, User, Project, ResearchGroup, Task, Comment } from '@/types';
 
 function timeAgo(dateStr: string): string {
@@ -142,9 +143,12 @@ const PostCard = ({
     >
       {/* Author header */}
       <div className="flex items-start gap-3 p-5 pb-0">
-        <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
-          {author.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-        </div>
+        <ProfileAvatar
+          userId={author.id}
+          name={author.full_name}
+          className="h-10 w-10 shrink-0 rounded-full bg-muted text-sm font-medium text-muted-foreground"
+          textClassName="text-sm font-medium text-muted-foreground"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-foreground">{author.full_name}</span>
@@ -259,9 +263,12 @@ const PostCard = ({
                   const isDeletingComment = deletingCommentIds.includes(comment.id);
                   return (
                     <div key={comment.id} className="flex gap-2.5">
-                      <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                        {cAuthor.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </div>
+                      <ProfileAvatar
+                        userId={cAuthor.id}
+                        name={cAuthor.full_name}
+                        className="h-7 w-7 shrink-0 rounded-full bg-muted text-[10px] font-medium text-muted-foreground"
+                        textClassName="text-[10px] font-medium text-muted-foreground"
+                      />
                       <div className="flex-1 min-w-0">
                         <div className="rounded-lg bg-accent/50 p-2.5">
                           <div className="flex items-center gap-2">
@@ -292,9 +299,12 @@ const PostCard = ({
               {/* New comment input */}
               {user && (
                 <div className="flex gap-2.5 pt-1">
-                  <div className="h-7 w-7 shrink-0 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground">
-                    {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
+                  <ProfileAvatar
+                    userId={user.id}
+                    name={user.full_name}
+                    className="h-7 w-7 shrink-0 rounded-full bg-muted text-[10px] font-medium text-muted-foreground"
+                    textClassName="text-[10px] font-medium text-muted-foreground"
+                  />
                   <div className="flex-1 flex gap-2">
                     <Input
                       value={newComment}
@@ -492,9 +502,12 @@ const Feed = () => {
             {(isTeacher || isAdmin) && (
               <div className="rounded-xl border border-border bg-card p-4">
                 <div className="flex gap-3">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
-                    {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
+                  <ProfileAvatar
+                    userId={user?.id}
+                    name={user?.full_name}
+                    className="h-10 w-10 shrink-0 rounded-full bg-muted text-sm font-medium text-muted-foreground"
+                    textClassName="text-sm font-medium text-muted-foreground"
+                  />
                   <div className="flex-1 space-y-2">
                     <Input
                       value={newPostTitle}
@@ -551,9 +564,12 @@ const Feed = () => {
             {/* Quick stats */}
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-base font-semibold text-muted-foreground">
-                  {user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                </div>
+                <ProfileAvatar
+                  userId={user?.id}
+                  name={user?.full_name}
+                  className="h-12 w-12 rounded-full bg-muted text-base font-semibold text-muted-foreground"
+                  textClassName="text-base font-semibold text-muted-foreground"
+                />
                 <div>
                   <p className="text-sm font-semibold text-foreground">{user?.full_name}</p>
                   <RoleBadge role={user?.role || 'STUDENT'} />

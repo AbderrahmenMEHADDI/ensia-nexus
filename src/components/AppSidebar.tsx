@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom';
 import { type UserRole } from '@/types';
-import { NavLink } from '@/components/NavLink';
-import { RoleBadge } from '@/components/Badges';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { apiRepository } from '@/repositories/apiRepository';
@@ -14,10 +12,11 @@ import {
   Settings,
   LogOut,
   MessageCircle,
-  Megaphone,
   FileUser,
   Users,
   FlaskConical,
+  MoreHorizontal,
+  type LucideIcon,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,7 +30,6 @@ import {
   SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,9 +37,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { ChevronUp, MoreHorizontal } from 'lucide-react';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 
-const navItems: { path: string; label: string; icon: any; allowedRoles?: UserRole[] }[] = [
+const navItems: { path: string; label: string; icon: LucideIcon; allowedRoles?: UserRole[] }[] = [
   { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
   { path: '/projects', label: 'Project Board', icon: Kanban },
   { path: '/my-labs', label: 'My Labs', icon: FlaskConical, allowedRoles: ['TEACHER', 'ADMIN'] },
@@ -149,9 +147,12 @@ export function AppSidebar() {
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-1 ring-primary/20">
-                    {user?.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
+                  <ProfileAvatar
+                    userId={user?.id}
+                    name={user?.full_name}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-1 ring-primary/20 overflow-hidden"
+                    textClassName="text-xs font-semibold text-primary"
+                  />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold text-foreground">{user?.full_name}</span>
                     <span className="truncate text-xs text-muted-foreground capitalize">{user?.role.toLowerCase()}</span>
@@ -166,9 +167,12 @@ export function AppSidebar() {
                 sideOffset={4}
               >
                 <div className="flex items-center gap-2 p-2">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {user?.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
+                  <ProfileAvatar
+                    userId={user?.id}
+                    name={user?.full_name}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary overflow-hidden"
+                    textClassName="text-xs font-semibold text-primary"
+                  />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold text-foreground">{user?.full_name}</span>
                     <span className="truncate text-xs text-muted-foreground">{user?.email}</span>

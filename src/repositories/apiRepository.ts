@@ -24,6 +24,7 @@ export const apiRepository = {
     api.post<User>('/users/', data),
   getUser: (id: number) => api.get<User>(`/users/${id}`),
   updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
+  updateProfilePicture: (data: FormData) => api.put<User>(`/users/profile-picture`, data),
   deleteUser: (id: number) => api.delete<void>(`/users/${id}`),
   getUsersPaged: (params: {
     skip?: number;
