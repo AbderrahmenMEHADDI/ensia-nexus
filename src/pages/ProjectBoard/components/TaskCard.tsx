@@ -53,12 +53,14 @@ export const TaskCard = ({
       <div className="flex items-center justify-between">
         <PriorityBadge priority={task.priority} />
         {assignee && (
-          <ProfileAvatar
-            userId={assignee.id}
-            name={assignee.full_name}
-            className="h-5 w-5 rounded-full bg-secondary text-[10px] font-medium text-secondary-foreground"
-            textClassName="text-[10px] font-medium text-secondary-foreground"
-          />
+          <span title={assignee.full_name} aria-label={assignee.full_name}>
+            <ProfileAvatar
+              userId={assignee.id}
+              name={assignee.full_name}
+              className="h-5 w-5 rounded-full bg-secondary text-[10px] font-medium text-secondary-foreground"
+              textClassName="text-[10px] font-medium text-secondary-foreground"
+            />
+          </span>
         )}
       </div>
       {task.due_date && (
