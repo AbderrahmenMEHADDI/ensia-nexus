@@ -1,6 +1,7 @@
 import { Trash2, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { ChatMessage } from '@/types';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -50,9 +51,12 @@ const ChatMessageItem = ({
       className={`flex gap-4 ${sameAuthor ? 'mt-0.5' : 'mt-6'} group relative`}
     >
       {!sameAuthor ? (
-        <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold shadow-md border select-none transition-transform group-hover:scale-105 duration-300 ${avatarColorClass}`}>
-          {message.sender_name?.split(' ').map(n => n[0]).join('').slice(0, 2) || '?'}
-        </div>
+        <ProfileAvatar
+          userId={message.sender_user_id}
+          name={message.sender_name}
+          className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center text-xs font-bold shadow-md border select-none transition-transform group-hover:scale-105 duration-300 ${avatarColorClass}`}
+          textClassName="text-xs font-bold"
+        />
       ) : (
         <div className="w-10 shrink-0 flex justify-end pr-3 select-none">
           <span className="text-[10px] text-muted-foreground/0 group-hover:text-muted-foreground/60 transition-colors">

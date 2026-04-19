@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { clearCachedProfilePicture } from '@/lib/profilePictureCache';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 import type { Student, Teacher, Project, Task, ProjectParticipant, User, StudentPreviousProject } from '@/types';
 
 const Profile = () => {
@@ -36,6 +39,9 @@ const Profile = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -83,7 +89,7 @@ const Profile = () => {
       }
     };
     load();
-  }, [user]);
+  }, [user, isTeacher]);
 
   const handleSaveProfileDetails = async () => {
     if (!user) return;
@@ -105,10 +111,10 @@ const Profile = () => {
       setProfileUser(updated);
       setIsEditingProfileDetails(false);
       toast({ title: 'Profile details updated' });
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: 'Failed to update profile details',
-        description: e?.message || 'Request failed',
+        description: e instanceof Error ? e.message : 'Request failed',
         variant: 'destructive'
       });
     } finally {
@@ -132,10 +138,10 @@ const Profile = () => {
       setNewPreviousProjectDescription('');
       setShowPreviousProjectForm(false);
       toast({ title: 'Previous project added' });
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: 'Failed to add previous project',
-        description: e?.message || 'Request failed',
+        description: e instanceof Error ? e.message : 'Request failed',
         variant: 'destructive'
       });
     } finally {
@@ -148,12 +154,52 @@ const Profile = () => {
       await apiRepository.deleteStudentPreviousProject(projectId);
       setPreviousProjects(prev => prev.filter(item => item.id !== projectId));
       toast({ title: 'Previous project removed' });
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: 'Failed to remove previous project',
-        description: e?.message || 'Request failed',
+        description: e instanceof Error ? e.message : 'Request failed',
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      await apiRepository.updateProfilePicture(formData);
+      clearCachedProfilePicture(user.id);
+      window.location.reload();
+    } catch (e: unknown) {
+      toast({
+        title: 'Failed to update profile picture',
+        description: e instanceof Error ? e.message : 'Request failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleAvatarUrlUpdate = async () => {
+    if (!user || !avatarUrl.trim()) return;
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('url', avatarUrl.trim());
+      await apiRepository.updateProfilePicture(formData);
+      clearCachedProfilePicture(user.id);
+      window.location.reload();
+    } catch (e: unknown) {
+      toast({
+        title: 'Failed to update profile picture',
+        description: e instanceof Error ? e.message : 'Request failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -185,11 +231,61 @@ const Profile = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-6 p-6 rounded-2xl border border-border bg-card shadow-sm">
           <div className="flex items-center gap-5">
-            <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20 shadow-inner">
-              <span className="text-2xl font-display font-bold text-primary">
-                {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-              </span>
-            </div>
+            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+              <DialogTrigger asChild>
+                <button className="relative group rounded-2xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                  <ProfileAvatar
+                    userId={user.id}
+                    name={user.full_name}
+                    className="h-20 w-20 rounded-2xl bg-primary/10 ring-1 ring-primary/20 shadow-inner"
+                    textClassName="text-2xl font-display font-bold text-primary"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 rounded-2xl">
+                    <span className="text-xs font-semibold text-white">Edit</span>
+                  </div>
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Update Profile Picture</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-picture">Upload Image</Label>
+                    <Input
+                      id="profile-picture"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAvatarUpload(file);
+                      }}
+                      disabled={uploadingAvatar}
+                    />
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-url">Paste URL</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="profile-url"
+                        type="url"
+                        placeholder="https://..."
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                        disabled={uploadingAvatar}
+                      />
+                      <Button onClick={handleAvatarUrlUpdate} disabled={uploadingAvatar || !avatarUrl.trim()}>
+                        {uploadingAvatar ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <div className="space-y-1">
               <h1 className="text-2xl font-display font-bold text-foreground leading-tight">{user.full_name}</h1>
               <div className="flex flex-wrap items-center gap-3">

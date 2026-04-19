@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectStatusBadge } from '@/components/Badges';
 import { getProjectStatus } from '@/lib/projectAccess';
-import type { Project, User, ProjectParticipant } from '@/types';
+import type { Project, ProjectParticipant, ProjectReviewStatus, User } from '@/types';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 
 interface ProjectBoardHeaderProps {
   project: Project;
@@ -108,9 +109,13 @@ export const ProjectBoardHeader = ({
           const u = getUserById(p.user_id);
           if (!u) return null;
           return (
-            <div key={p.user_id} className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground" title={u.full_name}>
-              {u.full_name.split(' ').map(n => n[0]).join('')}
-            </div>
+            <ProfileAvatar
+              key={p.user_id}
+              userId={u.id}
+              name={u.full_name}
+              className="h-7 w-7 rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
+              textClassName="text-xs font-medium text-secondary-foreground"
+            />
           );
         })}
       </div>
