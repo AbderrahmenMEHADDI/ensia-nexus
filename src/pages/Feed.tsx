@@ -608,10 +608,6 @@ const Feed = () => {
                       className="w-full text-sm rounded-xl bg-background/60 border border-border/70 text-foreground placeholder:text-muted-foreground resize-none min-h-[104px]"
                     />
                     <div className="flex items-center justify-between gap-3 mt-1">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Visible to all members</span>
-                      </div>
                       <Button size="sm" onClick={handlePost} disabled={!newPostContent.trim()} className="h-9 px-4 text-xs rounded-lg">
                         Post Announcement
                       </Button>
