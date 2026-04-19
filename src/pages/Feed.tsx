@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import {
-  Heart, Bookmark, MessageCircle, Send, MoreHorizontal,
+  Heart, MessageCircle, Send, MoreHorizontal,
   Users, FlaskConical, ChevronDown, ChevronUp, Sparkles, Loader2, Info, Tag as TagIcon, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -149,10 +149,10 @@ const PostCard = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-2xl border border-border/70 bg-card overflow-hidden shadow-sm"
     >
       {/* Author header */}
-      <div className="flex items-start gap-3 p-5 pb-0">
+      <div className="flex items-start gap-3 p-5 pb-2">
         <ProfileAvatar
           userId={author.id}
           name={author.full_name}
@@ -160,10 +160,10 @@ const PostCard = ({
           textClassName="text-sm font-medium text-muted-foreground"
         />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-foreground">{author.full_name}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[15px] font-semibold text-foreground leading-none">{author.full_name}</span>
             <RoleBadge role={author.role} />
-            <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border bg-accent/50 border-border`}>
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border bg-accent/40 border-border/70 text-muted-foreground">
               {post.category}
             </span>
             {canDeletePost && (
@@ -172,7 +172,7 @@ const PostCard = ({
                 size="icon"
                 onClick={handleDeletePost}
                 disabled={deletingPost}
-                className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                className="ml-auto h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-60"
                 aria-label="Delete post"
                 title="Delete post"
               >
@@ -187,13 +187,13 @@ const PostCard = ({
       </div>
 
       {/* Content */}
-      <div className="px-5 pt-3 pb-4">
-        <h3 className="text-base font-semibold text-foreground mb-2">{post.title}</h3>
-        <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{post.content}</p>
+      <div className="px-5 pt-2 pb-4">
+        <h3 className="text-lg font-semibold text-foreground mb-2 leading-snug">{post.title}</h3>
+        <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">{post.content}</p>
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
             {tags.map(tag => (
-              <span key={tag} className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-accent text-accent-foreground">
+              <span key={tag} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-accent/70 text-accent-foreground border border-border/60">
                 #{tag.trim()}
               </span>
             ))}
@@ -226,11 +226,11 @@ const PostCard = ({
       )}
 
       {/* Action buttons */}
-      <div className="flex items-center border-t border-border">
+      <div className="grid grid-cols-2 border-t border-border/70">
         <Button
           variant="ghost"
           onClick={() => onReact(post.id, 'like')}
-          className={`flex-1 flex items-center justify-center gap-2 rounded-none py-6 text-sm font-medium transition-colors hover:bg-accent/50 ${isLiked ? 'text-primary hover:text-primary' : 'text-muted-foreground'}`}
+          className={`flex items-center justify-center gap-2 rounded-none py-5 text-sm font-medium transition-colors hover:bg-accent/40 ${isLiked ? 'text-primary hover:text-primary' : 'text-muted-foreground'}`}
         >
           <Heart className={`h-4 w-4 ${isLiked ? 'fill-primary' : ''}`} />
           Like
@@ -238,17 +238,10 @@ const PostCard = ({
         <Button
           variant="ghost"
           onClick={toggleComments}
-          className="flex-1 flex items-center justify-center gap-2 rounded-none py-6 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
+          className="flex items-center justify-center gap-2 rounded-none py-5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/40"
         >
           {loadingComments ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
           {loadingComments ? 'Loading...' : 'Comment'}
-        </Button>
-        <Button
-          variant="ghost"
-          className="flex-1 flex items-center justify-center gap-2 rounded-none py-6 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50"
-        >
-          <Bookmark className="h-4 w-4" />
-          Save
         </Button>
       </div>
 
@@ -585,41 +578,37 @@ const Feed = () => {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <div className="grid lg:grid-cols-[1fr_280px] gap-6">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px] gap-6 lg:gap-8 items-start">
           {/* Main column */}
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Composer */}
             {(isTeacher || isAdmin) && (
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex gap-3">
+              <div className="rounded-2xl border border-border/70 bg-card p-5">
+                <div className="flex gap-3 items-start">
                   <ProfileAvatar
                     userId={user?.id}
                     name={user?.full_name}
                     className="h-10 w-10 shrink-0 rounded-full bg-muted text-sm font-medium text-muted-foreground"
                     textClassName="text-sm font-medium text-muted-foreground"
                   />
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 space-y-3">
                     <Input
                       value={newPostTitle}
                       onChange={e => setNewPostTitle(e.target.value)}
                       placeholder="Title (optional)"
-                      className="w-full text-sm font-semibold bg-transparent text-foreground placeholder:text-muted-foreground border-none focus-visible:ring-0 px-0 h-auto"
+                      className="h-10 w-full text-sm font-semibold rounded-xl bg-background/60 border border-border/70 text-foreground placeholder:text-muted-foreground"
                     />
                     <Textarea
                       value={newPostContent}
                       onChange={e => setNewPostContent(e.target.value)}
                       placeholder="Share an update, insight, or milestone..."
                       rows={3}
-                      className="w-full text-sm bg-transparent text-foreground placeholder:text-muted-foreground resize-none focus-visible:ring-0 border-none px-0 min-h-[80px]"
+                      className="w-full text-sm rounded-xl bg-background/60 border border-border/70 text-foreground placeholder:text-muted-foreground resize-none min-h-[104px]"
                     />
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Visible to all members</span>
-                      </div>
-                      <Button size="sm" onClick={handlePost} disabled={!newPostContent.trim()} className="h-8 px-4 text-xs">
+                    <div className="flex items-center justify-between gap-3 mt-1">
+                      <Button size="sm" onClick={handlePost} disabled={!newPostContent.trim()} className="h-9 px-4 text-xs rounded-lg">
                         Post Announcement
                       </Button>
                     </div>
@@ -652,9 +641,9 @@ const Feed = () => {
           </div>
 
           {/* Right sidebar */}
-          <aside className="hidden lg:block space-y-5">
+          <aside className="hidden lg:block space-y-5 lg:sticky lg:top-4">
             {/* Quick stats */}
-            <div className="rounded-xl border border-border bg-card p-4">
+            <div className="rounded-2xl border border-border/70 bg-card p-5">
               <div className="flex items-center gap-3 mb-4">
                 <ProfileAvatar
                   userId={user?.id}
@@ -667,16 +656,16 @@ const Feed = () => {
                   <RoleBadge role={user?.role || 'STUDENT'} />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="p-2 rounded-lg bg-accent/50">
+              <div className="grid grid-cols-3 gap-2.5 text-center">
+                <div className="p-2.5 rounded-lg bg-accent/50">
                   <span className="text-lg font-display font-semibold text-foreground">{projects.length}</span>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Projects</p>
                 </div>
-                <div className="p-2 rounded-lg bg-accent/50">
+                <div className="p-2.5 rounded-lg bg-accent/50">
                   <span className="text-lg font-display font-semibold text-foreground">{activeTasks.length}</span>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Tasks</p>
                 </div>
-                <div className="p-2 rounded-lg bg-accent/50">
+                <div className="p-2.5 rounded-lg bg-accent/50">
                   <span className="text-lg font-display font-semibold text-foreground">{myGroups.length}</span>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Groups</p>
                 </div>
@@ -685,7 +674,7 @@ const Feed = () => {
 
             {/* My Groups */}
             {myGroups.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-4">
+              <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">My Led Groups</h3>
                 <div className="space-y-2.5">
                   {myGroups.map(group => (
@@ -707,7 +696,7 @@ const Feed = () => {
 
             {/* Trending tags */}
             {trendingTags.length > 0 && (
-              <div className="rounded-xl border border-border bg-card p-4">
+              <div className="rounded-2xl border border-border/70 bg-card p-5">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Recent Topics</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {trendingTags.map(tag => (
