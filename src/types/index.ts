@@ -44,6 +44,7 @@ export interface User {
   full_name: string;
   email: string;
   role: UserRole;
+  profile_picture_url?: string;
   institution?: string;
   department?: string;
   contact_email?: string;

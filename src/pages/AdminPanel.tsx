@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { Badge } from '@/components/ui/badge'; // this is for displaying lab admins in the lab cards
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -793,9 +794,12 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
               {users.map(u => (
                 <div key={u.id} className="p-3 rounded-lg border border-border bg-card flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground">
-                      {u.full_name.split(' ').map(n => n[0]).join('')}
-                    </div>
+                    <ProfileAvatar
+                      userId={u.id}
+                      name={u.full_name}
+                      className="h-8 w-8 rounded-lg bg-secondary text-xs font-medium text-secondary-foreground"
+                      textClassName="text-xs font-medium text-secondary-foreground"
+                    />
                     <div>
                       <span className="text-sm font-medium text-foreground block">{u.full_name}</span>
                       <span className="text-xs font-mono text-muted-foreground">{u.email}</span>
