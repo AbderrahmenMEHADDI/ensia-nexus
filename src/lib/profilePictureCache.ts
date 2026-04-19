@@ -29,11 +29,11 @@ export function clearCachedProfilePicture(userId: number) {
 
 export async function fetchAndCacheProfilePicture(userId: number): Promise<string | null> {
   try {
-    // Use plain fetch to avoid apiClient adding Content-Type or 'include' credentials.
-    // This prevents CORS preflight OPTIONS requests when following 307 redirects to external images.
+    // Use plain fetch so we avoid apiClient adding non-simple headers such as Content-Type.
+    // Keep credentials included so cookie-based auth is sent with the request.
     const response = await fetch(`${BASE_URL}/users/${userId}/profile-picture`, {
       method: 'GET',
-      credentials: 'omit',
+      credentials: 'include',
     });
 
     if (!response.ok) return null;
