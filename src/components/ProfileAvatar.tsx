@@ -28,15 +28,27 @@ export function ProfileAvatar({
   useEffect(() => {
     if (!userId || imageUrl) return;
 
+    let cancelled = false;
+
     const cached = getCachedProfilePicture(userId);
     if (cached) {
-      setResolvedUrl(cached);
-      return;
+      if (!cancelled) {
+        setResolvedUrl(cached);
+      }
+      return () => {
+        cancelled = true;
+      };
     }
 
     fetchAndCacheProfilePicture(userId).then((url) => {
-      if (url) setResolvedUrl(url);
+      if (!cancelled && url) {
+        setResolvedUrl(url);
+      }
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, imageUrl]);
 
   const initials = name
