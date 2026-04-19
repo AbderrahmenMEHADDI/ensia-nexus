@@ -83,7 +83,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
             <ThemeToggle />
           </header>
-          <main className="flex-1 relative z-0 flex flex-col overflow-hidden">{children}</main>
+          <main className="flex-1 relative z-0 flex flex-col overflow-y-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>
