@@ -723,7 +723,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                         <div className="flex items-center gap-2">
                           {myLabsOnly && (
                             <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-normal text-muted-foreground hover:text-foreground">
-                              <Link to={`/my-labs/groups/${group.id}`}>
+                              <Link to={`/my-labs/${group.id}`}>
                                 Details
                               </Link>
                             </Button>

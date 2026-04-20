@@ -128,7 +128,7 @@ const MyLabDetails = () => {
                   {group.description}
                 </p>
 
-                <Link to={`/my-labs/groups/${group.id}`} className="inline-flex items-center text-sm font-semibold text-primary hover:underline gap-1.5">
+                <Link to={`/my-labs/${group.id}`} className="inline-flex items-center text-sm font-semibold text-primary hover:underline gap-1.5">
                   View Group Details <ChevronRight className="h-4 w-4" />
                 </Link>
               </motion.div>
