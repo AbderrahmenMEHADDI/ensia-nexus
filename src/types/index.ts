@@ -315,3 +315,7 @@ export interface FeedSave {
   post_id: number;
   user_id: number;
 }
+
+export interface UserProfileImageURL {
+  profile_picture_url: string
+}
