@@ -52,6 +52,7 @@ export function ProfileAvatar({
           src={resolvedUrl}
           alt={name || 'User'}
           className={cn('h-full w-full object-cover', imgClassName)}
+          onError={() => setResolvedUrl(null)}
         />
       ) : (
         <span className={textClassName}>{initials}</span>
