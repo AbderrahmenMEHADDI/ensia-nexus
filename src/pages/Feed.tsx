@@ -342,6 +342,7 @@ const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostTitle, setNewPostTitle] = useState('');
+  const [isPostingAnnouncement, setIsPostingAnnouncement] = useState(false);
 
   const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
 
@@ -506,7 +507,8 @@ const Feed = () => {
   };
 
   const handlePost = async () => {
-    if (!newPostContent.trim() || !user) return;
+    if (!newPostContent.trim() || !user || isPostingAnnouncement) return;
+    setIsPostingAnnouncement(true);
     try {
       const created = await apiRepository.createAnnouncement({
         title: newPostTitle.trim() || 'New Update',
@@ -536,6 +538,8 @@ const Feed = () => {
       loadData({ silent: true });
     } catch {
       toast({ title: 'Failed to post', variant: 'destructive' });
+    } finally {
+      setIsPostingAnnouncement(false);
     }
   };
 
@@ -608,8 +612,15 @@ const Feed = () => {
                       className="w-full text-sm rounded-xl bg-background/60 border border-border/70 text-foreground placeholder:text-muted-foreground resize-none min-h-[104px]"
                     />
                     <div className="flex items-center justify-between gap-3 mt-1">
-                      <Button size="sm" onClick={handlePost} disabled={!newPostContent.trim()} className="h-9 px-4 text-xs rounded-lg">
-                        Post Announcement
+                      <Button size="sm" onClick={handlePost} disabled={!newPostContent.trim() || isPostingAnnouncement} className="h-9 px-4 text-xs rounded-lg">
+                        {isPostingAnnouncement ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                            Posting...
+                          </>
+                        ) : (
+                          'Post Announcement'
+                        )}
                       </Button>
                     </div>
                   </div>
