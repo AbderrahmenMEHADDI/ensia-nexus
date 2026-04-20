@@ -1,4 +1,4 @@
-import {api, BASE_URL} from './apiClient';
+import { api, BASE_URL } from './apiClient';
 import type { User } from '@/types';
 
 export async function fetchProfilePicture(userId: number): Promise<string | null> {
