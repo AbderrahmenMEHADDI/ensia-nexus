@@ -1,57 +1,18 @@
-import { BASE_URL } from './apiClient';
+import { api, BASE_URL } from './apiClient';
+import type { User } from '@/types';
 
-const cacheKey = (userId: number) => `profile_picture_${userId}`;
-
-export function getCachedProfilePicture(userId?: number): string | null {
-  if (!userId) return null;
+export async function fetchProfilePicture(userId: number): Promise<string | null> {
   try {
-    return sessionStorage.getItem(cacheKey(userId));
-  } catch {
-    return null;
-  }
-}
+    const user = await api.get<User>(`/users/${userId}`);
 
-export function setCachedProfilePicture(userId: number, value: string) {
-  try {
-    sessionStorage.setItem(cacheKey(userId), value);
-  } catch {
-    // Ignore storage errors (quota, privacy mode)
-  }
-}
+    let url = user.profile_picture_url;
+    if (!url) return null;
 
-export function clearCachedProfilePicture(userId: number) {
-  try {
-    sessionStorage.removeItem(cacheKey(userId));
-  } catch {
-    // Ignore
-  }
-}
+    if (url.startsWith('/')) {
+      url = `${BASE_URL}${url}`;
+    }
 
-export async function fetchAndCacheProfilePicture(userId: number): Promise<string | null> {
-  try {
-    // Use plain fetch so we avoid apiClient adding non-simple headers such as Content-Type.
-    // Keep credentials included so cookie-based auth is sent with the request.
-    const response = await fetch(`${BASE_URL}/users/${userId}/profile-picture`, {
-      method: 'GET',
-      credentials: 'include',
-    });
-
-    if (!response.ok) return null;
-
-    const blob = await response.blob();
-
-    // Check if it's actually an image blob or if there was a CORS/network redirect
-    if (!blob || blob.size === 0 || blob.type.includes('json')) return null;
-
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read image data'));
-      reader.readAsDataURL(blob);
-    });
-
-    setCachedProfilePicture(userId, dataUrl);
-    return dataUrl;
+    return url;
   } catch {
     return null;
   }
