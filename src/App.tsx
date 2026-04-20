@@ -106,7 +106,7 @@ const AppRoutes = () => (
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />
       <Route path="/my-labs" element={<LabAdminProtectedRoute><AdminPanel myLabsOnly /></LabAdminProtectedRoute>} />
       <Route path="/my-labs/labs/:labId" element={<LabAdminProtectedRoute><MyLabDetails /></LabAdminProtectedRoute>} />
-      <Route path="/my-labs/:groupId" element={<LabAdminProtectedRoute><MyLabGroupDetails /></LabAdminProtectedRoute>} />
+      <Route path="/my-labs/groups/:groupId" element={<LabAdminProtectedRoute><MyLabGroupDetails /></LabAdminProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>
