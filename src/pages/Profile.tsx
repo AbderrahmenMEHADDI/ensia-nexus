@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { clearCachedProfilePicture } from '@/lib/profilePictureCache';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import type { Student, Teacher, Project, Task, ProjectParticipant, User, StudentPreviousProject } from '@/types';
 
@@ -170,7 +169,6 @@ const Profile = () => {
       const formData = new FormData();
       formData.append('file', file);
       await apiRepository.updateProfilePicture(formData);
-      clearCachedProfilePicture(user.id);
       window.location.reload();
     } catch (e: unknown) {
       toast({
@@ -190,7 +188,6 @@ const Profile = () => {
       const formData = new FormData();
       formData.append('url', avatarUrl.trim());
       await apiRepository.updateProfilePicture(formData);
-      clearCachedProfilePicture(user.id);
       window.location.reload();
     } catch (e: unknown) {
       toast({
