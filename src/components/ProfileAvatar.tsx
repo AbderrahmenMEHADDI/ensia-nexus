@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { fetchAndCacheProfilePicture, getCachedProfilePicture } from '@/lib/profilePictureCache';
+import { fetchProfilePicture } from '@/lib/profilePictureCache';
 
 interface ProfileAvatarProps {
   userId?: number;
@@ -30,17 +30,7 @@ export function ProfileAvatar({
 
     let cancelled = false;
 
-    const cached = getCachedProfilePicture(userId);
-    if (cached) {
-      if (!cancelled) {
-        setResolvedUrl(cached);
-      }
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    fetchAndCacheProfilePicture(userId).then((url) => {
+    fetchProfilePicture(userId).then((url) => {
       if (!cancelled && url) {
         setResolvedUrl(url);
       }
@@ -69,4 +59,3 @@ export function ProfileAvatar({
     </div>
   );
 }
-
