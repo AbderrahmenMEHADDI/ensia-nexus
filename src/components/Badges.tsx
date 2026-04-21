@@ -1,4 +1,5 @@
 import { type UserRole, type TaskPriority, type TaskStatus, type ApplicationStatus, type ProjectStatus } from '@/types';
+import { cn } from '@/lib/utils';
 
 const roleConfig: Record<UserRole, { label: string; className: string }> = {
   STUDENT: { label: 'Student', className: 'bg-info/15 text-info border-info/30' },
@@ -8,10 +9,10 @@ const roleConfig: Record<UserRole, { label: string; className: string }> = {
 };
 
 
-export const RoleBadge = ({ role }: { role: UserRole }) => {
+export const RoleBadge = ({ role, className }: { role: UserRole; className?: string }) => {
   const config = roleConfig[role];
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${config.className}`}>
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border", config.className, className)}>
       {config.label}
     </span>
   );
@@ -24,10 +25,10 @@ const priorityConfig: Record<TaskPriority, { label: string; className: string }>
   URGENT: { label: 'Urgent', className: 'bg-priority-urgent/15 text-priority-urgent' },
 };
 
-export const PriorityBadge = ({ priority }: { priority: TaskPriority }) => {
+export const PriorityBadge = ({ priority, className }: { priority: TaskPriority; className?: string }) => {
   const config = priorityConfig[priority];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium ${config.className}`}>
+    <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium", config.className, className)}>
       {config.label}
     </span>
   );
@@ -41,10 +42,10 @@ const statusConfig: Record<TaskStatus, { label: string; className: string }> = {
   CANCELLED: { label: 'Cancelled', className: 'bg-status-cancelled/15 text-status-cancelled' },
 };
 
-export const StatusBadge = ({ status }: { status: TaskStatus }) => {
+export const StatusBadge = ({ status, className }: { status: TaskStatus; className?: string }) => {
   const config = statusConfig[status];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium ${config.className}`}>
+    <span className={cn("inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium", config.className, className)}>
       {config.label}
     </span>
   );
@@ -56,10 +57,10 @@ const appStatusConfig: Record<ApplicationStatus, { label: string; className: str
   REJECTED: { label: 'Rejected', className: 'bg-destructive/15 text-destructive border-destructive/30' },
 };
 
-export const ApplicationStatusBadge = ({ status }: { status: ApplicationStatus }) => {
+export const ApplicationStatusBadge = ({ status, className }: { status: ApplicationStatus; className?: string }) => {
   const config = appStatusConfig[status];
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${config.className}`}>
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border", config.className, className)}>
       {config.label}
     </span>
   );
@@ -71,10 +72,10 @@ const projectStatusConfig: Record<ProjectStatus, { label: string; className: str
   REJECTED: { label: 'Rejected', className: 'bg-destructive/15 text-destructive border-destructive/30' },
 };
 
-export const ProjectStatusBadge = ({ status }: { status: ProjectStatus }) => {
+export const ProjectStatusBadge = ({ status, className }: { status: ProjectStatus; className?: string }) => {
   const config = projectStatusConfig[status];
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${config.className}`}>
+    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border", config.className, className)}>
       {config.label}
     </span>
   );
