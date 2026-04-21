@@ -1,20 +1,60 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { apiRepository } from '@/repositories/apiRepository';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { LogOut, Moon, Sun } from 'lucide-react';
+import { LogOut, Moon, Sun, Loader2 } from 'lucide-react';
 
 const Settings = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, checkAuth } = useAuth();
+  const { toast } = useToast();
+  
   const [fullName, setFullName] = useState(user?.full_name || '');
+  const [isSaving, setIsSaving] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [applicationUpdates, setApplicationUpdates] = useState(true);
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  // Sync state if user loads later
+  useEffect(() => {
+    if (user?.full_name) setFullName(user.full_name);
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    if (!fullName.trim()) {
+      toast({
+        title: "Error",
+        description: "Full name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await apiRepository.updateUser(user.id, { full_name: fullName });
+      await checkAuth(); // Refresh the user data in context
+      toast({
+        title: "Success",
+        description: "Profile updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const toggleTheme = (dark: boolean) => {
     setIsDark(dark);
@@ -43,7 +83,13 @@ const Settings = () => {
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
-                  <Input id="name" value={fullName} onChange={e => setFullName(e.target.value)} className="h-11" />
+                  <Input 
+                    id="name" 
+                    value={fullName} 
+                    onChange={e => setFullName(e.target.value)} 
+                    className="h-11" 
+                    placeholder="John Doe"
+                  />
                 </div>
                 <div className="space-y-3">
                   <Label htmlFor="email" className="text-sm font-medium">Email</Label>
@@ -52,7 +98,21 @@ const Settings = () => {
                 </div>
               </div>
               <div className="pt-2">
-                <Button size="default" className="px-8">Save Changes</Button>
+                <Button 
+                  size="default" 
+                  className="px-8" 
+                  onClick={handleSaveProfile} 
+                  disabled={isSaving || fullName === user?.full_name}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
               </div>
             </div>
           </section>
