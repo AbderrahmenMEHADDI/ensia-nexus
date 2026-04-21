@@ -217,6 +217,7 @@ const ProjectBoard = () => {
         handleCreateTask={board.handleCreateTask}
         editOpen={board.editOpen}
         setEditOpen={board.setEditOpen}
+        editTaskId={board.editingTaskId || undefined}
         editTitle={board.editTitle}
         setEditTitle={board.setEditTitle}
         editDesc={board.editDesc}

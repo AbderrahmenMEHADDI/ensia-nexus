@@ -1,4 +1,5 @@
 import { api } from '../lib/apiClient';
+import type { TaskComment, TaskCommentCreate } from '../types';
 import type {
   User, UserListResponse, Student, Teacher,
   ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
@@ -150,6 +151,15 @@ export const apiRepository = {
   updateTask: (id: number, data: Partial<Task>) => api.put<Task>(`/tasks/${id}`, data),
 
   // ── Task updates ──────────────────────────────────────────────────────────
+  
+  // Task Comments
+  getTaskComments: (taskId: number) => 
+    api.get<TaskComment[]>(`/task-comments/?task_id=${taskId}`),
+  createTaskComment: (taskId: number, data: TaskCommentCreate) => 
+    api.post<TaskComment>(`/task-comments/?task_id=${taskId}`, data),
+  deleteTaskComment: (commentId: number) => 
+    api.delete(`/task-comments/${commentId}`),
+
   getTaskUpdates: (taskId: number) =>
     api.get<TaskUpdate[]>(`/task-updates/?task_id=${taskId}`),
 

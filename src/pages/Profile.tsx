@@ -51,9 +51,9 @@ const Profile = () => {
           apiRepository.getTasks(),
           apiRepository.getProjectParticipants(),
         ]);
-        setProjects(p);
-        setTasks(t);
-        setParticipants(part);
+        setProjects(p || []);
+        setTasks(t || []);
+        setParticipants(part || []);
         // Fetch role-specific profile
         if (isTeacher) {
           try {
@@ -66,17 +66,19 @@ const Profile = () => {
         }
 
         const fullUser = await apiRepository.getUser(user.id);
-        setProfileUser(fullUser);
-        setInstitution(fullUser.institution || '');
-        setDepartment(fullUser.department || '');
-        setContactEmail(fullUser.contact_email || '');
-        setPhoneNumber(fullUser.phone_number || '');
-        setAddress(fullUser.address || '');
-        setWebsite(fullUser.website || '');
+        if (fullUser) {
+          setProfileUser(fullUser);
+          setInstitution(fullUser.institution || '');
+          setDepartment(fullUser.department || '');
+          setContactEmail(fullUser.contact_email || '');
+          setPhoneNumber(fullUser.phone_number || '');
+          setAddress(fullUser.address || '');
+          setWebsite(fullUser.website || '');
+        }
 
         if (user.role === 'STUDENT') {
           try {
-            setPreviousProjects(await apiRepository.getStudentPreviousProjects(user.id));
+            setPreviousProjects((await apiRepository.getStudentPreviousProjects(user.id)) || []);
           } catch {
             setPreviousProjects([]);
           }
@@ -202,14 +204,17 @@ const Profile = () => {
 
   if (!user) return null;
 
-  const myParticipations = participants.filter(p => p.user_id === user.id);
+  const myParticipations = (participants || []).filter(p => p.user_id === user.id);
   const myProjects = myParticipations
-    .map(p => ({ ...projects.find(proj => proj.id === p.project_id)!, role: p.participant_role }))
-    .filter(p => p.id);
+    .map(p => {
+      const proj = (projects || []).find(proj => proj.id === p.project_id);
+      return proj ? { ...proj, role: p.participant_role } : null;
+    })
+    .filter((p): p is (Project & { role: ParticipantRole }) => p !== null);
 
-  const myTasks = tasks.filter(t => t.assignee_user_id === user.id || t.created_by === user.id);
+  const myTasks = (tasks || []).filter(t => t.assignee_user_id === user.id || t.created_by === user.id);
   const recentTasks = [...myTasks]
-    .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''))
     .slice(0, 6);
 
   if (loading) {
@@ -318,14 +323,16 @@ const Profile = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Department</span><span className="text-foreground">{teacher.department}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Grade</span><span className="text-foreground">{teacher.grade}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Experience</span><span className="text-foreground">{teacher.experience_years} years</span></div>
-                <div className="pt-2 border-t border-border">
-                  <span className="text-xs text-muted-foreground block mb-2">Research Interests</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {teacher.research_interests.split(', ').map(interest => (
-                      <span key={interest} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">{interest}</span>
-                    ))}
+                {teacher.research_interests && (
+                  <div className="pt-2 border-t border-border">
+                    <span className="text-xs text-muted-foreground block mb-2">Research Interests</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {teacher.research_interests.split(',').filter(Boolean).map(interest => (
+                        <span key={interest.trim()} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">{interest.trim()}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
             {student && (

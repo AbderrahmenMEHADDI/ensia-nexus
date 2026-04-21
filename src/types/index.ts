@@ -101,7 +101,7 @@ export interface Teacher {
   experience_years: number;
   grade: TeacherGrade;
   department: string;
-  research_interests: string;
+  research_interests?: string;
   created_at: string;
 }
 
@@ -231,7 +231,7 @@ export interface Task {
   assignee_user_id?: number | null;
   due_date?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string | null;
 }
 
 export interface TaskUpdate {
@@ -314,4 +314,4 @@ export interface FeedLike {
 export interface FeedSave {
   post_id: number;
   user_id: number;
-}
+}export * from './task_comment';
