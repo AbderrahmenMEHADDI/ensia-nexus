@@ -317,6 +317,18 @@ export const useProjectBoard = () => {
     }
   };
 
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      await apiRepository.deleteTask(taskId);
+      setLocalTasks(prev => prev.filter(t => t.id !== taskId));
+      toast({ title: 'Task deleted' });
+      setEditOpen(false);
+      setEditingTaskId(null);
+    } catch {
+      toast({ title: 'Failed to delete task', variant: 'destructive' });
+    }
+  };
+
   const handleOpenApply = (projectId: number) => {
     setApplyProjectId(projectId);
     setApplyMotivation('');
@@ -542,6 +554,7 @@ export const useProjectBoard = () => {
     handleOpenEdit,
     handleCreateTask,
     handleUpdateTask,
+    handleDeleteTask,
     handleOpenApply,
     handleApplyToProject,
     handleCreateProjectFromForm,

@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { apiRepository } from '@/repositories/apiRepository';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import type { TaskStatus, TaskPriority, ProjectParticipant, User, TaskComment } from '@/types';
 
@@ -44,6 +45,7 @@ interface TaskDialogsProps {
   setEditAssigneeUserId: (val: string) => void;
   editLoading: boolean;
   handleUpdateTask: () => void;
+  handleDeleteTask: (id: number) => Promise<void>;
 
   statusColumns: { status: TaskStatus; label: string; color: string }[];
   participants: ProjectParticipant[];
@@ -81,16 +83,20 @@ export const TaskDialogs = ({
   setEditAssigneeUserId,
   editLoading,
   handleUpdateTask,
+  handleDeleteTask,
 
   statusColumns,
   participants,
   getUserById,
 }: TaskDialogsProps) => {
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     if (editOpen && editTaskId) {
@@ -129,12 +135,18 @@ export const TaskDialogs = ({
     }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
+  const handleDeleteComment = async () => {
+    if (commentToDelete === null) return;
     try {
-      await apiRepository.deleteTaskComment(commentId);
-      setComments(comments.filter(c => c.id !== commentId));
+      await apiRepository.deleteTaskComment(commentToDelete);
+      setComments(comments.filter(c => c.id !== commentToDelete));
+      toast({ title: "Comment deleted" });
     } catch (error) {
       console.error("Failed to delete comment", error);
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      toast({ title: "Failed to delete comment", description: msg, variant: "destructive" });
+    } finally {
+      setCommentToDelete(null);
     }
   };
 
@@ -264,7 +276,7 @@ export const TaskDialogs = ({
             <div className="space-y-4 flex flex-col h-[400px]">
               <h3 className="font-medium text-sm text-muted-foreground uppercase flex items-center tracking-wider"><MessageSquare className="h-4 w-4 mr-2" /> Comments</h3>
               
-              <div className="flex-1 min-h-[250px] border rounded-md p-3 relative overflow-hidden flex flex-col">
+              <div className="flex-1 min-h-[250px] border rounded-md p-3 relative flex flex-col">
                 {isLoadingComments ? (
                   <div className="flex-1 flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -277,28 +289,30 @@ export const TaskDialogs = ({
                   <ScrollArea className="flex-1 pr-3">
                     <div className="space-y-4">
                       {comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-3">
+                        <div key={comment.id} className="flex gap-3 group">
                           <ProfileAvatar 
                             userId={comment.author.id} 
                             name={comment.author.full_name} 
                             className="h-8 w-8 shrink-0 bg-muted"
                           />
-                          <div className="flex-1 bg-muted/50 rounded-lg p-3 pt-2 text-sm relative group">
-                            <div className="flex justify-between items-center mb-1">
+                          <div className="flex-1 bg-muted/50 rounded-lg p-3 pt-2 text-sm">
+                            <div className="flex justify-between items-center mb-1 gap-2">
                               <span className="font-semibold text-foreground">{comment.author.full_name}</span>
-                              <span className="text-[10px] text-muted-foreground shrink-0">{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className="text-[10px] text-muted-foreground">{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
+                                {(currentUser?.id === comment.author.id || currentUser?.role === 'TEACHER') && (
+                                  <button 
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentToDelete(comment.id); }}
+                                    className="opacity-0 group-hover:opacity-100 p-1 bg-destructive/10 text-destructive rounded transition-all hover:bg-destructive hover:text-destructive-foreground relative z-10 cursor-pointer"
+                                    title="Delete comment"
+                                    type="button"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <p className="text-foreground whitespace-pre-wrap leading-relaxed">{comment.content}</p>
-                            
-                            {(currentUser?.id === comment.author.id || currentUser?.role === 'TEACHER') && (
-                              <button 
-                                onClick={() => handleDeleteComment(comment.id)}
-                                className="absolute right-2 -top-3 opacity-0 group-hover:opacity-100 p-1.5 bg-destructive text-destructive-foreground rounded-full shadow-sm transition-opacity hover:bg-red-600"
-                                title="Delete comment"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
-                            )}
                           </div>
                         </div>
                       ))}
@@ -334,11 +348,59 @@ export const TaskDialogs = ({
             </div>
           </div>
           <DialogFooter className="mt-4 pt-4 border-t w-full">
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
-            <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
-              {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Changes
-            </Button>
+            <div className="flex justify-between w-full">
+              <Button 
+                variant="destructive" 
+                onClick={() => setTaskToDelete(editTaskId!)}
+                disabled={editLoading || !editTaskId}
+                type="button"
+              >
+                Delete Task
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
+                <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
+                  {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Comment Confirmation Dialog */}
+      <Dialog open={commentToDelete !== null} onOpenChange={(open) => !open && setCommentToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Comment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCommentToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteComment}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Task Confirmation Dialog */}
+      <Dialog open={taskToDelete !== null} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setTaskToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (taskToDelete !== null) {
+                await handleDeleteTask(taskToDelete);
+                setTaskToDelete(null);
+              }
+            }}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

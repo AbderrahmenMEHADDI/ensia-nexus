@@ -149,6 +149,7 @@ export const apiRepository = {
   getTask: (id: number) => api.get<Task>(`/tasks/${id}`),
   createTask: (data: Partial<Task>) => api.post<Task>('/tasks/', data),
   updateTask: (id: number, data: Partial<Task>) => api.put<Task>(`/tasks/${id}`, data),
+  deleteTask: (id: number) => api.delete<void>(`/tasks/${id}`),
 
   // ── Task updates ──────────────────────────────────────────────────────────
   
