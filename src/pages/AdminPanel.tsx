@@ -4,16 +4,22 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
+import { cn } from '@/lib/utils';
 import type { GroupMember, ResearchLab, ResearchGroup, ResearchLabAdmin, User, Teacher, UserRole } from '@/types';
-import { Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus, Building2, UserCog, UserPlus, FlaskConical, Loader2, Info, Trash2 } from 'lucide-react';
+import {
+  Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus,
+  Building2, UserCog, UserPlus, FlaskConical, Loader2, Info,
+  Trash2, ArrowRight, UserCheck, Mail
+} from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
-import { Badge } from '@/components/ui/badge'; // this is for displaying lab admins in the lab cards
+import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 
 type AdminPanelProps = {
@@ -25,7 +31,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   const { toast } = useToast();
   const [labs, setLabs] = useState<ResearchLab[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
-  const [labAdmins, setLabAdmins] = useState<ResearchLabAdmin[]>([]); // state to hold lab admins for easy access
+  const [labAdmins, setLabAdmins] = useState<ResearchLabAdmin[]>([]);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -42,14 +48,14 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   const [addLabOpen, setAddLabOpen] = useState(false);
   const [addGroupOpen, setAddGroupOpen] = useState(false);
   const [assignLeaderOpen, setAssignLeaderOpen] = useState(false);
-  const [manageAdminsOpen, setManageAdminsOpen] = useState(false);  // this is a new dialog for managing lab admins, it will open when clicking the "Admins" button on a lab card
-  const [editLabOpen, setEditLabOpen] = useState(false); // this is a new dialog for editing lab details, it will open when clicking the "Edit" button on a lab card
+  const [manageAdminsOpen, setManageAdminsOpen] = useState(false);
+  const [editLabOpen, setEditLabOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [createAdminOpen, setCreateAdminOpen] = useState(false);
   const [assignMembersOpen, setAssignMembersOpen] = useState(false);
   const [selectedGroupForLeader, setSelectedGroupForLeader] = useState<ResearchGroup | null>(null);
-  const [selectedLabForAdmins, setSelectedLabForAdmins] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently managing admins
-  const [selectedLabForEdit, setSelectedLabForEdit] = useState<ResearchLab | null>(null); // this state will hold the lab for which we are currently editing details
+  const [selectedLabForAdmins, setSelectedLabForAdmins] = useState<ResearchLab | null>(null);
+  const [selectedLabForEdit, setSelectedLabForEdit] = useState<ResearchLab | null>(null);
 
   // Form states
   const [newLabName, setNewLabName] = useState('');
@@ -61,10 +67,10 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   const [newGroupLab, setNewGroupLab] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [selectedLeader, setSelectedLeader] = useState('');
-  const [newAdminUser, setNewAdminUser] = useState(''); // this state will hold the user ID of the new admin we want to add to a lab
-  const [editLabName, setEditLabName] = useState(''); // this state will hold the edited lab name when we are in the edit lab dialog
-  const [editLabDesc, setEditLabDesc] = useState(''); // this state will hold the edited lab description when we are in the edit lab dialog
-  const [editLabHead, setEditLabHead] = useState(''); // this state will hold the edited lab head teacher ID when we are in the edit lab dialog
+  const [newAdminUser, setNewAdminUser] = useState('');
+  const [editLabName, setEditLabName] = useState('');
+  const [editLabDesc, setEditLabDesc] = useState('');
+  const [editLabHead, setEditLabHead] = useState('');
   const [newAdminFullName, setNewAdminFullName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('admin');
@@ -119,14 +125,14 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
         const [l, g, la, t, allUsers, gm] = await Promise.all([
           apiRepository.getLabs(),
           apiRepository.getGroups(),
-          apiRepository.getLabAdmins(), // added this to load lab admins on initial load when displaying labs and managing admins
+          apiRepository.getLabAdmins(),
           fetchAllTeachers(),
           apiRepository.getUsers({ limit: 1000 }),
           apiRepository.getGroupMembers(),
         ]);
         setLabs(sortLabsByNewest(l));
         setGroups(g);
-        setLabAdmins(la); // i added this so we can use it to display admins in the lab cards and manage them in the manage admins dialog
+        setLabAdmins(la);
         setTeachers(t);
         setGroupMembers(gm);
         mergeUsersIntoLookup(allUsers);
@@ -253,7 +259,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
       setIsAssigningMembers(false);
     }
   };
-  const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId); // this is a helper function to get admins for a specific lab, it will be used in the lab cards and the manage admins dialog
+  const labAdminsFor = (labId: number) => labAdmins.filter(a => a.lab_id === labId);
   const handleValidate = async (groupId: number) => {
     const target = groups.find(g => g.id === groupId);
     if (!target || !canManageLab(target.lab_id)) {
@@ -367,9 +373,8 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     setSelectedLeader('');
     setAssignLeaderOpen(false);
   };
-  // we need to add functions to handle adding and removing lab admins, as well as opening the manage admins dialog with the correct lab information. we also need to add functions to handle opening the edit lab dialog and saving the edited lab details.
 
-  const handleOpenManageAdmins = (lab: ResearchLab) => { // to handle opening the manage admins dialog, we set the selected lab for admins to the lab we want to manage, this will allow us to display the correct admins in the dialog and perform add/remove actions on the correct lab
+  const handleOpenManageAdmins = (lab: ResearchLab) => {
     if (!canManageLab(lab.id)) {
       toast({ title: 'Not authorized', variant: 'destructive' });
       return;
@@ -379,7 +384,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     setManageAdminsOpen(true);
   };
 
-  const handleAddAdmin = async () => { // to handle adding a new admin to the lab, we check if the selected lab and new admin user ID are valid, then we call the API to add the admin, and if successful we update our local state to reflect the change and show a success toast. if there's an error we show an error toast.
+  const handleAddAdmin = async () => {
     if (!selectedLabForAdmins || !newAdminUser) return;
     if (isAddingAdmin) return;
     if (!canManageLab(selectedLabForAdmins.id)) {
@@ -412,7 +417,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
       return;
     }
     const admins = labAdminsFor(labId);
-    if (admins.length <= 1) { // Prevents orphaned labs by ensuring at least one admin remains before calling the removal API.
+    if (admins.length <= 1) {
       toast({ title: 'Cannot remove last admin', variant: 'destructive' });
       return;
     }
@@ -428,9 +433,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     }
   };
 
-  // Platform admin toggle removed per request
-
-  const handleOpenEditLab = (lab: ResearchLab) => { // Syncs form state with the selected lab to ensure the user sees accurate data upon opening the editor.
+  const handleOpenEditLab = (lab: ResearchLab) => {
     if (!isPlatformAdmin) {
       toast({ title: 'Only platform admins can edit labs', variant: 'destructive' });
       return;
@@ -527,735 +530,690 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   }
 
   return (
-    <div className="container py-10">
-      <motion.div>
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-            <Shield className="h-5 w-5 text-destructive" />
+    <div className="container py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Header Section */}
+      <div className="relative mb-12">
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-destructive/5 rounded-full blur-3xl" />
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center shadow-inner border border-destructive/20">
+              <Shield className="h-7 w-7 text-destructive" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl mb-1">
+                Admin <span className="text-primary italic">Panel</span>
+              </h1>
+            </div>
           </div>
-          <div>
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">{myLabsOnly ? 'Lab Administration' : 'Administration'}</span>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">{myLabsOnly ? 'My Labs Panel' : 'Admin Panel'}</h1>
+
+          <div className="flex items-center gap-3">
+            <div className="px-4 py-2 rounded-full bg-secondary/80 border border-border flex items-center gap-2 text-sm font-medium shadow-sm">
+              <Building2 className="h-4 w-4 text-primary" />
+              <span>{labs.length} Labs</span>
+            </div>
+            <div className="px-4 py-2 rounded-full bg-secondary/80 border border-border flex items-center gap-2 text-sm font-medium shadow-sm">
+              <Users className="h-4 w-4 text-primary" />
+              <span>{userTotal} Users</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue={myLabsOnly ? 'labs' : 'groups'} className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/50 pb-4">
+          <TabsList className="bg-secondary/40 p-1 rounded-xl border border-border/50">
+            <TabsTrigger value="labs" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-6">
+              <FlaskConical className="h-4 w-4 mr-2" />Labs
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-6">
+              <Building2 className="h-4 w-4 mr-2" />Groups
+            </TabsTrigger>
+            {!myLabsOnly && (
+              <TabsTrigger value="requests" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-6">
+                <UserPlus className="h-4 w-4 mr-2" />Requests
+              </TabsTrigger>
+            )}
+            {!myLabsOnly && (
+              <TabsTrigger value="users" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-6">
+                <Users className="h-4 w-4 mr-2" />Users
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <div className="flex items-center gap-3">
+            {isPlatformAdmin && (
+              <Button onClick={() => setAddLabOpen(true)} size="sm" className="rounded-full shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4 mr-1.5" />New Lab
+              </Button>
+            )}
+            {manageableLabs.length > 0 && (
+              <Button onClick={() => setAddGroupOpen(true)} size="sm" variant="secondary" className="rounded-full">
+                <Plus className="h-4 w-4 mr-1.5" />New Group
+              </Button>
+            )}
           </div>
         </div>
 
-        <Tabs defaultValue={myLabsOnly ? 'labs' : 'groups'} className="space-y-6">
-          <TabsList className={`grid w-full ${myLabsOnly ? 'grid-cols-2 max-w-md' : 'grid-cols-4 max-w-xl'}`}>
-            <TabsTrigger value="labs"><FlaskConical className="h-4 w-4 mr-1.5" />Labs</TabsTrigger>
-            <TabsTrigger value="groups"><Building2 className="h-4 w-4 mr-1.5" />Groups</TabsTrigger>
-            {!myLabsOnly && <TabsTrigger value="requests"><UserPlus className="h-4 w-4 mr-1.5" />Requests</TabsTrigger>}
-            {!myLabsOnly && <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />Users</TabsTrigger>}
-          </TabsList>
-
-          {/* LABS TAB */}
-          <TabsContent value="labs" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">{myLabsOnly ? 'My Labs' : 'Research Labs'} ({visibleLabs.length})</h2>
-              {isPlatformAdmin && (
-                <Button onClick={() => setAddLabOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Lab</Button>
-              )}
-            </div>
-            <div className="space-y-3">
-              {visibleLabs.map(lab => {
-                const head = getUserById(lab.head_teacher_id);
-                const labGroups = groups.filter(g => g.lab_id === lab.id);
-                const admins = labAdminsFor(lab.id);
-                return (
-                  <div key={lab.id} className="p-4 rounded-xl border border-border bg-card">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-medium text-foreground">{lab.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{lab.description}</p>
-                      </div>
-                      {(canManageLab(lab.id) || isPlatformAdmin) && (
-                        <div className="flex items-center gap-2">
-                          {myLabsOnly && (
-                            <Link to={`/my-labs/labs/${lab.id}`}>
-                              <Button variant="outline" size="sm">Details</Button>
-                            </Link>
-                          )}
-                          {isPlatformAdmin && <Button variant="outline" size="sm" onClick={() => handleOpenEditLab(lab)}>Edit</Button>}
-                          <Button variant="secondary" size="sm" onClick={() => handleOpenManageAdmins(lab)}>Admins</Button>
+        {/* LABS TAB */}
+        <TabsContent value="labs" className="space-y-6 focus-visible:outline-none outline-none">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {visibleLabs.map((lab, index) => {
+              const head = getUserById(lab.head_teacher_id);
+              const labGroups = groups.filter(g => g.lab_id === lab.id);
+              const admins = labAdminsFor(lab.id);
+              return (
+                <motion.div
+                  key={lab.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className="group overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300">
+                    <div className="h-1 w-full bg-gradient-to-r from-primary/30 to-blue-500/30" />
+                    <CardHeader className="p-6">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">{lab.name}</CardTitle>
+                          <CardDescription className="line-clamp-2 text-xs leading-relaxed">
+                            {lab.description || "No description provided for this research laboratory."}
+                          </CardDescription>
                         </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground mt-3">
-                      <span className="flex items-center gap-1"><UserCog className="h-3.5 w-3.5" />Head: {head?.full_name ?? 'Unassigned'}</span>
-                      <span className="flex items-center gap-1"><Building2 className="h-3.5 w-3.5" />{labGroups.length} groups</span>
-                      <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" />{admins.length} admins</span>
-                    </div>
-                    {admins.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {admins.map(admin => {
-                          const adminUser = getUserById(admin.user_id);
-                          if (!adminUser) return null;
-                          return (
-                            <Badge key={admin.user_id} variant="secondary" className="flex items-center gap-1">
-                              {adminUser.full_name}
-                              <RoleBadge role={adminUser.role} />
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {visibleLabs.length === 0 && (
-                <div className="rounded-xl border border-dashed border-border bg-card/50 p-8 text-center">
-                  <p className="text-sm text-muted-foreground">You are not assigned as admin to any lab yet.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          {/* GROUPS TAB */}
-          <TabsContent value="groups" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-foreground">{myLabsOnly ? 'My Lab Groups' : 'Research Groups'} ({visibleGroups.length})</h2>
-              <div className="flex items-center gap-2">
-                {manageableGroups.length > 0 && (
-                  <Button variant="secondary" onClick={() => setAssignMembersOpen(true)} size="sm">
-                    <Users className="h-4 w-4 mr-1" />Assign Members
-                  </Button>
-                )}
-                {manageableLabs.length > 0 && (
-                  <Button onClick={() => setAddGroupOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1" />Add Group</Button>
-                )}
-              </div>
-            </div>
-
-            {pendingGroups.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" />Pending Validation ({pendingGroups.length})
-                </h3>
-                <div className="space-y-3">
-                  {pendingGroups.map(group => {
-                    const leader = getUserById(group.leader_user_id);
-                    const lab = labs.find(l => l.id === group.lab_id);
-                    const requesterId = group.requested_by_user_id;
-                    const requester = requesterId ? getUserById(requesterId) : undefined;
-                    return (
-                      <div key={group.id} className="p-4 rounded-xl border border-primary/20 bg-card">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h3 className="font-medium text-foreground">{group.name}</h3>
-                            <span className="text-xs font-mono text-muted-foreground">{lab?.name.split('—')[0]?.trim()}</span>
+                        {(canManageLab(lab.id) || isPlatformAdmin) && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/5"
+                              onClick={() => handleOpenManageAdmins(lab)}
+                              title="Manage Admins"
+                            >
+                              <Shield className="h-4 w-4" />
+                            </Button>
+                            {isPlatformAdmin && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary"
+                                onClick={() => handleOpenEditLab(lab)}
+                                title="Edit Lab"
+                              >
+                                <UserCog className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                          {canManageLab(group.lab_id) && (
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                variant="secondary" 
-                                size="sm" 
-                                onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
-                                className="h-8 gap-1.5"
-                              >
-                                <UserCog className="h-3.5 w-3.5" /> Assign Leader
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleValidate(group.id)}
-                                disabled={validatingGroupIds.includes(group.id) || deletingGroupIds.includes(group.id)}
-                                className="h-8 gap-1.5 border-primary/20 hover:bg-primary/10 text-primary"
-                              >
-                                {validatingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />} {validatingGroupIds.includes(group.id) ? 'Validating...' : 'Validate'}
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleDeleteGroup(group.id)}
-                                disabled={deletingGroupIds.includes(group.id) || validatingGroupIds.includes(group.id)}
-                                className="h-8 gap-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 border-none shadow-none"
-                              >
-                                {deletingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {deletingGroupIds.includes(group.id) ? 'Deleting...' : 'Delete'}
-                              </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="px-6 pb-6 space-y-4">
+                      <div className="grid grid-cols-3 gap-2 py-3 border-y border-border/50">
+                        <div className="text-center">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Groups</p>
+                          <p className="text-sm font-bold">{labGroups.length}</p>
+                        </div>
+                        <div className="text-center border-x border-border/50">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Admins</p>
+                          <p className="text-sm font-bold">{admins.length}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Role</p>
+                          <p className="text-xs font-medium text-primary">{isPlatformAdmin ? 'Platform' : 'Lab Admin'}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <ProfileAvatar
+                            userId={head?.id}
+                            name={head?.full_name}
+                            className="h-8 w-8 rounded-full border border-background shadow-sm"
+                            textClassName="text-[10px] font-bold"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Lab Head</p>
+                            <p className="text-xs font-semibold truncate">{head?.full_name ?? 'Unassigned'}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex -space-x-2 overflow-hidden py-1">
+                          {admins.slice(0, 4).map(admin => {
+                            const au = getUserById(admin.user_id);
+                            return (
+                              <ProfileAvatar
+                                key={admin.user_id}
+                                userId={au?.id}
+                                name={au?.full_name}
+                                className="h-7 w-7 rounded-full border-2 border-card shadow-sm"
+                                textClassName="text-[8px] font-bold"
+                                title={au?.full_name}
+                              />
+                            );
+                          })}
+                          {admins.length > 4 && (
+                            <div className="h-7 w-7 rounded-full bg-secondary border-2 border-card flex items-center justify-center text-[8px] font-bold text-muted-foreground">
+                              +{admins.length - 4}
                             </div>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{group.description}</p>
-                        {requester && (
-                          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mb-1">
-                            <UserPlus className="h-3.5 w-3.5" />
-                            <span>Requested by {requester.full_name}</span>
-                            <RoleBadge role={requester.role} />
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                          {leader && leader.id !== 0 ? (
-                            <><span>Led by {leader.full_name}</span><RoleBadge role={leader.role} /></>
-                          ) : (
-                            <span className="text-destructive">No leader assigned</span>
-                          )}
-                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+            {visibleLabs.length === 0 && (
+              <div className="col-span-full rounded-3xl border-2 border-dashed border-border bg-secondary/20 p-16 text-center">
+                <FlaskConical className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                <h3 className="text-lg font-bold mb-1">No labs found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto">You don't have administrative access to any labs at the moment.</p>
               </div>
             )}
+          </div>
+        </TabsContent>
 
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />Validated ({validatedGroups.length})
-              </h3>
-              <div className="space-y-2">
-                {validatedGroups.map(group => {
+        {/* GROUPS TAB */}
+        <TabsContent value="groups" className="space-y-10 focus-visible:outline-none outline-none">
+          {pendingGroups.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <h3 className="text-lg font-bold">Groups Awaiting Validation</h3>
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 rounded-full">{pendingGroups.length}</Badge>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {pendingGroups.map((group, index) => {
                   const leader = getUserById(group.leader_user_id);
                   const lab = labs.find(l => l.id === group.lab_id);
+                  const requester = group.requested_by_user_id ? getUserById(group.requested_by_user_id) : undefined;
+
                   return (
-                    <div key={group.id} className="p-3 rounded-lg border border-border bg-card flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                        <div>
-                          <span className="text-sm font-medium text-foreground">{group.name}</span>
-                          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                            <span>{lab?.name.split('—')[0]?.trim()}</span>
-                            <span>·</span>
-                            <span>Led by {leader?.full_name}</span>
-                            <span>·</span>
-                            <span>{groupMembers.filter(m => m.group_id === group.id && m.is_active).length} members</span>
-                          </div>
-                        </div>
-                      </div>
-                      {canManageLab(group.lab_id) && (
-                        <div className="flex items-center gap-2">
-                          {myLabsOnly && (
-                            <Button variant="ghost" size="sm" asChild className="h-8 text-xs font-normal text-muted-foreground hover:text-foreground">
-                              <Link to={`/my-labs/${group.id}`}>
-                                Details
-                              </Link>
-                            </Button>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
-                            className="h-8 text-xs font-normal text-muted-foreground hover:text-foreground gap-1"
+                    <motion.div
+                      key={group.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Card className="border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/[0.08] transition-colors relative group">
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-full border-amber-500/20 hover:bg-amber-500/20 text-amber-700"
+                            onClick={() => handleValidate(group.id)}
+                            disabled={validatingGroupIds.includes(group.id)}
                           >
-                            <UserCog className="h-3.5 w-3.5" /> Change Leader
+                            {validatingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
+                            Validate
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDeleteGroup(group.id)}
-                            disabled={deletingGroupIds.includes(group.id) || validatingGroupIds.includes(group.id)}
-                            className="h-8 text-xs font-normal text-destructive hover:bg-destructive/10 hover:text-destructive gap-1"
+                            disabled={deletingGroupIds.includes(group.id)}
                           >
-                            {deletingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />} {deletingGroupIds.includes(group.id) ? 'Deleting...' : 'Delete'}
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      )}
-                    </div>
+
+                        <CardHeader className="pb-4">
+                          <div className="space-y-1 pr-20">
+                            <CardTitle className="text-lg font-bold">{group.name}</CardTitle>
+                            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">{lab?.name}</p>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-muted-foreground line-clamp-2 italic">
+                            "{group.description || "Request to create a new specialized research group."}"
+                          </p>
+
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-amber-500/10">
+                            <div className="flex items-center gap-2">
+                              <ProfileAvatar userId={requester?.id} name={requester?.full_name} className="h-8 w-8" textClassName="text-[10px]" />
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Requested By</p>
+                                <p className="text-xs font-semibold truncate">{requester?.full_name ?? 'System'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <ProfileAvatar userId={leader?.id} name={leader?.full_name} className="h-8 w-8" textClassName="text-[10px]" />
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Proposed Leader</p>
+                                <p className={cn("text-xs font-semibold truncate", !leader && "text-destructive")}>{leader?.full_name ?? 'Not Assigned'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter className="pb-4 pt-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-[10px] font-bold uppercase tracking-widest gap-1.5 h-7 px-2 hover:bg-amber-500/10"
+                            onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
+                          >
+                            <UserCog className="h-3 w-3" /> Change Leader
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </motion.div>
                   );
                 })}
               </div>
             </div>
+          )}
+
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-bold">Active Research Groups</h3>
+                <Badge variant="secondary" className="rounded-full bg-secondary/50">{validatedGroups.length}</Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full h-8 font-semibold text-xs border-border/50 hover:bg-secondary"
+                onClick={() => setAssignMembersOpen(true)}
+              >
+                <Users className="h-3.5 w-3.5 mr-1.5" /> Bulk Member Assignment
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {validatedGroups.map(group => {
+                const leader = getUserById(group.leader_user_id);
+                const lab = labs.find(l => l.id === group.lab_id);
+                const activeCount = groupMembers.filter(m => m.group_id === group.id && m.is_active).length;
+                return (
+                  <motion.div
+                    key={group.id}
+                    layout
+                    className="p-4 rounded-2xl border border-border bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 group/item hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 border border-primary/10">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-bold text-foreground truncate">{group.name}</span>
+                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 font-bold border-border/50 uppercase tracking-tighter shrink-0">{lab?.name.split('—')[0]?.trim()}</Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
+                          <span className="flex items-center gap-1"><UserCheck className="h-3 w-3" />{leader?.full_name ?? 'No Leader'}</span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{activeCount} active members</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:self-center">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
+                        className="h-8 text-xs font-bold gap-1.5 px-3 rounded-lg hover:bg-primary/5 hover:text-primary"
+                      >
+                        <UserCog className="h-3.5 w-3.5" /> Leader
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteGroup(group.id)}
+                        disabled={deletingGroupIds.includes(group.id)}
+                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* REQUESTS TAB */}
+        {!myLabsOnly && (
+          <TabsContent value="requests" className="focus-visible:outline-none outline-none">
+            <div className="max-w-2xl mx-auto py-12 text-center space-y-6">
+              <div className="h-20 w-20 rounded-full bg-secondary/50 flex items-center justify-center mx-auto shadow-inner">
+                <Clock className="h-10 w-10 text-muted-foreground/40" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold">Join Requests Module</h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  The automated processing system for group join requests is currently under maintenance. Administrators can still manually assign members through the <b>Groups</b> tab.
+                </p>
+              </div>
+              <Button variant="outline" className="rounded-full px-8 font-bold border-border/50" disabled>
+                System Maintenance
+              </Button>
+            </div>
           </TabsContent>
+        )}
 
-          {/* REQUESTS TAB */}
-          {!myLabsOnly && <TabsContent value="requests" className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Member Join Requests</h2>
-            <div className="p-6 rounded-xl border border-border bg-card flex items-start gap-3">
-              <Info className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-              <p className="text-sm text-muted-foreground">
-                Group join requests management is not yet available via the API. This feature is coming soon.
-              </p>
-            </div>
-          </TabsContent>}
+        {/* USERS TAB */}
+        {!myLabsOnly && (
+          <TabsContent value="users" className="space-y-8 focus-visible:outline-none outline-none">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="relative flex-1 max-w-lg">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={userSearch}
+                  onChange={e => { setUserPage(1); setUserSearch(e.target.value); }}
+                  placeholder="Search by name, email, or role..."
+                  className="pl-11 h-12 rounded-2xl bg-secondary/20 border-border/50 focus:bg-background transition-all"
+                />
+              </div>
 
-          {/* USERS TAB */}
-          {!myLabsOnly && <TabsContent value="users" className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">Users ({userTotal})</h2>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={userSearch} onChange={e => { setUserPage(1); setUserSearch(e.target.value); }} placeholder="Search users..." className="pl-9" />
+              <div className="flex items-center gap-3">
+                <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v as UserRole | 'ALL'); setUserPage(1); }}>
+                  <SelectTrigger className="w-[160px] h-10 rounded-xl bg-secondary/30 border-border/50">
+                    <SelectValue placeholder="All Roles" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border">
+                    <SelectItem value="ALL">All Roles</SelectItem>
+                    <SelectItem value="STUDENT">Students</SelectItem>
+                    <SelectItem value="TEACHER">Teachers</SelectItem>
+                    <SelectItem value="ADMIN">Admins</SelectItem>
+                    <SelectItem value="PARTNER">Partners</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {isPlatformAdmin && (
+                  <Button size="sm" onClick={() => setCreateAdminOpen(true)} className="rounded-full h-10 px-5 shadow-lg shadow-primary/10">
+                    <UserPlus className="h-4 w-4 mr-2" />Add Admin
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v as UserRole | 'ALL'); setUserPage(1); }}>
-                <SelectTrigger className="w-[180px]"><SelectValue placeholder="Role" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">All roles</SelectItem>
-                  <SelectItem value="STUDENT">Student</SelectItem>
-                  <SelectItem value="TEACHER">Teacher</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                  <SelectItem value="PARTNER">Partner</SelectItem>
-                </SelectContent>
-              </Select>
-              {isPlatformAdmin && (
-                <Button size="sm" onClick={() => setCreateAdminOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" />Create Admin
-                </Button>
-              )}
-              {usersLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-            </div>
-            <div className="space-y-2">
-              {users.map(u => (
-                <div key={u.id} className="p-3 rounded-lg border border-border bg-card flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {users.map((u, index) => (
+                <motion.div
+                  key={u.id}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: (index % 12) * 0.03 }}
+                  className="p-4 rounded-2xl border border-border bg-card hover:bg-secondary/10 transition-colors flex items-center justify-between group/user"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
                     <ProfileAvatar
                       userId={u.id}
                       name={u.full_name}
-                      className="h-8 w-8 rounded-lg bg-secondary text-xs font-medium text-secondary-foreground"
-                      textClassName="text-xs font-medium text-secondary-foreground"
+                      className="h-10 w-10 rounded-xl bg-primary/10 shadow-sm ring-1 ring-border"
+                      textClassName="text-xs font-bold text-primary"
                     />
-                    <div>
-                      <span className="text-sm font-medium text-foreground block">{u.full_name}</span>
-                      <span className="text-xs font-mono text-muted-foreground">{u.email}</span>
+                    <div className="min-w-0 flex flex-col">
+                      <span className="text-sm font-bold truncate group-hover/user:text-primary transition-colors">{u.full_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground truncate">{u.email}</span>
+                        <RoleBadge role={u.role} />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <RoleBadge role={u.role} />
+
+                  <div className="flex items-center">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover/user:opacity-100 transition-opacity">
+                      <Mail className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover/user:opacity-100 transition-opacity">
+                      <UserCog className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
-                </div>
+                </motion.div>
               ))}
-              {users.length === 0 && !usersLoading && (
-                <div className="text-sm text-muted-foreground">No users found for this filter.</div>
-              )}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Page {userPage} of {totalUserPages}</span>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setUserPage(p => Math.max(1, p - 1))} disabled={userPage === 1 || usersLoading}>Previous</Button>
-                <Button variant="outline" size="sm" onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))} disabled={userPage >= totalUserPages || usersLoading}>Next</Button>
-              </div>
-            </div>
-          </TabsContent>}
-        </Tabs>
 
-        {/* ADD LAB DIALOG */}
-        <Dialog open={addLabOpen} onOpenChange={(open) => { if (!isCreatingLab) setAddLabOpen(open); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Research Lab</DialogTitle>
-              <DialogDescription>Create a new research lab and assign a head teacher.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Lab Name</label>
-                <Input value={newLabName} onChange={e => setNewLabName(e.target.value)} placeholder="e.g. LRIA — Laboratoire de..." />
+            {totalUserPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                  disabled={userPage === 1}
+                  className="rounded-xl border-border/50"
+                >
+                  Previous
+                </Button>
+                <div className="px-4 py-1.5 rounded-full bg-secondary/50 text-xs font-bold font-mono">
+                  Page {userPage} of {totalUserPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))}
+                  disabled={userPage === totalUserPages}
+                  className="rounded-xl border-border/50"
+                >
+                  Next
+                </Button>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Description</label>
-                <Input value={newLabDesc} onChange={e => setNewLabDesc(e.target.value)} placeholder="Brief description..." />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Head Teacher</label>
-                <Select value={newLabHead} onValueChange={setNewLabHead}>
-                  <SelectTrigger><SelectValue placeholder="Select head teacher" /></SelectTrigger>
-                  <SelectContent>
-                    {headTeacherUsers.map(({ teacher, user }) => (
-                      <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
-                        {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline" disabled={isCreatingLab}>Cancel</Button></DialogClose>
-              <Button onClick={handleAddLab} disabled={!newLabName.trim() || !newLabHead || isCreatingLab}>
-                {isCreatingLab ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Lab'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            )}
+          </TabsContent>
+        )}
+      </Tabs>
 
-        {/* ASSIGN GROUP MEMBERS DIALOG */}
-        <Dialog open={assignMembersOpen} onOpenChange={(open) => { if (!isAssigningMembers) setAssignMembersOpen(open); }}>
-          <DialogContent className="sm:max-w-[860px]">
-            <DialogHeader>
-              <DialogTitle>Assign Teachers to Groups</DialogTitle>
-              <DialogDescription>
-                Select one or more groups and teachers. Existing assignments are kept, and repeated assignments are allowed.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>{selectedAssignmentGroups.length} group(s) selected</span>
-              <span>{selectedAssignmentTeachers.length} teacher(s) selected</span>
+      {/* Dialogs */}
+      <Dialog open={addLabOpen} onOpenChange={setAddLabOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Research Lab</DialogTitle>
+            <DialogDescription>Create a new research lab and assign a head teacher.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Lab Name</label>
+              <Input value={newLabName} onChange={e => setNewLabName(e.target.value)} placeholder="e.g. LRIA — Laboratoire de..." />
             </div>
-            <div className="grid md:grid-cols-2 gap-4 py-2">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-foreground">Groups</label>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={selectAllFilteredGroups}>Select all</Button>
-                    <Button variant="ghost" size="sm" onClick={clearFilteredGroups}>Clear</Button>
-                  </div>
-                </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={assignGroupSearch}
-                    onChange={e => setAssignGroupSearch(e.target.value)}
-                    placeholder="Search groups..."
-                    className="pl-9"
-                  />
-                </div>
-                <div className="h-[240px] overflow-auto rounded-lg border p-3 space-y-2">
-                  {filteredAssignmentGroups.map(group => (
-                    <label key={group.id} className="flex items-center justify-between gap-2 text-sm rounded-md border border-border/50 px-2 py-1.5 hover:bg-muted/30">
-                      <span className="truncate">{group.name}</span>
-                      <Checkbox
-                        checked={selectedAssignmentGroups.includes(group.id)}
-                        onCheckedChange={() => toggleAssignmentGroup(group.id)}
-                      />
-                    </label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input value={newLabDesc} onChange={e => setNewLabDesc(e.target.value)} placeholder="Brief description..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Head Teacher</label>
+              <Select value={newLabHead} onValueChange={setNewLabHead}>
+                <SelectTrigger><SelectValue placeholder="Select head teacher" /></SelectTrigger>
+                <SelectContent>
+                  {headTeacherUsers.map(({ teacher, user }) => (
+                    <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
+                      {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
+                    </SelectItem>
                   ))}
-                  {filteredAssignmentGroups.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No groups match this search.</p>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-foreground">Teachers</label>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={selectAllFilteredTeachers}>Select all</Button>
-                    <Button variant="ghost" size="sm" onClick={clearFilteredTeachers}>Clear</Button>
-                  </div>
-                </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    value={assignTeacherSearch}
-                    onChange={e => setAssignTeacherSearch(e.target.value)}
-                    placeholder="Search teachers by name or email..."
-                    className="pl-9"
-                  />
-                </div>
-                <div className="h-[240px] overflow-auto rounded-lg border p-3 space-y-2">
-                  {filteredAssignmentTeachers.map(t => (
-                    <label key={t.id} className="flex items-center justify-between gap-2 text-sm rounded-md border border-border/50 px-2 py-1.5 hover:bg-muted/30">
-                      <div className="min-w-0">
-                        <p className="truncate">{t.full_name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{t.email}</p>
-                      </div>
-                      <Checkbox
-                        checked={selectedAssignmentTeachers.includes(t.id)}
-                        onCheckedChange={() => toggleAssignmentTeacher(t.id)}
-                      />
-                    </label>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddLabOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddLab} disabled={!newLabName.trim() || !newLabHead || isCreatingLab}>
+              {isCreatingLab ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Lab'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addGroupOpen} onOpenChange={setAddGroupOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Group</DialogTitle>
+            <DialogDescription>Create a new research group.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Group Name</label>
+              <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Group name..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input value={newGroupDesc} onChange={e => setNewGroupDesc(e.target.value)} placeholder="Description..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Lab</label>
+              <Select value={newGroupLab} onValueChange={setNewGroupLab}>
+                <SelectTrigger><SelectValue placeholder="Select lab" /></SelectTrigger>
+                <SelectContent>
+                  {manageableLabs.map(l => (
+                    <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>
                   ))}
-                  {filteredAssignmentTeachers.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No teachers match this search.</p>
-                  )}
-                </div>
-              </div>
+                </SelectContent>
+              </Select>
             </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline" disabled={isAssigningMembers}>Cancel</Button></DialogClose>
-              <Button
-                onClick={handleBulkAssignMembers}
-                disabled={!selectedAssignmentGroups.length || !selectedAssignmentTeachers.length || isAssigningMembers}
-              >
-                {isAssigningMembers ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Assigning...
-                  </>
-                ) : (
-                  'Assign Selected'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddGroupOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddGroup} disabled={!newGroupName.trim() || !newGroupLab || isCreatingGroup}>
+              {isCreatingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Group'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* ADD GROUP DIALOG */}
-        <Dialog open={addGroupOpen} onOpenChange={(open) => { if (!isCreatingGroup) setAddGroupOpen(open); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Research Group</DialogTitle>
-              <DialogDescription>Create a new group under a lab. You can assign a leader after.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Group Name</label>
-                <Input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="e.g. NLP & Language Understanding" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Description</label>
-                <Input value={newGroupDesc} onChange={e => setNewGroupDesc(e.target.value)} placeholder="Brief description..." />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Parent Lab</label>
-                <Select value={newGroupLab} onValueChange={setNewGroupLab}>
-                  <SelectTrigger><SelectValue placeholder="Select lab" /></SelectTrigger>
-                  <SelectContent>
-                    {manageableLabs.map(l => (
-                      <SelectItem key={l.id} value={String(l.id)}>{l.name.split('—')[0]?.trim()}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <Dialog open={assignLeaderOpen} onOpenChange={setAssignLeaderOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Leader</DialogTitle>
+            <DialogDescription>Assign a leader to {selectedGroupForLeader?.name}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Select value={selectedLeader} onValueChange={setSelectedLeader}>
+              <SelectTrigger><SelectValue placeholder="Select leader" /></SelectTrigger>
+              <SelectContent>
+                {headTeacherUsers.map(({ teacher, user }) => (
+                  <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>{user?.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignLeaderOpen(false)}>Cancel</Button>
+            <Button onClick={handleAssignLeader} disabled={!selectedLeader || isAssigningLeader}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={manageAdminsOpen} onOpenChange={setManageAdminsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lab Admins</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex flex-wrap gap-2">
+              {selectedLabForAdmins && labAdminsFor(selectedLabForAdmins.id).map(a => {
+                const au = getUserById(a.user_id);
+                return (
+                  <Badge key={a.user_id} variant="secondary" className="gap-2">
+                    {au?.full_name}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-4 w-4"
+                      onClick={() => handleRemoveAdmin(selectedLabForAdmins.id, a.user_id)}
+                    >
+                      <XCircle className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                );
+              })}
             </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline" disabled={isCreatingGroup}>Cancel</Button></DialogClose>
-              <Button onClick={handleAddGroup} disabled={!newGroupName.trim() || !newGroupLab || isCreatingGroup}>
-                {isCreatingGroup ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Group'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* ASSIGN LEADER DIALOG */}
-        <Dialog open={assignLeaderOpen} onOpenChange={(open) => { if (!isAssigningLeader) setAssignLeaderOpen(open); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign Group Leader</DialogTitle>
-              <DialogDescription>
-                Assign a teacher as leader of <span className="font-medium text-foreground">{selectedGroupForLeader?.name}</span>
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Select Teacher</label>
-                <Select value={selectedLeader} onValueChange={setSelectedLeader}>
-                  <SelectTrigger><SelectValue placeholder="Choose a teacher" /></SelectTrigger>
-                  <SelectContent>
-                    {headTeacherUsers.map(({ teacher, user }) => (
-                      <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
-                        {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex gap-2">
+              <Select value={newAdminUser} onValueChange={setNewAdminUser}>
+                <SelectTrigger><SelectValue placeholder="Add admin..." /></SelectTrigger>
+                <SelectContent>
+                  {teacherUsers.map(u => <SelectItem key={u.id} value={String(u.id)}>{u.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAddAdmin} disabled={!newAdminUser}>Add</Button>
             </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline" disabled={isAssigningLeader}>Cancel</Button></DialogClose>
-              <Button onClick={handleAssignLeader} disabled={!selectedLeader || isAssigningLeader}>
-                {isAssigningLeader ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Assigning...
-                  </>
-                ) : (
-                  'Assign Leader'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        {/* MANAGE LAB ADMINS DIALOG */}
-        <Dialog open={manageAdminsOpen} onOpenChange={setManageAdminsOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Lab Admins</DialogTitle>
-              <DialogDescription>
-                Manage administrators for <span className="font-medium text-foreground">{selectedLabForAdmins?.name}</span>.
-              </DialogDescription>
-            </DialogHeader>
+      <Dialog open={editLabOpen} onOpenChange={setEditLabOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Lab</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <Input value={editLabName} onChange={e => setEditLabName(e.target.value)} placeholder="Lab name" />
+            <Input value={editLabDesc} onChange={e => setEditLabDesc(e.target.value)} placeholder="Description" />
+            <Select value={editLabHead} onValueChange={setEditLabHead}>
+              <SelectTrigger><SelectValue placeholder="Head teacher" /></SelectTrigger>
+              <SelectContent>
+                {headTeacherUsers.map(({ teacher, user }) => (
+                  <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>{user?.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="destructive" className="w-full" onClick={() => setDeleteConfirmOpen(true)}>Delete Lab</Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditLabOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveLab}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Current Admins</label>
-                <div className="flex flex-wrap gap-2">
-                  {selectedLabForAdmins && labAdminsFor(selectedLabForAdmins.id).map(admin => {
-                    const adminUser = getUserById(admin.user_id);
-                    if (!adminUser) return null;
-                    const isOnly = labAdminsFor(selectedLabForAdmins.id).length <= 1;
-                    return (
-                      <Badge key={admin.user_id} variant="secondary" className="flex items-center gap-2">
-                        <span>{adminUser.full_name}</span>
-                        <RoleBadge role={adminUser.role} />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          disabled={isOnly || removingAdminKeys.includes(adminRemovalKey(selectedLabForAdmins.id, admin.user_id))}
-                          onClick={() => handleRemoveAdmin(selectedLabForAdmins.id, admin.user_id)}
-                          className="h-6 w-6"
-                        >
-                          {removingAdminKeys.includes(adminRemovalKey(selectedLabForAdmins.id, admin.user_id)) ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <XCircle className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </Badge>
-                    );
-                  })}
-                  {selectedLabForAdmins && labAdminsFor(selectedLabForAdmins.id).length === 0 && (
-                    <span className="text-sm text-muted-foreground">No admins assigned.</span>
-                  )}
-                </div>
-              </div>
+      <Dialog open={createAdminOpen} onOpenChange={setCreateAdminOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create Admin</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <Input value={newAdminFullName} onChange={e => setNewAdminFullName(e.target.value)} placeholder="Full name" />
+            <Input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="Email" />
+            <Input type="password" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} placeholder="Password" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateAdminOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateAdmin}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Add Admin</label>
-                <div className="flex items-center gap-2">
-                  <Select value={newAdminUser} onValueChange={setNewAdminUser}>
-                    <SelectTrigger className="w-full"><SelectValue placeholder="Select user" /></SelectTrigger>
-                    <SelectContent>
-                      {Object.values(userLookup)
-                        .filter(u => u.role === 'TEACHER')
-                        .map(u => (
-                          <SelectItem key={u.id} value={String(u.id)}>{u.full_name} ({u.role})</SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={handleAddAdmin} disabled={!newAdminUser || !selectedLabForAdmins || isAddingAdmin}>
-                    {isAddingAdmin ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      'Add'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Are you absolutely sure?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">This will permanently delete the lab and all associated groups.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteLab}>Confirm Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* EDIT LAB DIALOG */}
-        <Dialog open={editLabOpen} onOpenChange={(open) => { setEditLabOpen(open); if (!open) setDeleteConfirmOpen(false); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Lab</DialogTitle>
-              <DialogDescription>Update details for <span className="font-medium text-foreground">{selectedLabForEdit?.name}</span>.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Lab Name</label>
-                <Input value={editLabName} onChange={e => setEditLabName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Description</label>
-                <Input value={editLabDesc} onChange={e => setEditLabDesc(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Head Teacher</label>
-                <Select value={editLabHead} onValueChange={setEditLabHead}>
-                  <SelectTrigger><SelectValue placeholder="Select head" /></SelectTrigger>
-                  <SelectContent>
-                    {headTeacherUsers.map(({ teacher, user }) => (
-                      <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>
-                        {user?.full_name ?? `User ${teacher.user_id}`} ({teacher.grade})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-
-                <div className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Delete lab</p>
-                    <p className="text-xs text-muted-foreground">This removes the lab and its groups.</p>
+      <Dialog open={assignMembersOpen} onOpenChange={setAssignMembersOpen}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader><DialogTitle>Bulk Member Assignment</DialogTitle></DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold">Groups ({selectedAssignmentGroups.length})</label>
+              <div className="h-60 overflow-y-auto border rounded-md p-2 space-y-1">
+                {manageableGroups.map(g => (
+                  <div key={g.id} className="flex items-center gap-2">
+                    <Checkbox checked={selectedAssignmentGroups.includes(g.id)} onCheckedChange={() => toggleAssignmentGroup(g.id)} />
+                    <span className="text-xs truncate">{g.name}</span>
                   </div>
-                  <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-                    <Trash2 className="h-4 w-4 mr-1" />Delete lab
-                  </Button>
-                </div>
+                ))}
               </div>
             </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline" disabled={isSavingLab || isDeletingLab}>Cancel</Button></DialogClose>
-              <Button onClick={handleSaveLab} disabled={!editLabName.trim() || isSavingLab || isDeletingLab}>
-                {isSavingLab ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* CREATE ADMIN DIALOG */}
-        <Dialog open={createAdminOpen} onOpenChange={(open) => { if (!isCreatingAdmin) setCreateAdminOpen(open); }}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Admin</DialogTitle>
-              <DialogDescription>Create a new admin account.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Full name</label>
-                <Input value={newAdminFullName} onChange={e => setNewAdminFullName(e.target.value)} placeholder="Jane Doe" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Email</label>
-                <Input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="admin@example.com" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Password</label>
-                <Input
-                  type="password"
-                  value={newAdminPassword}
-                  onChange={e => setNewAdminPassword(e.target.value)}
-                  placeholder="admin"
-                />
+            <div className="space-y-2">
+              <label className="text-sm font-bold">Teachers ({selectedAssignmentTeachers.length})</label>
+              <div className="h-60 overflow-y-auto border rounded-md p-2 space-y-1">
+                {teacherUsers.map(t => (
+                  <div key={t.id} className="flex items-center gap-2">
+                    <Checkbox checked={selectedAssignmentTeachers.includes(t.id)} onCheckedChange={() => toggleAssignmentTeacher(t.id)} />
+                    <span className="text-xs truncate">{t.full_name}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            <DialogFooter>
-              <DialogClose asChild><Button variant="outline" disabled={isCreatingAdmin}>Cancel</Button></DialogClose>
-              <Button onClick={handleCreateAdmin} disabled={!newAdminFullName.trim() || !newAdminEmail.trim() || isCreatingAdmin}>
-                {isCreatingAdmin ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <DialogContent className="sm:max-w-[420px]">
-            <DialogHeader>
-              <DialogTitle>Delete lab?</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete <span className="font-medium text-foreground">{selectedLabForEdit?.name}</span>? This cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} disabled={isDeletingLab}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDeleteLab} disabled={isDeletingLab}>
-                {isDeletingLab ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete lab'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </motion.div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignMembersOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkAssignMembers}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

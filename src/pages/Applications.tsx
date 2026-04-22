@@ -18,15 +18,15 @@ import type {
   ProjectReviewStatus,
   GroupMember,
 } from '@/types';
-import { 
-  FileText, 
-  CheckCircle2, 
-  XCircle, 
-  MessageSquare, 
-  Loader2, 
-  Filter, 
-  Star, 
-  ShieldCheck, 
+import {
+  FileText,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  Loader2,
+  Filter,
+  Star,
+  ShieldCheck,
   UserCircle2,
   Calendar,
   ChevronDown,
@@ -273,13 +273,8 @@ const Applications = () => {
             <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
               {isTeacher ? (isAnyGroupLeader ? 'Application' : 'Student') : 'My'} <span className="text-primary italic">Reviews</span>
             </h1>
-            <p className="text-muted-foreground mt-2 max-w-xl">
-              {isTeacher 
-                ? 'Manage research group entry requests and track student performance metrics.' 
-                : 'Track the progress of your submitted research applications.'}
-            </p>
           </div>
-          
+
           {uniqueProjectIdsInApps.length > 0 && (
             <div className="flex items-center gap-3">
               <div className="bg-secondary/50 p-1.5 rounded-xl border border-border flex items-center gap-2">
@@ -287,8 +282,8 @@ const Applications = () => {
                   <Filter className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium">Filter</span>
                 </div>
-                <Select 
-                  value={filterProjectId.toString()} 
+                <Select
+                  value={filterProjectId.toString()}
                   onValueChange={(val) => setFilterProjectId(val === 'all' ? 'all' : Number(val))}
                 >
                   <SelectTrigger className="w-[200px] border-none bg-transparent focus:ring-0 h-9">
@@ -311,7 +306,7 @@ const Applications = () => {
       {/* Pending Projects Alert Section */}
       <AnimatePresence>
         {pendingProjectsForReview.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-10"
@@ -336,9 +331,9 @@ const Applications = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <Button 
+                      <Button
                         variant={selectedProject === project.id ? "secondary" : "ghost"}
-                        size="sm" 
+                        size="sm"
                         className="text-xs h-8"
                         onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
                       >
@@ -381,7 +376,7 @@ const Applications = () => {
           const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
           const isSelected = selectedApp === app.id;
           const isAnalysisExpanded = expandedAnalysis.includes(app.id);
-          
+
           const canReviewThisApp = project ? canUserReviewProjectApplication(user?.id, project, groups, participants) : false;
           const canRateAcceptedApp = project ? (
             participants.some(p => p.project_id === project.id && p.user_id === user?.id) ||
@@ -404,13 +399,13 @@ const Applications = () => {
                   "h-1 w-full bg-gradient-to-r",
                   app.status === 'ACCEPTED' ? "from-success/50 to-success" : "from-primary/50 to-primary"
                 )} />
-                
+
                 <CardHeader className="pb-4">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <ProfileAvatar 
-                        userId={student?.id} 
-                        name={student?.full_name} 
+                      <ProfileAvatar
+                        userId={student?.id}
+                        name={student?.full_name}
                         className="h-14 w-14 rounded-2xl ring-2 ring-secondary shadow-sm"
                         textClassName="text-lg font-bold"
                       />
@@ -443,9 +438,9 @@ const Applications = () => {
                           <div className="text-lg font-black text-foreground">{app.ranking?.final_score != null ? app.ranking.final_score.toFixed(1) : '-'}</div>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-[10px] h-7 font-bold uppercase tracking-widest gap-1.5"
                         onClick={() => toggleAnalysis(app.id)}
                       >
@@ -532,7 +527,7 @@ const Applications = () => {
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         {[
                           { key: 'technical_fit', label: 'Technical Fit', icon: Cpu },
@@ -545,8 +540,8 @@ const Applications = () => {
                               <Icon className="h-3 w-3" />
                               {label}
                             </label>
-                            <Select 
-                              value={draft[key as keyof ProjectApplicationReviewerRatingInput]?.toString()} 
+                            <Select
+                              value={draft[key as keyof ProjectApplicationReviewerRatingInput]?.toString()}
                               onValueChange={(v) => updateRatingDraft(app.id, key as any, Number(v))}
                             >
                               <SelectTrigger className="h-10 rounded-xl bg-background shadow-sm">
@@ -554,7 +549,7 @@ const Applications = () => {
                               </SelectTrigger>
                               <SelectContent>
                                 {[1, 2, 3, 4, 5].map(v => (
-                                  <SelectItem key={v} value={v.toString()}>{v} — {['Poor', 'Fair', 'Good', 'Very Good', 'Expert'][v-1]}</SelectItem>
+                                  <SelectItem key={v} value={v.toString()}>{v} — {['Poor', 'Fair', 'Good', 'Very Good', 'Expert'][v - 1]}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -570,7 +565,7 @@ const Applications = () => {
                           placeholder="Confidential reviewer notes for this student..."
                           className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none transition-all"
                         />
-                        <Button 
+                        <Button
                           className="h-auto rounded-xl px-6 self-stretch shadow-sm"
                           onClick={() => handleSaveMyRating(app)}
                           disabled={savingRatingAppId === app.id}
@@ -595,7 +590,7 @@ const Applications = () => {
                           <ArrowRight className="h-4 w-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                         </Button>
                       ) : (
-                        <motion.div 
+                        <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="space-y-4"
@@ -635,8 +630,8 @@ const Applications = () => {
             </div>
             <h3 className="text-lg font-bold">No records found</h3>
             <p className="text-sm text-muted-foreground max-w-xs text-center">
-              {isTeacher 
-                ? (isAnyGroupLeader ? 'There are currently no new applications for your research projects.' : 'No students have been assigned to your projects for evaluation yet.') 
+              {isTeacher
+                ? (isAnyGroupLeader ? 'There are currently no new applications for your research projects.' : 'No students have been assigned to your projects for evaluation yet.')
                 : 'You have not submitted any applications yet.'}
             </p>
           </div>
