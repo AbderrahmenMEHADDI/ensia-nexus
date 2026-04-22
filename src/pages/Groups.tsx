@@ -12,7 +12,8 @@ import {
   Mail,
   ShieldCheck,
   Clock,
-  ExternalLink
+  ExternalLink,
+  UserMinus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +31,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const Groups = () => {
   const { user } = useAuth();
@@ -41,6 +52,7 @@ const Groups = () => {
   const [invitations, setInvitations] = useState<GroupInvitation[]>([]);
   const [actingId, setActingId] = useState<number | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<number[]>([]);
+  const [memberToRemove, setMemberToRemove] = useState<{ groupId: number, userId: number } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -124,6 +136,22 @@ const Groups = () => {
     }
   };
 
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+    const { groupId, userId } = memberToRemove;
+    setActingId(userId);
+    try {
+      await apiRepository.removeGroupMember(groupId, userId);
+      setMembers(prev => prev.filter(m => !(m.group_id === groupId && m.user_id === userId)));
+      toast({ title: 'Member removed successfully' });
+    } catch (e: any) {
+      toast({ title: 'Failed to remove member', description: e?.message, variant: 'destructive' });
+    } finally {
+      setActingId(null);
+      setMemberToRemove(null);
+    }
+  };
+
   const toggleExpandGroup = (groupId: number) => {
     setExpandedGroups(prev =>
       prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
@@ -165,9 +193,6 @@ const Groups = () => {
             <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl mb-2">
               Research <span className="text-primary italic">Groups</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl">
-              Collaborate with colleagues, manage invitations, and oversee your research team's progress.
-            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="px-4 py-2 rounded-full bg-secondary/80 border border-border flex items-center gap-2 text-sm font-medium">
@@ -390,23 +415,40 @@ const Groups = () => {
                                 const memberUser = userById[m.user_id];
                                 const isMemberLeader = m.user_id === group.leader_user_id;
                                 return (
-                                  <div
-                                    key={`${group.id}-${m.user_id}`}
-                                    className="flex items-center gap-3 p-2 rounded-xl bg-secondary/40 border border-transparent hover:border-border transition-all"
-                                  >
-                                    <ProfileAvatar
-                                      userId={m.user_id}
-                                      name={memberUser?.full_name}
-                                      className="h-8 w-8 rounded-full border border-background shadow-sm"
-                                      textClassName="text-[10px] font-bold"
-                                    />
-                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-xs font-semibold truncate">{memberUser?.full_name}</span>
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {isMemberLeader ? "Group Leader" : "Member"}
-                                      </span>
+                                    <div
+                                      key={`${group.id}-${m.user_id}`}
+                                      className="flex items-center justify-between p-2 rounded-xl bg-secondary/40 border border-transparent hover:border-border transition-all group/member"
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <ProfileAvatar
+                                          userId={m.user_id}
+                                          name={memberUser?.full_name}
+                                          className="h-8 w-8 rounded-full border border-background shadow-sm"
+                                          textClassName="text-[10px] font-bold"
+                                        />
+                                        <div className="flex flex-col min-w-0">
+                                          <span className="text-xs font-semibold truncate">{memberUser?.full_name}</span>
+                                          <span className="text-[10px] text-muted-foreground">
+                                            {isMemberLeader ? "Group Leader" : "Member"}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {isLeader && !isMemberLeader && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive opacity-0 group-hover/member:opacity-100 transition-opacity"
+                                          onClick={() => setMemberToRemove({ groupId: group.id, userId: m.user_id })}
+                                          disabled={actingId === m.user_id}
+                                        >
+                                          {actingId === m.user_id ? (
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                          ) : (
+                                            <UserMinus className="h-3.5 w-3.5" />
+                                          )}
+                                        </Button>
+                                      )}
                                     </div>
-                                  </div>
                                 );
                               })}
                             </div>
@@ -423,6 +465,26 @@ const Groups = () => {
           </div>
         )}
       </div>
+      
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+        <AlertDialogContent className="rounded-3xl border-border bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold">Remove Member?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              This action will remove the member from the research group. They will no longer have access to group projects or chat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 pt-4">
+            <AlertDialogCancel className="rounded-xl border-border hover:bg-muted">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleRemoveMember}
+              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove Member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

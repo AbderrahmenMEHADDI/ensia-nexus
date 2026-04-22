@@ -116,6 +116,8 @@ export const apiRepository = {
     api.delete<void>(`/group-invitations/${invitationId}`),
   respondToGroupInvitation: (invitationId: number, status: 'ACCEPTED' | 'REJECTED') =>
     api.patch<GroupInvitation>(`/group-invitations/${invitationId}/respond`, { status }),
+  removeGroupMember: (groupId: number, userId: number) =>
+    api.delete<void>(`/group-members/${groupId}/${userId}`),
 
   // ── Projects ─────────────────────────────────────────────────────────────
   getProjects: (groupId?: number) =>
