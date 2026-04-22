@@ -9,6 +9,7 @@ interface ProfileAvatarProps {
   className?: string;
   textClassName?: string;
   imgClassName?: string;
+  title?: string;
 }
 
 export function ProfileAvatar({
@@ -18,6 +19,7 @@ export function ProfileAvatar({
   className,
   textClassName,
   imgClassName,
+  title,
 }: ProfileAvatarProps) {
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(imageUrl || null);
 

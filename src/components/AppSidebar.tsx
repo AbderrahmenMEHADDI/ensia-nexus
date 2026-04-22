@@ -45,7 +45,7 @@ const navItems: { path: string; label: string; icon: LucideIcon; allowedRoles?: 
   { path: '/my-labs', label: 'My Labs', icon: FlaskConical, allowedRoles: ['TEACHER', 'ADMIN'] },
   { path: '/groups', label: 'Groups', icon: Users, allowedRoles: ['TEACHER'] },
   { path: '/student-cv', label: 'Student CV', icon: FileUser, allowedRoles: ['STUDENT'] },
-  { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
+  { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'PARTNER'] },
   { path: '/chat', label: 'Chat', icon: MessageCircle },
   { path: '/profile', label: 'Profile', icon: User },
   { path: '/admin', label: 'Admin', icon: Shield, allowedRoles: ['ADMIN'] },
@@ -109,14 +109,19 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 if (item.allowedRoles && !hasRole(item.allowedRoles)) return null;
                 if (item.path === '/my-labs' && !isLabAdminUser) return null;
+                
+                const label = (item.path === '/applications' && user?.role === 'TEACHER' && !hasLeadershipGroups) 
+                  ? 'Reviews' 
+                  : item.label;
+
                 const isActive = window.location.pathname === item.path || (item.path !== '/dashboard' && window.location.pathname.startsWith(item.path));
                 
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                       <Link to={item.path}>
                         <item.icon />
-                        <span>{item.label}</span>
+                        <span>{label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
