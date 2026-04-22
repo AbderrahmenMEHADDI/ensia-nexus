@@ -16,6 +16,7 @@ import type {
   ResearchGroup,
   ProjectParticipant,
   ProjectReviewStatus,
+  GroupMember,
 } from '@/types';
 import { FileText, CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ const Applications = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
   const [participants, setParticipants] = useState<ProjectParticipant[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<number | null>(null);
   const [reviewingAppId, setReviewingAppId] = useState<number | null>(null);
@@ -47,18 +49,20 @@ const Applications = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [a, u, p, g, pp] = await Promise.all([
+        const [a, u, p, g, pp, gm] = await Promise.all([
           apiRepository.getApplications(),
           apiRepository.getUsers(),
           apiRepository.getProjects(),
           apiRepository.getGroups(),
           apiRepository.getProjectParticipants(),
+          apiRepository.getGroupMembers(),
         ]);
         setApps(a);
         setUsers(u);
         setProjects(p);
         setGroups(g);
         setParticipants(pp);
+        setGroupMembers(gm);
       } catch (e) {
         console.error('Applications load error:', e);
         toast({ title: 'Error loading applications', variant: 'destructive' });
@@ -95,7 +99,25 @@ const Applications = () => {
     [apps, filterProjectId]
   );
 
+  const displayApps = useMemo(() => {
+    return sortedApps.filter(app => {
+      if (!isTeacher) return true; // Students see all their own apps
+
+      const p = getProjectById(app.project_id);
+      if (!p) return false;
+      const g = getGroupById(p.group_id);
+      const isLeader = g?.leader_user_id === user?.id;
+
+      if (isLeader) return true; // Group leaders see all relevant apps (Pending/Accepted)
+      return app.status === 'ACCEPTED'; // Normal teachers only see accepted students
+    });
+  }, [sortedApps, user?.id, projects, groups, isTeacher]);
+
   const uniqueProjectIdsInApps = useMemo(() => Array.from(new Set(apps.map(a => a.project_id))), [apps]);
+
+  const isAnyGroupLeader = useMemo(() => {
+    return groups.some(g => g.leader_user_id === user?.id);
+  }, [groups, user?.id]);
 
   const getDefaultRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
     const myRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
@@ -225,12 +247,18 @@ const Applications = () => {
       <motion.div >
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
           <div>
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Applications</span>
+            <span className="text-xs font-mono text-primary uppercase tracking-wider">Management</span>
             <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">
-              {isTeacher ? 'Review Applications' : 'Application Access'}
+              {isTeacher 
+                ? (isAnyGroupLeader ? 'Application Review' : 'Student Reviews') 
+                : 'Application Access'}
             </h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
-              You can review applications only if you are a group leader or a project participant with LEAD/REVIEWER role.
+              {isTeacher 
+                ? (isAnyGroupLeader 
+                    ? 'Review and manage applications for your research group projects.' 
+                    : 'Evaluate students who have joined your projects.') 
+                : 'View your submitted applications and their current status.'}
             </p>
           </div>
           {uniqueProjectIdsInApps.length > 0 && (
@@ -343,7 +371,7 @@ const Applications = () => {
 
         {/* Applications list */}
         <div className="space-y-4">
-          {sortedApps.map((app, i) => {
+          {displayApps.map((app, i) => {
             const student = getUserById(app.student_user_id);
             const project = getProjectById(app.project_id);
             const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
@@ -354,6 +382,7 @@ const Applications = () => {
             const canRateAcceptedApp = project
               ? participants.some(p => p.project_id === project.id && p.user_id === user?.id)
               || groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id)
+              || groupMembers.some(m => m.group_id === project.group_id && m.user_id === user?.id && m.is_active)
               : false;
             const draft = getRatingDraft(app);
             const myExistingRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
@@ -370,6 +399,11 @@ const Applications = () => {
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
+                        {isTeacher && (
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-tighter">
+                            {app.status === 'ACCEPTED' ? 'Review' : 'Application'}
+                          </span>
+                        )}
                         <h3 className="font-medium text-foreground">{project?.title || 'Unknown Project'}</h3>
                         <ApplicationStatusBadge status={app.status} />
                       </div>
@@ -529,10 +563,14 @@ const Applications = () => {
               </motion.div>
             );
           })}
-          {apps.length === 0 && (
+          {displayApps.length === 0 && (
             <div className="text-muted-foreground text-center py-16">
               <FileText className="h-5 w-5 mx-auto mb-2" />
-              <p>No applications available for your current reviewer scope.</p>
+              <p>
+                {isTeacher 
+                  ? (isAnyGroupLeader ? 'No applications to review.' : 'No students to evaluate.') 
+                  : 'No applications found.'}
+              </p>
             </div>
           )}
         </div>

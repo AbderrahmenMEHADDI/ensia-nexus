@@ -109,14 +109,19 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 if (item.allowedRoles && !hasRole(item.allowedRoles)) return null;
                 if (item.path === '/my-labs' && !isLabAdminUser) return null;
+                
+                const label = (item.path === '/applications' && user?.role === 'TEACHER' && !hasLeadershipGroups) 
+                  ? 'Reviews' 
+                  : item.label;
+
                 const isActive = window.location.pathname === item.path || (item.path !== '/dashboard' && window.location.pathname.startsWith(item.path));
                 
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
                       <Link to={item.path}>
                         <item.icon />
-                        <span>{item.label}</span>
+                        <span>{label}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

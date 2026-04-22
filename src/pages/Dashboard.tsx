@@ -60,14 +60,28 @@ const Dashboard = () => {
   const myTasks = tasks.filter(t => t.assignee_user_id === user.id || t.created_by === user.id);
   const activeTasks = myTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'TODO');
 
-  const pendingApplications = applications.filter(a => a.status === 'PENDING');
-  const pendingGroups = groups.filter(g => !g.is_validated);
-  const isTeacherOrAdmin = isTeacher || isAdmin;
-
   const myGroupIds = groupMembers
     .filter(m => m.user_id === user.id && m.is_active)
     .map(m => m.group_id);
   const myGroups = groups.filter(g => myGroupIds.includes(g.id));
+
+  const pendingGroups = groups.filter(g => !g.is_validated);
+  const isTeacherOrAdmin = isTeacher || isAdmin;
+
+  const pendingApplications = applications.filter(a => {
+    if (a.status !== 'PENDING') return false;
+    const p = projects.find(proj => proj.id === a.project_id);
+    if (!p) return false;
+    const g = groups.find(gr => gr.id === p.group_id);
+    return g?.leader_user_id === user?.id;
+  });
+
+  const studentsToEvaluate = applications.filter(a => {
+    if (a.status !== 'ACCEPTED') return false;
+    const hasRated = a.reviewer_ratings?.some(r => r.reviewer_user_id === user.id);
+    if (hasRated) return false;
+    return participants.some(p => p.project_id === a.project_id && p.user_id === user.id);
+  });
 
   if (loading) {
     return (
@@ -94,12 +108,18 @@ const Dashboard = () => {
           <p className="text-muted-foreground mt-1">Here's what's happening with your research.</p>
         </div>
 
-        {/* Pending reviews for teachers */}
-        {isTeacherOrAdmin && (pendingApplications.length > 0 || (isAdmin && pendingGroups.length > 0)) && (
+        {/* Alerts for teachers/admins */}
+        {isTeacherOrAdmin && (pendingApplications.length > 0 || studentsToEvaluate.length > 0 || (isAdmin && pendingGroups.length > 0)) && (
           <div className="mb-8 space-y-2">
             {pendingApplications.length > 0 && (
               <Link to="/applications" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
                 <span className="text-sm font-medium text-foreground">{pendingApplications.length} pending application(s) to review</span>
+                <ArrowRight className="h-4 w-4 text-primary" />
+              </Link>
+            )}
+            {studentsToEvaluate.length > 0 && (
+              <Link to="/applications" className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
+                <span className="text-sm font-medium text-foreground">{studentsToEvaluate.length} student(s) to evaluate</span>
                 <ArrowRight className="h-4 w-4 text-primary" />
               </Link>
             )}

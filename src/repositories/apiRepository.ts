@@ -19,12 +19,12 @@ export const apiRepository = {
     if (typeof params?.skip !== 'undefined') searchParams.set('skip', params.skip.toString());
     if (typeof params?.limit !== 'undefined') searchParams.set('limit', params.limit.toString());
     const qs = searchParams.toString();
-    return api.get<User[]>(qs ? `/users?${qs}` : '/users');
+    return api.get<User[]>(qs ? `/users/?${qs}` : '/users/');
   },
   createUser: (data: Partial<User> & { full_name: string; email: string; role: UserRole; password?: string }) =>
     api.post<User>('/users/', data),
-  getUser: (id: number) => api.get<User>(`/users/${id}`),
-  updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}`, data),
+  getUser: (id: number) => api.get<User>(`/users/${id}/`),
+  updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}/`, data),
   updateProfilePicture: (data: FormData) => api.put<User>(`/users/profile-picture`, data),
   deleteUser: (id: number) => api.delete<void>(`/users/${id}`),
   getUsersPaged: (params: {
@@ -39,7 +39,7 @@ export const apiRepository = {
     if (params.role) searchParams.set('role', params.role);
     if (params.search) searchParams.set('search', params.search);
     const qs = searchParams.toString();
-    return api.get<UserListResponse>(qs ? `/users/paged?${qs}` : '/users/paged');
+    return api.get<UserListResponse>(qs ? `/users/paged/?${qs}` : '/users/paged/');
   },
 
   // ── Student / Teacher profiles ───────────────────────────────────────────
@@ -159,7 +159,7 @@ export const apiRepository = {
   createTaskComment: (taskId: number, data: TaskCommentCreate) => 
     api.post<TaskComment>(`/task-comments/?task_id=${taskId}`, data),
   deleteTaskComment: (commentId: number) => 
-    api.delete(`/task-comments/${commentId}`),
+    api.delete(`/task-comments/${commentId}/`),
 
   getTaskUpdates: (taskId: number) =>
     api.get<TaskUpdate[]>(`/task-updates/?task_id=${taskId}`),
@@ -179,7 +179,7 @@ export const apiRepository = {
   getApplicationReviewerRatings: (id: number) =>
     api.get<ProjectApplicationReviewerRating[]>(`/project-applications/${id}/reviewer-ratings`),
   upsertMyApplicationRating: (id: number, data: ProjectApplicationReviewerRatingInput) =>
-    api.put<ProjectApplicationReviewerRating>(`/project-applications/${id}/my-rating`, data),
+    api.put<ProjectApplicationReviewerRating>(`/project-applications/${id}/my-rating/`, data),
 
   // ── Announcements ────────────────────────────────────────────────────────
   getAnnouncements: () => api.get<Announcement[]>('/announcements/'),
