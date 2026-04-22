@@ -230,6 +230,7 @@ const ProjectBoard = () => {
         setEditAssigneeUserId={board.setEditAssigneeUserId}
         editLoading={board.editLoading}
         handleUpdateTask={board.handleUpdateTask}
+        handleDeleteTask={board.handleDeleteTask}
         statusColumns={statusColumns}
         participants={board.participants}
         getUserById={board.getUserById}

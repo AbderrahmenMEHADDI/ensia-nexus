@@ -45,6 +45,7 @@ interface TaskDialogsProps {
   setEditAssigneeUserId: (val: string) => void;
   editLoading: boolean;
   handleUpdateTask: () => void;
+  handleDeleteTask: (id: number) => Promise<void>;
 
   statusColumns: { status: TaskStatus; label: string; color: string }[];
   participants: ProjectParticipant[];
@@ -82,6 +83,7 @@ export const TaskDialogs = ({
   setEditAssigneeUserId,
   editLoading,
   handleUpdateTask,
+  handleDeleteTask,
 
   statusColumns,
   participants,
@@ -93,6 +95,8 @@ export const TaskDialogs = ({
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     if (editOpen && editTaskId) {
@@ -131,15 +135,18 @@ export const TaskDialogs = ({
     }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
+  const handleDeleteComment = async () => {
+    if (commentToDelete === null) return;
     try {
-      await apiRepository.deleteTaskComment(commentId);
-      setComments(comments.filter(c => c.id !== commentId));
+      await apiRepository.deleteTaskComment(commentToDelete);
+      setComments(comments.filter(c => c.id !== commentToDelete));
       toast({ title: "Comment deleted" });
     } catch (error) {
       console.error("Failed to delete comment", error);
       const msg = error instanceof Error ? error.message : "Unknown error";
       toast({ title: "Failed to delete comment", description: msg, variant: "destructive" });
+    } finally {
+      setCommentToDelete(null);
     }
   };
 
@@ -295,7 +302,7 @@ export const TaskDialogs = ({
                                 <span className="text-[10px] text-muted-foreground">{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
                                 {(currentUser?.id === comment.author.id || currentUser?.role === 'TEACHER') && (
                                   <button 
-                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteComment(comment.id); }}
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentToDelete(comment.id); }}
                                     className="opacity-0 group-hover:opacity-100 p-1 bg-destructive/10 text-destructive rounded transition-all hover:bg-destructive hover:text-destructive-foreground relative z-10 cursor-pointer"
                                     title="Delete comment"
                                     type="button"
@@ -341,11 +348,59 @@ export const TaskDialogs = ({
             </div>
           </div>
           <DialogFooter className="mt-4 pt-4 border-t w-full">
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
-            <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
-              {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Save Changes
-            </Button>
+            <div className="flex justify-between w-full">
+              <Button 
+                variant="destructive" 
+                onClick={() => setTaskToDelete(editTaskId!)}
+                disabled={editLoading || !editTaskId}
+                type="button"
+              >
+                Delete Task
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
+                <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
+                  {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Comment Confirmation Dialog */}
+      <Dialog open={commentToDelete !== null} onOpenChange={(open) => !open && setCommentToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Comment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setCommentToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteComment}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Task Confirmation Dialog */}
+      <Dialog open={taskToDelete !== null} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setTaskToDelete(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={async () => {
+              if (taskToDelete !== null) {
+                await handleDeleteTask(taskToDelete);
+                setTaskToDelete(null);
+              }
+            }}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
