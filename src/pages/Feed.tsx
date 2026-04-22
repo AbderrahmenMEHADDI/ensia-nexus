@@ -93,7 +93,7 @@ const PostCard = ({
 
   const submitComment = async () => {
     if (!newComment.trim() || !user || postingComment) return;
-    
+
     const commentText = newComment.trim();
     setNewComment('');
     setPostingComment(true);
@@ -107,7 +107,7 @@ const PostCard = ({
       author_user_id: user.id,
       created_at: new Date().toISOString()
     };
-    
+
     setComments(prev => [...prev, optimisticComment]);
 
     try {
@@ -146,8 +146,8 @@ const PostCard = ({
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
       className="rounded-2xl border border-border/70 bg-card overflow-hidden shadow-sm"
     >
@@ -382,7 +382,7 @@ const Feed = () => {
           return newA;
         });
       });
-      
+
       setUsers(u);
       setGroups(g);
       setProjects(p);
@@ -424,7 +424,7 @@ const Feed = () => {
 
     const isRemoving = currentInteractions.user_reacted === type;
     const newReactionsByType = { ...currentInteractions.reactions_by_type };
-    
+
     // Adjust counts and types
     if (isRemoving) {
       newReactionsByType[type] = Math.max(0, (newReactionsByType[type] || 0) - 1);
@@ -473,7 +473,7 @@ const Feed = () => {
 
   const handleAddComment = async (id: number, text: string) => {
     if (!user) return;
-    
+
     // Optimistic count update for the parent feed
     setAnnouncements(prev => prev.map(a => {
       if (a.id === id) {
@@ -583,7 +583,7 @@ const Feed = () => {
 
   return (
     <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px] gap-6 lg:gap-8 items-start">
           {/* Main column */}
           <div className="space-y-5">

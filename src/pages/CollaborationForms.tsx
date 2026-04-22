@@ -50,10 +50,10 @@ const CollaborationForms = () => {
   const validatedGroups = groups.filter(group => group.is_validated);
   const myValidatedGroups = user
     ? validatedGroups.filter(group =>
-        groupMembers.some(
-          member => member.group_id === group.id && member.user_id === user.id && member.is_active
-        )
+      groupMembers.some(
+        member => member.group_id === group.id && member.user_id === user.id && member.is_active
       )
+    )
     : [];
 
   useEffect(() => {
@@ -208,7 +208,7 @@ const CollaborationForms = () => {
 
   return (
     <div className="container py-10">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="mb-8">
           <span className="text-xs font-mono text-primary uppercase tracking-wider">Collaboration Workspace</span>
           <h1 className="text-3xl font-serif font-bold text-foreground mt-1">Project & Profile Forms</h1>

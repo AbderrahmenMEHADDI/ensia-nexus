@@ -87,11 +87,11 @@ const CompleteRegistration = () => {
         role: data.role,
         ...(data.role === 'TEACHER'
           ? {
-              experience_years: data.experienceYears,
-              grade: data.grade,
-              department: data.department?.trim(),
-              research_interests: data.researchInterests?.trim(),
-            }
+            experience_years: data.experienceYears,
+            grade: data.grade,
+            department: data.department?.trim(),
+            research_interests: data.researchInterests?.trim(),
+          }
           : {}),
       });
       toast({ title: 'Registration completed', description: 'Your profile has been updated.' });
@@ -110,8 +110,8 @@ const CompleteRegistration = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         className="w-full max-w-md"
       >
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">

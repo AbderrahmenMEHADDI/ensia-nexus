@@ -190,8 +190,8 @@ const Groups = () => {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl mb-2">
-              Research <span className="text-primary italic">Groups</span>
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mb-2">
+              My Groups
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -302,11 +302,6 @@ const Groups = () => {
 
       {/* My Groups Section */}
       <div>
-        <div className="flex items-center gap-2 mb-6">
-          <LayoutGrid className="h-5 w-5 text-primary" />
-          <h2 className="text-2xl font-bold">My Groups</h2>
-        </div>
-
         {myGroups.length === 0 ? (
           <div className="p-12 rounded-3xl border-2 border-dashed border-border bg-secondary/30 flex flex-col items-center text-center">
             <div className="h-20 w-20 rounded-full bg-background flex items-center justify-center mb-6 shadow-sm">
@@ -328,16 +323,14 @@ const Groups = () => {
               return (
                 <motion.div
                   key={group.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.1 }}
                 >
                   <Card className={cn(
                     "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
                     isLeader ? "border-primary/20" : "border-border"
                   )}>
-                    <div className="h-1.5 w-full bg-gradient-to-r from-primary/50 via-primary to-blue-600/50" />
-
                     <CardHeader>
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">
@@ -377,7 +370,7 @@ const Groups = () => {
                               key={m.user_id}
                               userId={m.user_id}
                               name={userById[m.user_id]?.full_name}
-                              className="h-10 w-10 rounded-full border-2 border-card ring-1 ring-border shadow-sm"
+                              className="h-10 w-10 rounded-full border-2 border-card ring-1 ring-border shadow-sm bg-secondary"
                               textClassName="text-xs font-bold"
                             />
                           ))}
@@ -415,40 +408,40 @@ const Groups = () => {
                                 const memberUser = userById[m.user_id];
                                 const isMemberLeader = m.user_id === group.leader_user_id;
                                 return (
-                                    <div
-                                      key={`${group.id}-${m.user_id}`}
-                                      className="flex items-center justify-between p-2 rounded-xl bg-secondary/40 border border-transparent hover:border-border transition-all group/member"
-                                    >
-                                      <div className="flex items-center gap-3 min-w-0">
-                                        <ProfileAvatar
-                                          userId={m.user_id}
-                                          name={memberUser?.full_name}
-                                          className="h-8 w-8 rounded-full border border-background shadow-sm"
-                                          textClassName="text-[10px] font-bold"
-                                        />
-                                        <div className="flex flex-col min-w-0">
-                                          <span className="text-xs font-semibold truncate">{memberUser?.full_name}</span>
-                                          <span className="text-[10px] text-muted-foreground">
-                                            {isMemberLeader ? "Group Leader" : "Member"}
-                                          </span>
-                                        </div>
+                                  <div
+                                    key={`${group.id}-${m.user_id}`}
+                                    className="flex items-center justify-between p-2 rounded-xl bg-secondary/40 border border-transparent hover:border-border transition-all group/member"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <ProfileAvatar
+                                        userId={m.user_id}
+                                        name={memberUser?.full_name}
+                                        className="h-8 w-8 rounded-full border border-background shadow-sm"
+                                        textClassName="text-[10px] font-bold"
+                                      />
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="text-xs font-semibold truncate">{memberUser?.full_name}</span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                          {isMemberLeader ? "Group Leader" : "Member"}
+                                        </span>
                                       </div>
-                                      {isLeader && !isMemberLeader && (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive opacity-0 group-hover/member:opacity-100 transition-opacity"
-                                          onClick={() => setMemberToRemove({ groupId: group.id, userId: m.user_id })}
-                                          disabled={actingId === m.user_id}
-                                        >
-                                          {actingId === m.user_id ? (
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                          ) : (
-                                            <UserMinus className="h-3.5 w-3.5" />
-                                          )}
-                                        </Button>
-                                      )}
                                     </div>
+                                    {isLeader && !isMemberLeader && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 rounded-lg text-muted-foreground hover:text-destructive opacity-0 group-hover/member:opacity-100 transition-opacity"
+                                        onClick={() => setMemberToRemove({ groupId: group.id, userId: m.user_id })}
+                                        disabled={actingId === m.user_id}
+                                      >
+                                        {actingId === m.user_id ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <UserMinus className="h-3.5 w-3.5" />
+                                        )}
+                                      </Button>
+                                    )}
+                                  </div>
                                 );
                               })}
                             </div>
@@ -465,7 +458,7 @@ const Groups = () => {
           </div>
         )}
       </div>
-      
+
       <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
         <AlertDialogContent className="rounded-3xl border-border bg-card">
           <AlertDialogHeader>
@@ -476,7 +469,7 @@ const Groups = () => {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 pt-4">
             <AlertDialogCancel className="rounded-xl border-border hover:bg-muted">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleRemoveMember}
               className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
@@ -485,7 +478,7 @@ const Groups = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </div >
   );
 };
 

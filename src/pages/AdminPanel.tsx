@@ -538,11 +538,8 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center shadow-inner border border-destructive/20">
-              <Shield className="h-7 w-7 text-destructive" />
-            </div>
             <div>
-              <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl mb-1">
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl mb-1">
                 Admin <span className="text-primary italic">Panel</span>
               </h1>
             </div>
@@ -606,12 +603,11 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
               return (
                 <motion.div
                   key={lab.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
                 >
                   <Card className="group overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300">
-                    <div className="h-1 w-full bg-gradient-to-r from-primary/30 to-blue-500/30" />
                     <CardHeader className="p-6">
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">

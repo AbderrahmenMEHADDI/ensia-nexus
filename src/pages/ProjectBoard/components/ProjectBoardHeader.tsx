@@ -43,43 +43,37 @@ export const ProjectBoardHeader = ({
 }: ProjectBoardHeaderProps) => {
   return (
     <div className="mb-8">
-      {canManageProjects && (
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {canCreateProjects && (
-            <Button size="sm" onClick={() => setProjectFormOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Project Details Form
-            </Button>
-          )}
-          <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" /> Member Details Form
-          </Button>
+      <div className='flex items-start justify-between w-full'>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-3">
+          <Select value={String(selectedProjectId)} onValueChange={handleProjectChange}>
+            <SelectTrigger className="w-full sm:w-[340px] h-auto py-2">
+              <SelectValue placeholder="Select a project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map(p => (
+                <SelectItem key={p.id} value={String(p.id)}>{p.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className={`text-xs font-mono px-2 py-0.5 rounded ${project.visibility === 'PUBLIC' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
+            {project.visibility}
+          </span>
+          <ProjectStatusBadge status={getProjectStatus(project)} />
         </div>
-      )}
-
-      <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground mb-2">
-        <span>{labName}</span>
-        <span>/</span>
-        <span>{groupName}</span>
+        {canManageProjects && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {canCreateProjects && (
+              <Button size="sm" onClick={() => setProjectFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Project Details Form
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Member Details Form
+            </Button>
+          </div>
+        )}
       </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-3">
-        <Select value={String(selectedProjectId)} onValueChange={handleProjectChange}>
-          <SelectTrigger className="w-full sm:w-[340px] h-auto py-2">
-            <SelectValue placeholder="Select a project" />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map(p => (
-              <SelectItem key={p.id} value={String(p.id)}>{p.title}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className={`text-xs font-mono px-2 py-0.5 rounded ${project.visibility === 'PUBLIC' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
-          {project.visibility}
-        </span>
-        <ProjectStatusBadge status={getProjectStatus(project)} />
-      </div>
-
-      <p className="text-muted-foreground text-sm max-w-2xl mb-3">{project.description}</p>
+      {/* <p className="text-muted-foreground text-sm max-w-2xl mb-3">{project.description}</p> */}
 
       {canReviewSelectedProject && (
         <div className="flex flex-wrap items-center gap-2 mb-3">
