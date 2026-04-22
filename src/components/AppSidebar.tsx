@@ -45,7 +45,7 @@ const navItems: { path: string; label: string; icon: LucideIcon; allowedRoles?: 
   { path: '/my-labs', label: 'My Labs', icon: FlaskConical, allowedRoles: ['TEACHER', 'ADMIN'] },
   { path: '/groups', label: 'Groups', icon: Users, allowedRoles: ['TEACHER'] },
   { path: '/student-cv', label: 'Student CV', icon: FileUser, allowedRoles: ['STUDENT'] },
-  { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'ADMIN', 'PARTNER'] },
+  { path: '/applications', label: 'Applications', icon: FileText, allowedRoles: ['TEACHER', 'PARTNER'] },
   { path: '/chat', label: 'Chat', icon: MessageCircle },
   { path: '/profile', label: 'Profile', icon: User },
   { path: '/admin', label: 'Admin', icon: Shield, allowedRoles: ['ADMIN'] },

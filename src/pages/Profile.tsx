@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
+import { cn } from '@/lib/utils';
 import type { Student, Teacher, Project, Task, ProjectParticipant, User, StudentPreviousProject, ParticipantRole } from '@/types';
 
 const Profile = () => {
@@ -230,17 +231,17 @@ const Profile = () => {
   return (
     <div className="w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        
+
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left Column: Profile Sidebar */}
           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-8">
-            
+
             {/* Profile Header Card */}
             <div className="relative overflow-hidden p-6 rounded-3xl border border-border bg-card shadow-sm group">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
-              
+
               <div className="flex flex-col items-center text-center space-y-6">
                 <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
                   <DialogTrigger asChild>
@@ -331,27 +332,27 @@ const Profile = () => {
                 <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                 Information
               </h2>
-              
+
               <div className="space-y-4">
                 {teacher && (
                   <>
                     <div className="flex flex-col space-y-1">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Department</span>
-                      <span className="text-sm font-medium text-foreground">{teacher.department}</span>
+                      <span className="text-sm font-medium text-foreground">{teacher?.department}</span>
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Grade</span>
-                      <span className="text-sm font-medium text-foreground">{teacher.grade}</span>
+                      <span className="text-sm font-medium text-foreground">{teacher?.grade}</span>
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Experience</span>
-                      <span className="text-sm font-medium text-foreground">{teacher.experience_years} years</span>
+                      <span className="text-sm font-medium text-foreground">{teacher?.experience_years} years</span>
                     </div>
                     {teacher.research_interests && (
                       <div className="flex flex-col space-y-3 pt-2 border-t border-border">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Research Interests</span>
                         <div className="flex flex-wrap gap-2">
-                          {teacher.research_interests.split(',').filter(Boolean).map(interest => (
+                          {teacher?.research_interests?.split(',').filter(Boolean).map(interest => (
                             <span key={interest.trim()} className="px-2.5 py-1 rounded-lg bg-primary/5 text-primary text-[11px] font-semibold border border-primary/10">
                               #{interest.trim()}
                             </span>
@@ -361,27 +362,11 @@ const Profile = () => {
                     )}
                   </>
                 )}
-                {student && (
-                  <>
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">University</span>
-                      <span className="text-sm font-medium text-foreground">{student.university}</span>
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Level</span>
-                      <span className="text-sm font-medium text-foreground">{student.level}</span>
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Major</span>
-                      <span className="text-sm font-medium text-foreground">{student.major}</span>
-                    </div>
-                    {student.cv_url && (
-                      <div className="flex flex-col space-y-1 pt-2 border-t border-border">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">CV</span>
-                        <a href={student.cv_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">View CV</a>
-                      </div>
-                    )}
-                  </>
+                {student && student.cv_url && (
+                  <div className="flex flex-col space-y-1 pt-2 border-t border-border">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">CV</span>
+                    <a href={student.cv_url} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline truncate">View CV</a>
+                  </div>
                 )}
                 <div className="flex flex-col space-y-1 pt-2 border-t border-border">
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Member Since</span>
@@ -393,10 +378,10 @@ const Profile = () => {
 
           {/* Right Column: Main Content Area */}
           <div className="lg:col-span-8 space-y-8">
-            
-            {student && (
+
+            {user.role !== 'PARTNER' && (
               <>
-                {/* Profile Details for Students */}
+                {/* Profile Details */}
                 <section className="p-8 rounded-3xl border border-border bg-card shadow-sm space-y-6">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
@@ -407,7 +392,7 @@ const Profile = () => {
                       Edit Details
                     </Button>
                   </div>
-                  
+
                   {!isEditingProfileDetails ? (
                     <div className="grid sm:grid-cols-2 gap-x-12 gap-y-6">
                       <div className="space-y-1">
@@ -438,6 +423,14 @@ const Profile = () => {
                           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Department</Label>
                           <Input value={department} onChange={e => setDepartment(e.target.value)} />
                         </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Contact Email</Label>
+                          <Input value={contactEmail} onChange={e => setContactEmail(e.target.value)} placeholder="Email for contact" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Phone Number</Label>
+                          <Input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="e.g., +213..." />
+                        </div>
                       </div>
                       <div className="flex justify-end gap-2 pt-2">
                         <Button variant="ghost" size="sm" onClick={() => setIsEditingProfileDetails(false)}>Cancel</Button>
@@ -450,18 +443,18 @@ const Profile = () => {
                 </section>
 
                 {/* About & Bio */}
-                {(student.bio || student.experience || student.skills) && (
+                {student && (student.bio || student.experience || student.skills) && (
                   <section className="p-8 rounded-3xl border border-border bg-card shadow-sm space-y-8">
-                    {student.bio && (
+                    {student?.bio && (
                       <div>
                         <h2 className="text-lg font-display font-bold text-foreground mb-4">About</h2>
-                        <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{student.bio}</p>
+                        <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{student?.bio}</p>
                       </div>
                     )}
-                    {student.experience && (
+                    {student?.experience && (
                       <div className="pt-8 border-t border-border">
                         <h2 className="text-lg font-display font-bold text-foreground mb-4">Experience</h2>
-                        <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{student.experience}</p>
+                        <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">{student?.experience}</p>
                       </div>
                     )}
                   </section>
@@ -484,11 +477,15 @@ const Profile = () => {
                       <div className="grid gap-6">
                         <div className="space-y-2">
                           <Label>Project Title</Label>
-                          <Input value={newPreviousProjectTitle} onChange={e => setNewPreviousProjectTitle(e.target.value)} placeholder="Project title" />
+                          <Input value={newPreviousProjectTitle} onChange={e => setNewPreviousProjectTitle(e.target.value)} placeholder="e.g., Autonomous Drone Navigation" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Project Link</Label>
+                          <Input value={newPreviousProjectLink} onChange={e => setNewPreviousProjectLink(e.target.value)} placeholder="https://github.com/..." />
                         </div>
                         <div className="space-y-2">
                           <Label>Description</Label>
-                          <Textarea value={newPreviousProjectDescription} onChange={e => setNewPreviousProjectDescription(e.target.value)} rows={3} placeholder="Project description" />
+                          <Textarea value={newPreviousProjectDescription} onChange={e => setNewPreviousProjectDescription(e.target.value)} rows={3} placeholder="Briefly explain your role and the technologies used." />
                         </div>
                       </div>
                       <div className="flex justify-end gap-3 pt-6">
@@ -502,21 +499,43 @@ const Profile = () => {
 
                   <div className="grid gap-4">
                     {previousProjects.map(item => (
-                      <div key={item.id} className="p-6 rounded-3xl border border-border bg-card hover:shadow-md transition-all group">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="space-y-2">
-                            <h3 className="font-bold text-foreground text-lg">{item.title}</h3>
-                            {item.project_link && (
-                              <a href={item.project_link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline font-medium inline-flex items-center gap-1.5">
-                                <ExternalLink className="h-3 w-3" /> View Project
-                              </a>
-                            )}
-                            <p className="text-sm text-muted-foreground leading-relaxed pt-2">{item.description}</p>
+                      <div key={item.id} className="relative group">
+                        <a
+                          href={item.project_link || '#'}
+                          target={item.project_link ? "_blank" : undefined}
+                          rel="noopener noreferrer"
+                          className={cn(
+                            "p-6 rounded-3xl border border-border bg-card hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all block h-full",
+                            !item.project_link && "cursor-default"
+                          )}
+                          onClick={(e) => {
+                            if (!item.project_link) e.preventDefault();
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-2">
+                              <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{item.title}</h3>
+                              {item.project_link && (
+                                <span className="text-xs text-primary font-medium inline-flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-lg">
+                                  <ExternalLink className="h-3 w-3" /> External Project Link
+                                </span>
+                              )}
+                              <p className="text-sm text-muted-foreground leading-relaxed pt-2">{item.description}</p>
+                            </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive" onClick={() => handleDeletePreviousProject(item.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive z-10 h-8 w-8"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeletePreviousProject(item.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ))}
                   </div>
