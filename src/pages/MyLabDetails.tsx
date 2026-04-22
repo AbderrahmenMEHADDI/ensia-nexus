@@ -110,8 +110,8 @@ const MyLabDetails = () => {
             {groups.map((group, i) => (
               <motion.div
                 key={group.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: i * 0.1 }}
                 className="group p-6 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all hover:shadow-xl hover:shadow-primary/5"
               >

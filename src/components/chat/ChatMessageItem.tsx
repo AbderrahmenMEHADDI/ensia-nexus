@@ -39,14 +39,14 @@ const ChatMessageItem = ({
     return colors[Math.abs(hash) % colors.length];
   };
 
-  const avatarColorClass = isMe 
-    ? 'bg-primary text-primary-foreground shadow-primary/20' 
+  const avatarColorClass = isMe
+    ? 'bg-primary text-primary-foreground shadow-primary/20'
     : getAvatarColor(message.sender_name);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
       className={`flex gap-4 ${sameAuthor ? 'mt-0.5' : 'mt-6'} group relative`}
     >
@@ -64,7 +64,7 @@ const ChatMessageItem = ({
           </span>
         </div>
       )}
-      
+
       <div className="flex-1 min-w-0">
         {!sameAuthor && (
           <div className="flex items-baseline gap-3 mb-1.5">
@@ -74,16 +74,15 @@ const ChatMessageItem = ({
             <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-tighter italic">{formatTime(message.created_at)}</span>
           </div>
         )}
-        
+
         <div className="relative group/content max-w-[85%]">
-          <div className={`text-sm leading-relaxed p-3 rounded-2xl shadow-sm transition-all duration-300 ${
-            isMe 
-              ? 'bg-primary/10 text-foreground border border-primary/20 rounded-tl-none hover:bg-primary/[0.12]' 
+          <div className={`text-sm leading-relaxed p-3 rounded-2xl shadow-sm transition-all duration-300 ${isMe
+              ? 'bg-primary/10 text-foreground border border-primary/20 rounded-tl-none hover:bg-primary/[0.12]'
               : 'bg-muted/70 text-foreground/90 border border-border/60 rounded-tl-none hover:bg-muted/80'
-          } ${sameAuthor ? '!rounded-tl-2xl' : ''}`}>
+            } ${sameAuthor ? '!rounded-tl-2xl' : ''}`}>
             {message.content}
           </div>
-          
+
           {canDelete && (
             <div className={`absolute -right-12 top-0 opacity-0 group-hover/content:opacity-100 transition-opacity`}>
               <button

@@ -72,8 +72,8 @@ const LabExplorer = () => {
             return (
               <motion.div
                 key={lab.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 className="rounded-xl border border-border bg-card overflow-hidden"
               >
                 <button

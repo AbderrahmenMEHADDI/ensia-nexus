@@ -102,7 +102,7 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
           <div className="h-20 w-auto mb-4">
             <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />

@@ -266,22 +266,14 @@ const Applications = () => {
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest">Board</div>
-              <Activity className="h-4 w-4 text-primary animate-pulse" />
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
               {isTeacher ? (isAnyGroupLeader ? 'Application' : 'Student') : 'My'} <span className="text-primary italic">Reviews</span>
             </h1>
           </div>
 
           {uniqueProjectIdsInApps.length > 0 && (
             <div className="flex items-center gap-3">
-              <div className="bg-secondary/50 p-1.5 rounded-xl border border-border flex items-center gap-2">
-                <div className="bg-background px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-2">
-                  <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium">Filter</span>
-                </div>
+              <div className="bg-secondary/50 p-1 rounded-xl border border-border flex items-center gap-2">
                 <Select
                   value={filterProjectId.toString()}
                   onValueChange={(val) => setFilterProjectId(val === 'all' ? 'all' : Number(val))}
@@ -307,8 +299,8 @@ const Applications = () => {
       <AnimatePresence>
         {pendingProjectsForReview.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="mb-10"
           >
             <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm">
@@ -390,8 +382,8 @@ const Applications = () => {
           return (
             <motion.div
               key={app.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: i * 0.05 }}
             >
               <Card className="overflow-hidden border-border hover:shadow-md transition-shadow group">
@@ -496,8 +488,7 @@ const Applications = () => {
                   </AnimatePresence>
 
                   {/* Motivation Section */}
-                  <div className="relative p-5 rounded-2xl bg-secondary/40 border border-border/50 italic text-sm text-foreground/80 leading-relaxed group-hover:bg-secondary/60 transition-colors">
-                    <MessageSquare className="absolute -top-3 -left-1 h-6 w-6 text-primary opacity-20" />
+                  <div className="relative p-3 rounded-2xl bg-secondary/40 border border-border/50 italic text-sm text-foreground/80 leading-relaxed group-hover:bg-secondary/60 transition-colors">
                     "{app.motivation || "No motivation letter provided."}"
                   </div>
 
@@ -561,7 +552,7 @@ const Applications = () => {
                         <textarea
                           value={draft.note || ''}
                           onChange={e => updateRatingDraft(app.id, 'note', e.target.value)}
-                          rows={2}
+                          rows={1}
                           placeholder="Confidential reviewer notes for this student..."
                           className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none transition-all"
                         />
@@ -573,7 +564,7 @@ const Applications = () => {
                           {savingRatingAppId === app.id ? (
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           ) : (
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            null
                           )}
                           Save Scores
                         </Button>
@@ -591,8 +582,8 @@ const Applications = () => {
                         </Button>
                       ) : (
                         <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
                           className="space-y-4"
                         >
                           <textarea

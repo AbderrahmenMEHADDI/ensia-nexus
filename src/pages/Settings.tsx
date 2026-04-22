@@ -13,7 +13,7 @@ import { LogOut, Moon, Sun, Loader2 } from 'lucide-react';
 const Settings = () => {
   const { user, signOut, checkAuth } = useAuth();
   const { toast } = useToast();
-  
+
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [isSaving, setIsSaving] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -69,7 +69,7 @@ const Settings = () => {
 
   return (
     <div className="max-w-5xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <div className="mb-10">
           <h1 className="text-3xl font-display font-bold text-foreground tracking-tight mb-2">Settings</h1>
           <p className="text-muted-foreground text-lg">Manage your account preferences and settings.</p>
@@ -83,11 +83,11 @@ const Settings = () => {
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
-                  <Input 
-                    id="name" 
-                    value={fullName} 
-                    onChange={e => setFullName(e.target.value)} 
-                    className="h-11" 
+                  <Input
+                    id="name"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    className="h-11"
                     placeholder="John Doe"
                   />
                 </div>
@@ -98,10 +98,10 @@ const Settings = () => {
                 </div>
               </div>
               <div className="pt-2">
-                <Button 
-                  size="default" 
-                  className="px-8" 
-                  onClick={handleSaveProfile} 
+                <Button
+                  size="default"
+                  className="px-8"
+                  onClick={handleSaveProfile}
                   disabled={isSaving || fullName === user?.full_name}
                 >
                   {isSaving ? (

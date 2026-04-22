@@ -99,7 +99,7 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         {/* Greeting */}
         <div className="mb-10">
           <h1 className="text-2xl font-display font-semibold text-foreground">

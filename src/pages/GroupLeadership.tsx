@@ -195,8 +195,8 @@ const GroupLeadership = () => {
           return (
             <motion.div
               key={group.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: index * 0.1 }}
             >
               <Card className="overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300">

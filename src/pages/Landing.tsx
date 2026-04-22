@@ -100,8 +100,8 @@ const Landing = () => {
       {/* Hero */}
       <section className="flex flex-col items-center justify-center px-4 py-20 md:py-32">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
           className="text-center max-w-2xl mx-auto"
         >
@@ -120,8 +120,8 @@ const Landing = () => {
 
         {/* Auth card */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.45 }}
           className="mt-10 w-full max-w-sm"
         >
