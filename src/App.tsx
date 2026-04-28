@@ -14,9 +14,7 @@ import SignUp from "./pages/SignUp";
 import CompleteRegistration from "./pages/CompleteRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import Feed from "./pages/Feed";
 import ProjectBoard from "./pages/ProjectBoard";
-import Chat from "./pages/Chat";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -40,7 +38,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isInitialLoading } = useAuth();
   if (isInitialLoading) return null; // Or a loader
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  if (isAuthenticated) return <Navigate to="/projects" replace />;
   return <>{children}</>;
 };
 
@@ -49,7 +47,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }: { children: React.ReactN
   const location = useLocation();
   if (isInitialLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/signin" replace state={{ from: location }} />;
-  if (!hasRole(allowedRoles)) return <Navigate to="/dashboard" replace />;
+  if (!hasRole(allowedRoles)) return <Navigate to="/projects" replace />;
   return <>{children}</>;
 };
 
@@ -80,7 +78,7 @@ const LabAdminProtectedRoute = ({ children }: { children: React.ReactNode }) => 
 
   if (isInitialLoading || checking) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/signin" replace state={{ from: location }} />;
-  if (!isLabAdmin) return <Navigate to="/dashboard" replace />;
+  if (!isLabAdmin) return <Navigate to="/projects" replace />;
   return <>{children}</>;
 };
 
@@ -93,11 +91,9 @@ const AppRoutes = () => (
       <Route path="/complete-registration" element={<ProtectedRoute><CompleteRegistration /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="/projects" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/applications" element={<RoleProtectedRoute allowedRoles={['TEACHER', 'PARTNER']}><Applications /></RoleProtectedRoute>} />
-      <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/groups" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><Groups /></RoleProtectedRoute>} />
@@ -107,6 +103,7 @@ const AppRoutes = () => (
       <Route path="/my-labs" element={<LabAdminProtectedRoute><AdminPanel myLabsOnly /></LabAdminProtectedRoute>} />
       <Route path="/my-labs/labs/:labId" element={<LabAdminProtectedRoute><MyLabDetails /></LabAdminProtectedRoute>} />
       <Route path="/my-labs/groups/:groupId" element={<LabAdminProtectedRoute><MyLabGroupDetails /></LabAdminProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Navigate to="/projects" replace /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>

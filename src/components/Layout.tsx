@@ -21,7 +21,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const getBreadcrumbLabel = (path: string) => {
     const labels: Record<string, string> = {
-      'dashboard': 'Feed',
       'projects': 'Projects',
       'my-labs': 'My Labs',
       'groups': 'Groups',
@@ -53,7 +52,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to="/dashboard">Home</Link>
+                      <Link to="/projects">Home</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   {pathnames.map((value, index) => {
@@ -61,7 +60,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     const to = `/${pathnames.slice(0, index + 1).join('/')}`;
                     const label = getBreadcrumbLabel(value);
 
-                    if (value === 'dashboard') return null;
+
 
                     return (
                       <React.Fragment key={to}>
