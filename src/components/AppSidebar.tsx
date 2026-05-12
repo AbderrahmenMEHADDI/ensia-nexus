@@ -16,7 +16,6 @@ import {
   FlaskConical,
   MoreHorizontal,
   type LucideIcon,
-  Search,
 } from 'lucide-react';
 import {
   Sidebar,

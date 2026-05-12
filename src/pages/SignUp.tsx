@@ -61,7 +61,7 @@ const SignUp = () => {
         });
       } else {
         toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
-        navigate('/dashboard', { replace: true });
+        navigate('/projects', { replace: true });
       }
     } catch (err: any) {
       toast({
@@ -89,7 +89,7 @@ const SignUp = () => {
     try {
       await signInWithGoogle(idToken);
       toast({ title: 'Signed in with Google', description: 'Welcome to ENSIA Research Hub!' });
-      navigate('/dashboard', { replace: true });
+      navigate('/projects', { replace: true });
     } catch (err: any) {
       toast({
         title: 'Google sign-up failed',

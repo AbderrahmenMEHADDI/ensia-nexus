@@ -58,7 +58,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
-                      <Link to="/dashboard">Home</Link>
+                      <Link to="/projects">Home</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   {pathnames.map((value, index) => {

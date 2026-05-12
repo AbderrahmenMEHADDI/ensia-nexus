@@ -53,7 +53,7 @@ const ResetPassword = () => {
         title: 'Password updated',
         description: 'Your password has been reset successfully.'
       });
-      navigate('/dashboard');
+      navigate('/signin');
     } catch (err: any) {
       toast({
         title: 'Reset failed',
