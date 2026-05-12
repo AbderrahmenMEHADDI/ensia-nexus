@@ -7,7 +7,8 @@ import type {
   ProjectApplicationRanking, ProjectApplicationReviewerRating, ProjectApplicationReviewerRatingInput,
   Task, TaskUpdate, StudentCVEntry, StudentPreviousProject,
   UserRole, GroupInvitation, ProjectReviewStatus,
-  Publication, CollaborationCall, CollaborationSubmission, Notification, NotificationListResponse, AnalyticsResponse
+  Publication, CollaborationCall, CollaborationSubmission, Notification, NotificationListResponse, AnalyticsResponse,
+  LandingPageResponse, TeamSummary, TeamProjectsResponse
 } from '@/types';
 
 /**
@@ -212,10 +213,15 @@ export const apiRepository = {
   // ── Analytics ────────────────────────────────────────────────────────────
   getSystemAnalytics: () => api.get<AnalyticsResponse>('/analytics/system-stats'),
 
-  // ── Landing Page ─────────────────────────────────────────────────────────
-  getLandingPageData: () => api.get('/landing-page'),
+  // ── Landing Page & discovery ──────────────────────────────────────────
+  getLandingPageData: () => api.get<LandingPageResponse>('/landing-page'),
+  getTeamSummary: (teamId: number) => api.get<TeamSummary>(`/landing-page/teams/${teamId}/summary`),
+  getTeamProjects: (teamId: number) => api.get<TeamProjectsResponse>(`/landing-page/teams/${teamId}/projects`),
 
-  // ── Applications ─────────────────────────────────────────────────────────
+  // ── Groups & Members ──────────────────────────────────────────────────
+  getGroupMembersFiltered: (groupId: number) => api.get<GroupMember[]>(`/group-members/?group_id=${groupId}`),
+
+  // ── Auth utility endpoints ───────────────────────────────────────────────
   getApplications: () => api.get<ProjectApplication[]>('/project-applications/'),
   getMyApplications: () => api.get<ProjectApplication[]>('/project-applications/mine'),
   getApplication: (id: number) => api.get<ProjectApplication>(`/project-applications/${id}`),

@@ -16,6 +16,7 @@ import {
   FlaskConical,
   MoreHorizontal,
   type LucideIcon,
+  Search,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -39,7 +40,6 @@ import {
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 
 const navItems: { path: string; label: string; icon: LucideIcon; allowedRoles?: UserRole[] }[] = [
-  { path: '/dashboard', label: 'Feed', icon: LayoutDashboard },
   { path: '/projects', label: 'Project Board', icon: Kanban },
   { path: '/my-labs', label: 'My Labs', icon: FlaskConical, allowedRoles: ['TEACHER', 'ADMIN'] },
   { path: '/groups', label: 'Groups', icon: Users, allowedRoles: ['TEACHER'] },
@@ -86,7 +86,7 @@ export function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <Link to="/dashboard">
+                <Link to="/projects">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                     <img src="/logo_small.svg" alt="Logo" className="size-6 object-contain brightness-0 invert" />
                   </div>
@@ -112,7 +112,7 @@ export function AppSidebar() {
                   ? 'Reviews'
                   : item.label;
 
-                const isActive = window.location.pathname === item.path || (item.path !== '/dashboard' && window.location.pathname.startsWith(item.path));
+                const isActive = window.location.pathname === item.path || (item.path !== '/projects' && window.location.pathname.startsWith(item.path));
 
                 return (
                   <SidebarMenuItem key={item.path}>

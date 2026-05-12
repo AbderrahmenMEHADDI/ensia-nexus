@@ -21,7 +21,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const getBreadcrumbLabel = (path: string) => {
     const labels: Record<string, string> = {
-      'dashboard': 'Feed',
+      'dashboard': 'Projects',
       'projects': 'Projects',
       'my-labs': 'My Labs',
       'groups': 'Groups',
@@ -36,7 +36,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     return labels[path] || path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
   };
 
-  if (!isAuthenticated) {
+  const publicPaths = ['/', '/signin', '/signup', '/forgot-password', '/reset-password', '/discovery', '/group'];
+  const isPublicPath = publicPaths.some(path => 
+    location.pathname === path || (path !== '/' && location.pathname.startsWith(path))
+  );
+
+  if (!isAuthenticated || isPublicPath) {
     return <>{children}</>;
   }
 

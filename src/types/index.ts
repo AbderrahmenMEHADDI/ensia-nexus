@@ -109,6 +109,8 @@ export interface GroupMember {
   user_id: number;
   is_active: boolean;
   joined_at: string;
+  user_name?: string;
+  user_email?: string;
 }
 
 export interface GroupInvitation {
@@ -332,6 +334,85 @@ export interface AnalyticsResponse {
   stats: SystemStats;
   user_growth: ActivityDatapoint[];
   application_trends: ActivityDatapoint[];
+}
+
+// Landing Page types
+export interface ProjectPreview {
+  id: number;
+  group_id: number;
+  team_id: number;
+  team_name: string;
+  lab_id: number;
+  lab_name: string;
+  title: string;
+  description?: string;
+  accepting_collaborators: boolean;
+  open_collaboration_calls_count: number;
+  publication_count: number;
+  created_at?: string;
+}
+
+export interface TeamSummary {
+  id: number;
+  lab_id: number;
+  lab_name: string;
+  name: string;
+  description?: string;
+  leader_user_id?: number;
+  project_count: number;
+  open_project_count: number;
+  publication_count: number;
+}
+
+export interface TeamProjectsResponse {
+  team: TeamSummary;
+  projects: ProjectPreview[];
+}
+
+export interface LandingTeam extends TeamSummary {
+  projects: ProjectPreview[];
+}
+
+export interface LandingLab {
+  id: number;
+  name: string;
+  description?: string;
+  head_teacher_id?: number;
+  teams: LandingTeam[];
+}
+
+export interface CollaborationCallPreview {
+  id: number;
+  project_id: number;
+  title: string;
+  description?: string;
+  requirements?: string;
+  deadline?: string;
+  created_at?: string;
+  project: ProjectPreview;
+}
+
+export interface PublicationPreview {
+  id: number;
+  project_id?: number;
+  title: string;
+  abstract?: string;
+  publication_date?: string;
+  venue?: string;
+  doi?: string;
+  paper_url?: string;
+  citation_count: number;
+  author_count: number;
+  project?: ProjectPreview;
+  created_at?: string;
+}
+
+export interface LandingPageResponse {
+  labs: LandingLab[];
+  featured_teams: TeamSummary[];
+  open_projects: ProjectPreview[];
+  open_collaboration_calls: CollaborationCallPreview[];
+  publications: PublicationPreview[];
 }
 
 export * from './task_comment';

@@ -11,7 +11,7 @@ import * as z from 'zod';
 import { apiRepository } from '@/repositories/apiRepository';
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address').endsWith('@ensia.edu.dz', 'Must be an ENSIA email'),
+  email: z.string().email('Invalid email address'),
 });
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
