@@ -9,36 +9,6 @@ export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
 export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'RESEARCHER';
 export type ResourceType = 'PAPER_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
 
-export interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  author_user_id: number;
-  created_at: string;
-  category: 'RESEARCH' | 'ADMIN' | 'EVENT';
-  tags?: string[];
-  interactions?: {
-    comments_count: number;
-    reactions_count: number;
-    reactions_by_type: Record<string, number>;
-    user_reacted?: string;
-  };
-}
-
-export interface Comment {
-  id: number;
-  content: string;
-  announcement_id: number;
-  author_user_id: number;
-  created_at: string;
-}
-
-export interface Reaction {
-  announcement_id: number;
-  user_id: number;
-  reaction_type: string;
-}
-
 export interface User {
   id: number;
   full_name: string;
@@ -127,6 +97,7 @@ export interface ResearchGroup {
   description: string;
   leader_user_id: number;
   is_validated: boolean;
+  show_on_landing_page: boolean;
   validated_by_admin_id?: number; 
   validated_at?: string;
   created_at: string;
@@ -138,6 +109,8 @@ export interface GroupMember {
   user_id: number;
   is_active: boolean;
   joined_at: string;
+  user_name?: string;
+  user_email?: string;
 }
 
 export interface GroupInvitation {
@@ -157,6 +130,8 @@ export interface Project {
   description: string;
   visibility: Visibility;
   status?: ProjectStatus;
+  accepting_collaborators: boolean;
+  deadline?: string;
   reviewed_by?: number;
   reviewed_at?: string;
   decision_note?: string;
@@ -267,51 +242,177 @@ export interface GroupJoinRequest {
   created_at: string;
 }
 
-// Chat types
-export interface ChatRoom {
+// Publication types
+export interface PublicationAuthor {
+  user_id: number;
+  author_order: number;
+  is_corresponding: boolean;
+  publication_id?: number;
+  user?: User;
+}
+
+export interface Publication {
+  id: number;
+  project_id?: number;
+  title: string;
+  abstract?: string;
+  publication_date?: string;
+  venue?: string;
+  doi?: string;
+  paper_url?: string;
+  citation_count: number;
+  created_at?: string;
+  authors: PublicationAuthor[];
+}
+
+// Collaboration types
+export type CollaborationCallStatus = 'OPEN' | 'CLOSED' | 'ARCHIVED';
+export type CollaborationSubmissionStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface CollaborationCall {
+  id: number;
+  project_id: number;
+  title: string;
+  description?: string;
+  requirements?: string;
+  status: CollaborationCallStatus;
+  deadline?: string;
+  created_by: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CollaborationSubmission {
+  id: number;
+  call_id: number;
+  full_name: string;
+  email: string;
+  institution?: string;
+  motivation?: string;
+  cv_url: string;
+  status: CollaborationSubmissionStatus;
+  reviewed_by?: number;
+  reviewed_at?: string;
+  decision_note?: string;
+  submitted_at?: string;
+}
+
+// Notification types
+export interface Notification {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  content: string;
+  link?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  items: Notification[];
+  total: number;
+  unread_count: number;
+}
+
+// Analytics types
+export interface SystemStats {
+  total_users: number;
+  total_labs: number;
+  total_projects: number;
+  total_publications: number;
+  total_applications: number;
+  pending_applications: number;
+}
+
+export interface ActivityDatapoint {
+  date: string;
+  count: number;
+}
+
+export interface AnalyticsResponse {
+  stats: SystemStats;
+  user_growth: ActivityDatapoint[];
+  application_trends: ActivityDatapoint[];
+}
+
+// Landing Page types
+export interface ProjectPreview {
+  id: number;
+  group_id: number;
+  team_id: number;
+  team_name: string;
+  lab_id: number;
+  lab_name: string;
+  title: string;
+  description?: string;
+  accepting_collaborators: boolean;
+  open_collaboration_calls_count: number;
+  publication_count: number;
+  created_at?: string;
+}
+
+export interface TeamSummary {
+  id: number;
+  lab_id: number;
+  lab_name: string;
+  name: string;
+  description?: string;
+  leader_user_id?: number;
+  project_count: number;
+  open_project_count: number;
+  publication_count: number;
+}
+
+export interface TeamProjectsResponse {
+  team: TeamSummary;
+  projects: ProjectPreview[];
+}
+
+export interface LandingTeam extends TeamSummary {
+  projects: ProjectPreview[];
+}
+
+export interface LandingLab {
   id: number;
   name: string;
-  type: 'TEAM' | 'PROJECT' | 'LAB' | 'GROUP';
+  description?: string;
+  head_teacher_id?: number;
+  teams: LandingTeam[];
+}
+
+export interface CollaborationCallPreview {
+  id: number;
+  project_id: number;
+  title: string;
+  description?: string;
+  requirements?: string;
+  deadline?: string;
+  created_at?: string;
+  project: ProjectPreview;
+}
+
+export interface PublicationPreview {
+  id: number;
   project_id?: number;
-  lab_id?: number;
-  group_id?: number;
-  created_at: string;
+  title: string;
+  abstract?: string;
+  publication_date?: string;
+  venue?: string;
+  doi?: string;
+  paper_url?: string;
+  citation_count: number;
+  author_count: number;
+  project?: ProjectPreview;
+  created_at?: string;
 }
 
-export interface ChatMessage {
-  id: number;
-  room_id: number;
-  sender_user_id: number;
-  sender_name?: string;
-  content: string;
-  created_at: string;
+export interface LandingPageResponse {
+  labs: LandingLab[];
+  featured_teams: TeamSummary[];
+  open_projects: ProjectPreview[];
+  open_collaboration_calls: CollaborationCallPreview[];
+  publications: PublicationPreview[];
 }
 
-// Feed types
-export interface FeedPost {
-  id: number;
-  author_user_id: number;
-  content: string;
-  tags: string[];
-  project_id?: number;
-  group_id?: number;
-  created_at: string;
-}
-
-export interface FeedComment {
-  id: number;
-  post_id: number;
-  author_user_id: number;
-  content: string;
-  created_at: string;
-}
-
-export interface FeedLike {
-  post_id: number;
-  user_id: number;
-}
-
-export interface FeedSave {
-  post_id: number;
-  user_id: number;
-}export * from './task_comment';
+export * from './task_comment';

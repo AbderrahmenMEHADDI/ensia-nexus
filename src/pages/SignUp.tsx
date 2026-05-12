@@ -16,7 +16,7 @@ import * as z from 'zod';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address').endsWith('@ensia.edu.dz', 'Must be an ENSIA email'),
+  email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['STUDENT', 'TEACHER']),
 });
@@ -61,7 +61,7 @@ const SignUp = () => {
         });
       } else {
         toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
-        navigate('/dashboard', { replace: true });
+        navigate('/projects', { replace: true });
       }
     } catch (err: any) {
       toast({
@@ -89,7 +89,7 @@ const SignUp = () => {
     try {
       await signInWithGoogle(idToken);
       toast({ title: 'Signed in with Google', description: 'Welcome to ENSIA Research Hub!' });
-      navigate('/dashboard', { replace: true });
+      navigate('/projects', { replace: true });
     } catch (err: any) {
       toast({
         title: 'Google sign-up failed',

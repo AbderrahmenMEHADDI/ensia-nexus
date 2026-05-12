@@ -75,6 +75,8 @@ export const useProjectBoard = () => {
   const [formProjectDescription, setFormProjectDescription] = useState('');
   const [formGroupId, setFormGroupId] = useState('');
   const [formVisibility, setFormVisibility] = useState<Visibility>('PRIVATE');
+  const [formAcceptingCollaborators, setFormAcceptingCollaborators] = useState(false);
+  const [formDeadline, setFormDeadline] = useState('');
   const [formCreateProjectLoading, setFormCreateProjectLoading] = useState(false);
 
   const [formMemberProjectId, setFormMemberProjectId] = useState('');
@@ -91,6 +93,7 @@ export const useProjectBoard = () => {
   const [createResourceLoading, setCreateResourceLoading] = useState(false);
 
   const fetchAllUsers = async () => {
+    if (user?.role !== 'ADMIN') return [];
     const pageSize = 500;
     let all: User[] = [];
     let skip = 0;
@@ -166,7 +169,19 @@ export const useProjectBoard = () => {
     }
   };
 
-  const getUserById = (id: number) => allUsers.find(u => u.id === id);
+  const getUserById = (id: number) => {
+    const fromAll = allUsers.find(u => u.id === id);
+    if (fromAll) return fromAll;
+    const fromGroup = groupMembers.find(gm => gm.user_id === id);
+    if (fromGroup) {
+      return {
+        id: fromGroup.user_id,
+        full_name: fromGroup.user_name || `User ${id}`,
+        email: fromGroup.user_email || '',
+      } as User;
+    }
+    return undefined;
+  };
   const getGroupById = (id: number) => groups.find(g => g.id === id);
   const getLabById = (id: number) => labs.find(l => l.id === id);
 
@@ -176,14 +191,13 @@ export const useProjectBoard = () => {
 
   const selectedMemberFormProject = projects.find(p => Number(p.id) === Number(formMemberProjectId));
   const availableMemberOptions = selectedMemberFormProject
-    ? allUsers.filter(u =>
-        groupMembers.some(
-          gm =>
-            gm.group_id === selectedMemberFormProject.group_id &&
-            gm.user_id === u.id &&
-            gm.is_active
-        )
-      )
+    ? groupMembers
+        .filter(gm => gm.group_id === selectedMemberFormProject.group_id && gm.is_active)
+        .map(gm => ({
+          id: gm.user_id,
+          full_name: gm.user_name || `User ${gm.user_id}`,
+          email: gm.user_email || '',
+        } as User))
     : [];
 
   const acceptedProjectIds = applications
@@ -370,6 +384,8 @@ export const useProjectBoard = () => {
         title: formProjectTitle.trim(),
         description: formProjectDescription.trim(),
         visibility: formVisibility,
+        accepting_collaborators: formAcceptingCollaborators,
+        deadline: formDeadline || undefined,
         created_by: user.id,
       });
       const refreshedProjects = await apiRepository.getProjects();
@@ -381,6 +397,8 @@ export const useProjectBoard = () => {
       setFormProjectDescription('');
       setFormGroupId('');
       setFormVisibility('PRIVATE');
+      setFormAcceptingCollaborators(false);
+      setFormDeadline('');
       toast({ title: 'Project created' });
     } catch {
       toast({ title: 'Failed to create project', variant: 'destructive' });
@@ -526,6 +544,10 @@ export const useProjectBoard = () => {
     setFormGroupId,
     formVisibility,
     setFormVisibility,
+    formAcceptingCollaborators,
+    setFormAcceptingCollaborators,
+    formDeadline,
+    setFormDeadline,
     formCreateProjectLoading,
     formMemberProjectId,
     setFormMemberProjectId,
