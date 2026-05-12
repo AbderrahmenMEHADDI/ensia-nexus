@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import type { ResearchGroup, Visibility, Project, User, ParticipantRole } from '@/types';
 
 interface ProjectDialogsProps {
@@ -18,6 +19,10 @@ interface ProjectDialogsProps {
   setFormGroupId: (val: string) => void;
   formVisibility: Visibility;
   setFormVisibility: (val: Visibility) => void;
+  formAcceptingCollaborators: boolean;
+  setFormAcceptingCollaborators: (val: boolean) => void;
+  formDeadline: string;
+  setFormDeadline: (val: string) => void;
   formCreateProjectLoading: boolean;
   handleCreateProjectFromForm: () => void;
   validatedGroups: ResearchGroup[];
@@ -47,6 +52,10 @@ export const ProjectDialogs = ({
   setFormGroupId,
   formVisibility,
   setFormVisibility,
+  formAcceptingCollaborators,
+  setFormAcceptingCollaborators,
+  formDeadline,
+  setFormDeadline,
   formCreateProjectLoading,
   handleCreateProjectFromForm,
   validatedGroups,
@@ -109,6 +118,27 @@ export const ProjectDialogs = ({
                     <SelectItem value="PUBLIC">Public</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 items-center pt-2">
+              <div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Accepting Collaborators</Label>
+                  <p className="text-[10px] text-muted-foreground">Allow students to apply.</p>
+                </div>
+                <Switch
+                  checked={formAcceptingCollaborators}
+                  onCheckedChange={setFormAcceptingCollaborators}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Deadline</Label>
+                <Input
+                  type="date"
+                  value={formDeadline}
+                  onChange={e => setFormDeadline(e.target.value)}
+                  className="h-10"
+                />
               </div>
             </div>
           </div>

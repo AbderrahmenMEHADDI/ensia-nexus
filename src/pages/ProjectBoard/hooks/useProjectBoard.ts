@@ -75,6 +75,8 @@ export const useProjectBoard = () => {
   const [formProjectDescription, setFormProjectDescription] = useState('');
   const [formGroupId, setFormGroupId] = useState('');
   const [formVisibility, setFormVisibility] = useState<Visibility>('PRIVATE');
+  const [formAcceptingCollaborators, setFormAcceptingCollaborators] = useState(false);
+  const [formDeadline, setFormDeadline] = useState('');
   const [formCreateProjectLoading, setFormCreateProjectLoading] = useState(false);
 
   const [formMemberProjectId, setFormMemberProjectId] = useState('');
@@ -370,6 +372,8 @@ export const useProjectBoard = () => {
         title: formProjectTitle.trim(),
         description: formProjectDescription.trim(),
         visibility: formVisibility,
+        accepting_collaborators: formAcceptingCollaborators,
+        deadline: formDeadline || undefined,
         created_by: user.id,
       });
       const refreshedProjects = await apiRepository.getProjects();
@@ -381,6 +385,8 @@ export const useProjectBoard = () => {
       setFormProjectDescription('');
       setFormGroupId('');
       setFormVisibility('PRIVATE');
+      setFormAcceptingCollaborators(false);
+      setFormDeadline('');
       toast({ title: 'Project created' });
     } catch {
       toast({ title: 'Failed to create project', variant: 'destructive' });
@@ -526,6 +532,10 @@ export const useProjectBoard = () => {
     setFormGroupId,
     formVisibility,
     setFormVisibility,
+    formAcceptingCollaborators,
+    setFormAcceptingCollaborators,
+    formDeadline,
+    setFormDeadline,
     formCreateProjectLoading,
     formMemberProjectId,
     setFormMemberProjectId,

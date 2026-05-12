@@ -5,8 +5,9 @@ import type {
   ResearchLab, ResearchGroup, GroupMember, ResearchLabAdmin, 
   Project, ProjectParticipant, ProjectApplication, ProjectResource,
   ProjectApplicationRanking, ProjectApplicationReviewerRating, ProjectApplicationReviewerRatingInput,
-  Task, TaskUpdate, Announcement, Comment, Reaction, StudentCVEntry, StudentPreviousProject,
+  Task, TaskUpdate, StudentCVEntry, StudentPreviousProject,
   UserRole, GroupInvitation, ProjectReviewStatus,
+  Publication, CollaborationCall, CollaborationSubmission, Notification, NotificationListResponse, AnalyticsResponse
 } from '@/types';
 
 /**
@@ -166,6 +167,54 @@ export const apiRepository = {
   getTaskUpdates: (taskId: number) =>
     api.get<TaskUpdate[]>(`/task-updates/?task_id=${taskId}`),
 
+  // ── Publications ─────────────────────────────────────────────────────────
+  getPublications: (params?: { skip?: number; limit?: number; project_id?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip) searchParams.set('skip', params.skip.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.project_id) searchParams.set('project_id', params.project_id.toString());
+    const qs = searchParams.toString();
+    return api.get<Publication[]>(qs ? `/publications/?${qs}` : '/publications/');
+  },
+  getPublication: (id: number) => api.get<Publication>(`/publications/${id}`),
+  createPublication: (data: Partial<Publication>) => api.post<Publication>('/publications/', data),
+  updatePublication: (id: number, data: Partial<Publication>) => api.put<Publication>(`/publications/${id}`, data),
+  deletePublication: (id: number) => api.delete<void>(`/publications/${id}`),
+
+  // ── Collaboration ─────────────────────────────────────────────────────────
+  getCollaborationCalls: (projectId: number) =>
+    api.get<CollaborationCall[]>(`/collaboration-calls?project_id=${projectId}`),
+  getOpenCollaborationCalls: (limit: number = 12) =>
+    api.get<CollaborationCall[]>(`/collaboration-calls/open?limit=${limit}`),
+  getCollaborationCall: (id: number) =>
+    api.get<CollaborationCall>(`/collaboration-calls/${id}`),
+  createCollaborationCall: (data: Partial<CollaborationCall>) =>
+    api.post<CollaborationCall>('/collaboration-calls', data),
+  updateCollaborationCall: (id: number, data: Partial<CollaborationCall>) =>
+    api.put<CollaborationCall>(`/collaboration-calls/${id}`, data),
+  deleteCollaborationCall: (id: number) =>
+    api.delete<void>(`/collaboration-calls/${id}`),
+
+  getCollaborationSubmissions: (callId: number) =>
+    api.get<CollaborationSubmission[]>(`/collaboration-submissions/call/${callId}`),
+  getCollaborationSubmission: (id: number) =>
+    api.get<CollaborationSubmission>(`/collaboration-submissions/${id}`),
+  createCollaborationSubmission: (data: Partial<CollaborationSubmission>) =>
+    api.post<CollaborationSubmission>('/collaboration-submissions', data),
+  updateCollaborationSubmission: (id: number, data: Partial<CollaborationSubmission>) =>
+    api.put<CollaborationSubmission>(`/collaboration-submissions/${id}`, data),
+
+  // ── Notifications ────────────────────────────────────────────────────────
+  getNotifications: () => api.get<NotificationListResponse>('/notifications/'),
+  markNotificationAsRead: (id: number) => api.patch<Notification>(`/notifications/${id}/read`),
+  markAllNotificationsAsRead: () => api.post<{ message: string }>('/notifications/read-all'),
+
+  // ── Analytics ────────────────────────────────────────────────────────────
+  getSystemAnalytics: () => api.get<AnalyticsResponse>('/analytics/system-stats'),
+
+  // ── Landing Page ─────────────────────────────────────────────────────────
+  getLandingPageData: () => api.get('/landing-page'),
+
   // ── Applications ─────────────────────────────────────────────────────────
   getApplications: () => api.get<ProjectApplication[]>('/project-applications/'),
   getMyApplications: () => api.get<ProjectApplication[]>('/project-applications/mine'),
@@ -182,17 +231,6 @@ export const apiRepository = {
     api.get<ProjectApplicationReviewerRating[]>(`/project-applications/${id}/reviewer-ratings`),
   upsertMyApplicationRating: (id: number, data: ProjectApplicationReviewerRatingInput) =>
     api.put<ProjectApplicationReviewerRating>(`/project-applications/${id}/my-rating/`, data),
-
-  // ── Announcements ────────────────────────────────────────────────────────
-  getAnnouncements: () => api.get<Announcement[]>('/announcements/'),
-  createAnnouncement: (data: Partial<Announcement>) => api.post<Announcement>('/announcements/', data),
-  deleteAnnouncement: (id: number) => api.delete<void>(`/announcements/${id}`),
-  getInteractions: (id: number) => api.get<Announcement['interactions']>(`/announcements/${id}/interactions`),
-  getComments: (id: number) => api.get<Comment[]>(`/announcements/${id}/comments`),
-  createComment: (id: number, data: Partial<Comment>) => api.post<Comment>(`/announcements/${id}/comments`, data),
-  deleteComment: (announcementId: number, commentId: number) =>
-    api.delete<void>(`/announcements/${announcementId}/comments/${commentId}`),
-  reactToAnnouncement: (id: number, data: Partial<Reaction>) => api.post<Announcement['interactions']>(`/announcements/${id}/react`, data),
 
   // ── Auth utility endpoints ───────────────────────────────────────────────
   forgetPassword: (email: string) =>

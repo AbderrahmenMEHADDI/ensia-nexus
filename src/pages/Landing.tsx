@@ -26,11 +26,6 @@ const features = [
     description: 'Organize teams under labs, assign leaders, and manage membership with admin validation.',
   },
   {
-    icon: MessageCircle,
-    title: 'Real-time Chat',
-    description: 'Team and project-scoped chat rooms to keep conversations contextual and focused.',
-  },
-  {
     icon: FolderOpen,
     title: 'Project Management',
     description: 'Create public or private projects, track milestones, and collaborate across groups.',
@@ -61,12 +56,12 @@ const steps = [
   {
     number: '03',
     title: 'Launch projects',
-    description: 'Start public or private projects with task boards, resources, and dedicated chat rooms.',
+    description: 'Start public or private projects with task boards and resources.',
   },
   {
     number: '04',
     title: 'Track & collaborate',
-    description: 'Manage tasks on kanban boards, discuss in real-time, and share progress through the feed.',
+    description: 'Manage tasks on kanban boards and share progress through the feed.',
   },
 ];
 
