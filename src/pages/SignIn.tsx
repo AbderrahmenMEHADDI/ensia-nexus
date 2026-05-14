@@ -14,7 +14,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { GOOGLE_CLIENT_ID } from '@/lib/googleAuth';
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address').endsWith('@ensia.edu.dz', 'Must be an ENSIA email'),
+  email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -32,14 +32,20 @@ const SignIn = () => {
   });
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard', { replace: true });
+    if (isAuthenticated) {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || '/projects';
+      navigate(redirect, { replace: true });
+    }
   }, [isAuthenticated, navigate]);
 
   const onFormSubmit = async (data: SignInValues) => {
     setSubmitting(true);
     try {
       await signIn({ email: data.email, password: data.password });
-      navigate('/dashboard', { replace: true });
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || '/projects';
+      navigate(redirect, { replace: true });
     } catch (err: any) {
       toast({
         title: 'Login failed',
@@ -65,7 +71,9 @@ const SignIn = () => {
     setSubmitting(true);
     try {
       await signInWithGoogle(idToken);
-      navigate('/dashboard', { replace: true });
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || '/projects';
+      navigate(redirect, { replace: true });
     } catch (err: any) {
       toast({
         title: 'Google login failed',

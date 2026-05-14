@@ -11,7 +11,6 @@ import {
   Shield,
   Settings,
   LogOut,
-  MessageCircle,
   FileUser,
   Users,
   FlaskConical,
@@ -82,6 +81,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+<<<<<<< HEAD
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -99,6 +99,25 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+=======
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link to="/projects">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <img src="/logo_small.svg" alt="Logo" className="size-6 object-contain brightness-0 invert" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold text-foreground">ENSIA Research Hub</span>
+                    <span className="truncate text-xs text-muted-foreground italic font-mono uppercase tracking-tighter">Innovate · Discover</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+>>>>>>> 52751b215e613772a07cc359c0245394d95ba204
 
         {/* Navigation */}
         <SidebarGroup>
@@ -107,13 +126,13 @@ export function AppSidebar() {
               {navItems.map((item) => {
                 if (item.allowedRoles && !hasRole(item.allowedRoles)) return null;
                 if (item.path === '/my-labs' && !isLabAdminUser) return null;
-                
-                const label = (item.path === '/applications' && user?.role === 'TEACHER' && !hasLeadershipGroups) 
-                  ? 'Reviews' 
+
+                const label = (item.path === '/applications' && user?.role === 'TEACHER' && !hasLeadershipGroups)
+                  ? 'Reviews'
                   : item.label;
 
-                const isActive = window.location.pathname === item.path || (item.path !== '/dashboard' && window.location.pathname.startsWith(item.path));
-                
+                const isActive = window.location.pathname === item.path || (item.path !== '/projects' && window.location.pathname.startsWith(item.path));
+
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
@@ -195,7 +214,7 @@ export function AppSidebar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={signOut}
                   className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer flex items-center gap-2"
                 >

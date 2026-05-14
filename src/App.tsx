@@ -9,6 +9,7 @@ import { apiRepository } from "@/repositories/apiRepository";
 import { type UserRole } from "@/types";
 import { useEffect, useState } from "react";
 import Landing from "./pages/Landing";
+import GroupLanding from "./pages/GroupLanding";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import CompleteRegistration from "./pages/CompleteRegistration";
@@ -24,6 +25,8 @@ import GroupLeadership from "./pages/GroupLeadership";
 import StudentCV from "./pages/StudentCV";
 import MyLabDetails from "./pages/MyLabDetails";
 import MyLabGroupDetails from "./pages/MyLabGroupDetails";
+import PublicProjects from "./pages/PublicProjects";
+import PublicProjectDetails from "./pages/PublicProjectDetails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,11 +89,15 @@ const AppRoutes = () => (
   <Layout>
     <Routes>
       <Route path="/" element={<PublicOnlyRoute><Landing /></PublicOnlyRoute>} />
+      <Route path="/group/:groupId" element={<GroupLanding />} />
+      <Route path="/discovery/projects" element={<PublicProjects />} />
+      <Route path="/discovery/projects/:projectId" element={<PublicProjectDetails />} />
       <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignUp /></PublicOnlyRoute>} />
       <Route path="/complete-registration" element={<ProtectedRoute><CompleteRegistration /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
+      <Route path="/dashboard" element={<Navigate to="/projects" replace />} />
       <Route path="/projects" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/applications" element={<RoleProtectedRoute allowedRoles={['TEACHER', 'PARTNER']}><Applications /></RoleProtectedRoute>} />

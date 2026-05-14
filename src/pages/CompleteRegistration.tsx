@@ -95,7 +95,7 @@ const CompleteRegistration = () => {
           : {}),
       });
       toast({ title: 'Registration completed', description: 'Your profile has been updated.' });
-      navigate('/dashboard', { replace: true });
+      navigate('/projects', { replace: true });
     } catch (err: any) {
       toast({
         title: 'Update failed',
@@ -114,9 +114,15 @@ const CompleteRegistration = () => {
         animate={{ opacity: 1 }}
         className="w-full max-w-md"
       >
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-col items-center mb-8">
+          <div className="h-20 w-auto mb-4">
+            <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
+          </div>
           <h1 className="text-xl font-display font-semibold text-foreground">Complete Registration</h1>
-          <p className="text-sm text-muted-foreground mt-1 mb-6">Choose your role and finish your profile.</p>
+          <p className="text-sm text-muted-foreground mt-1">Finish setting up your ENSIA profile</p>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {!isTeacherFlow && (
