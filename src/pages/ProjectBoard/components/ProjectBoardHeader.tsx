@@ -63,11 +63,11 @@ export const ProjectBoardHeader = ({
         {canManageProjects && (
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {canCreateProjects && (
-              <Button size="sm" onClick={() => setProjectFormOpen(true)}>
+              <Button size="sm" className="rounded-lg h-9 font-semibold" style={{ background: '#F37F20', color: '#fff' }} onClick={() => setProjectFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Project Details Form
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={() => setMemberFormOpen(true)}>
+            <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white" onClick={() => setMemberFormOpen(true)}>
               <Plus className="h-4 w-4 mr-1" /> Member Details Form
             </Button>
           </div>
@@ -79,6 +79,7 @@ export const ProjectBoardHeader = ({
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Button
             size="sm"
+            className="rounded-lg h-9 font-semibold bg-green-600 hover:bg-green-700 text-white"
             onClick={() => handleReviewSelectedProject('APPROVED')}
             disabled={projectReviewLoading !== null}
           >
@@ -88,6 +89,7 @@ export const ProjectBoardHeader = ({
           <Button
             size="sm"
             variant="outline"
+            className="rounded-lg h-9 font-semibold text-red-600 border-red-600/20 hover:bg-red-600 hover:text-white"
             onClick={() => handleReviewSelectedProject('REJECTED')}
             disabled={projectReviewLoading !== null}
           >

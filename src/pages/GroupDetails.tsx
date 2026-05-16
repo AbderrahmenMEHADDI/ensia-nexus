@@ -8,6 +8,13 @@ import type { ResearchGroup, GroupMember, Project, User, ResearchLab } from '@/t
 import { Users, FolderOpen, ChevronRight, Loader2, UserPlus, Info, ArrowLeft, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+
+declare global {
+  interface Window {
+    __dynamicBreadcrumbs?: Record<string, string>;
+  }
+}
 
 const GroupDetails = () => {
   const { groupId } = useParams<{ groupId: string }>();
@@ -31,6 +38,15 @@ const GroupDetails = () => {
           apiRepository.getUsers(),
           apiRepository.getLabs(),
         ]);
+
+        // Fetch lab admins without failing if unauthorized
+        let adminList = [];
+        try {
+          adminList = await apiRepository.getLabAdmins(g.lab_id);
+        } catch (err) {
+          // Ignore
+        }
+
         setGroup(g);
         setMembers(m);
         setProjects(p);
@@ -47,16 +63,16 @@ const GroupDetails = () => {
     load();
   }, [groupId]);
 
-  const getUserById = (id: number) => users.find(u => u.id === id);
-  const isMember = members.some(m => m.user_id === user?.id);
-  const leader = getUserById(group?.leader_user_id || 0);
+  useEffect(() => {
+    if (group && groupId) {
+      window.__dynamicBreadcrumbs = window.__dynamicBreadcrumbs || {};
+      window.__dynamicBreadcrumbs[groupId] = group.name;
+      window.dispatchEvent(new Event('breadcrumb-update'));
+    }
+  }, [group, groupId]);
 
-  const handleJoinRequest = () => {
-    toast({
-      title: "Request Sent",
-      description: "Working on integrating join requests API. Your interest is noted!",
-    });
-  };
+  const getUserById = (id: number) => users.find(u => u.id === id);
+  const leader = getUserById(group?.leader_user_id || 0);
 
   if (loading) {
     return (
@@ -69,125 +85,162 @@ const GroupDetails = () => {
   if (!group) return <div className="container py-20 text-center">Group not found.</div>;
 
   return (
-    <div className="container py-10 max-w-5xl">
-      <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-        <Link to="/labs" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-6 transition-colors gap-1.5">
-          <ArrowLeft className="h-4 w-4" /> Back to Explorater
-        </Link>
-      </motion.div>
-
-      <motion.div >
-        <div className="flex flex-col md:flex-row gap-8 mb-12">
-          {/* Header Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 text-xs font-mono text-primary uppercase tracking-widest mb-3">
-              <Building2 className="h-3.5 w-3.5" /> {lab?.name || 'Laboratory'}
+    <div className="flex flex-col min-h-screen pb-16">
+      {/* Top Header Banner */}
+      <div className="w-full bg-white border-b border-slate-200 border-t-[3px] border-t-[#F37F20] pt-12 pb-10 px-6 sm:px-12 relative">
+        <div className="container max-w-5xl mx-auto relative z-10 flex flex-col">
+          <div className="flex-1 space-y-5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 text-slate-500 text-xs font-bold tracking-widest uppercase">
+              <Building2 className="h-3 w-3" />
+              {lab?.name || 'Research Laboratory'}
             </div>
-            <h1 className="text-4xl font-display font-bold text-foreground mb-4">
-              {group.name}
-            </h1>
-            <p className="text-muted-foreground leading-relaxed mb-6">
-              {group.description}
-            </p>
+            
+            <div className="space-y-3">
+              <h1 className="text-4xl sm:text-5xl font-display font-bold text-[#074a75] tracking-tight">
+                {group.name}
+              </h1>
+              <p className="text-lg text-slate-600 max-w-2xl leading-relaxed">
+                {group.description || "Advancing research and innovation through collaborative projects and academic excellence in this specialized research domain."}
+              </p>
+            </div>
 
-            <div className="flex items-center gap-6">
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Group Leader</span>
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-primary">{leader?.full_name[0]}</span>
-                  </div>
-                  <span className="text-sm font-medium">{leader?.full_name}</span>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 pt-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#074a75] shadow-sm ring-1 ring-slate-200">
+                  {leader?.full_name?.[0] || 'L'}
                 </div>
+                <span className="font-medium">Led by <span className="text-[#0F172A]">{leader?.full_name || 'Group Leader'}</span></span>
               </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="flex flex-col">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Status</span>
-                <div className="flex items-center gap-1.5">
-                  <div className={`h-2 w-2 rounded-full ${group.is_validated ? 'bg-success' : 'bg-primary animate-pulse'}`} />
-                  <span className="text-xs font-medium">{group.is_validated ? 'Active' : 'Awaiting Validation'}</span>
-                </div>
+              <div className="h-4 w-[1px] bg-slate-200" />
+              <div className="flex items-center gap-1.5">
+                <div className={`h-2 w-2 rounded-full ${group.is_validated ? 'bg-emerald-500 ring-4 ring-emerald-50' : 'bg-amber-400 animate-pulse ring-4 ring-amber-50'}`} />
+                <span className="font-medium">{group.is_validated ? 'Active Research Group' : 'Awaiting Validation'}</span>
               </div>
             </div>
           </div>
 
-          {/* Action Card */}
-          <div className="w-full md:w-80 h-fit p-6 rounded-2xl border border-border bg-card shadow-sm">
-            <h4 className="font-semibold mb-2">Interested in this group?</h4>
-            <p className="text-xs text-muted-foreground mb-4">Join our research efforts and collaborate on world-class projects.</p>
-            {!isMember ? (
-              <Button onClick={handleJoinRequest} className="w-full gap-2 rounded-xl">
-                <UserPlus className="h-4 w-4" /> Request to Join
-              </Button>
-            ) : (
-              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-2 text-primary">
-                <Info className="h-4 w-4" />
-                <span className="text-xs font-medium">You are a member</span>
-              </div>
-            )}
+          {/* Stats Row */}
+          <div className="flex items-center gap-8 mt-10 pt-6 border-t border-slate-100">
+            <div className="flex flex-col">
+              <span className="text-2xl font-display font-bold text-[#0F172A] leading-none mb-1">{projects.length}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Projects</span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-2xl font-display font-bold text-[#0F172A] leading-none mb-1">{members.length}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Members</span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-2xl font-display font-bold text-[#0F172A] leading-none mb-1">0</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Publications</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid md:grid-cols-3 gap-10">
+      <div className="container max-w-5xl mx-auto px-6 sm:px-12 -mt-6 relative z-20 space-y-12">
+        <div className="grid md:grid-cols-5 gap-10">
+          
           {/* Left Column: Projects */}
-          <div className="md:col-span-2 space-y-8">
-            <section>
-              <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-primary" /> Active Projects
+          <div className="md:col-span-3 space-y-6 pt-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-[#074a75]" /> Active Projects
               </h2>
-              <div className="space-y-4">
-                {projects.map(proj => (
+            </div>
+            
+            <div className="space-y-4">
+              {projects.map((proj, index) => {
+                const isFeatured = index === 0;
+                return (
                   <Link
                     key={proj.id}
                     to={`/projects/${proj.id}`}
-                    className="flex items-center justify-between p-5 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all group"
+                    className={`block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${
+                      isFeatured ? 'border-l-4 border-l-[#F37F20]' : ''
+                    }`}
                   >
-                    <div className="min-w-0">
-                      <h3 className="font-display font-semibold text-lg text-foreground group-hover:text-primary transition-colors">{proj.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{proj.description}</p>
+                    {isFeatured && (
+                      <div className="absolute -top-3 left-4 bg-[#F37F20] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+                        Featured
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#074a75] transition-colors truncate">
+                            {proj.title}
+                          </h3>
+                          <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
+                            Active
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-slate-500 line-clamp-1">
+                          {proj.description || "A collaborative research initiative focusing on advanced methodologies."}
+                        </p>
+                      </div>
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#074a75] group-hover:bg-[#F37F20] group-hover:text-white transition-all">
+                        <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                   </Link>
-                ))}
-                {projects.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-10 bg-muted/20 rounded-2xl italic">No projects listed yet.</p>
-                )}
-              </div>
-            </section>
+                );
+              })}
+              {projects.length === 0 && (
+                <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                  <p className="text-sm text-slate-500 italic">No research projects listed yet.</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Column: Members */}
-          <aside className="space-y-8">
-            <section>
-              <h2 className="text-xl font-display font-bold text-foreground mb-6 flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" /> Members ({members.length})
-              </h2>
-              <div className="space-y-3">
-                {members.map(m => {
-                  const u = getUserById(m.user_id);
-                  if (!u) return null;
-                  return (
-                    <div key={u.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-xs">
-                          {u.full_name[0]}
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium block">{u.full_name}</span>
-                          <RoleBadge role={u.role} />
-                        </div>
-                      </div>
-                      {u.id === group.leader_user_id && (
-                        <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">Lead</span>
-                      )}
+          <aside className="md:col-span-2 space-y-6 pt-6">
+            <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#074a75]" /> Research Team
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {members.map(m => {
+                const u = getUserById(m.user_id);
+                if (!u) return null;
+                const isLeader = u.id === group.leader_user_id;
+                
+                // Assign a consistent pastel color based on user ID
+                const colors = [
+                  'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700', 
+                  'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700',
+                  'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700'
+                ];
+                const colorClass = colors[u.id % colors.length];
+
+                return (
+                  <div key={u.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#074a75]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
+                    <div className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${colorClass}`}>
+                      {u.full_name?.[0] || '?'}
                     </div>
-                  );
-                })}
-              </div>
-            </section>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-[#0F172A] truncate block">{u.full_name || 'Unknown'}</span>
+                        {isLeader ? (
+                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#074a75] px-1.5 py-0.5 rounded w-fit mt-0.5">
+                            Lead
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-500 truncate block capitalize">
+                            {u.role?.toLowerCase() || 'Member'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </aside>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 };

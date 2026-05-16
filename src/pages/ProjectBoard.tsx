@@ -62,16 +62,16 @@ const ProjectBoard = () => {
     return (
       <div className="container py-10">
         <motion.div >
-          <div className="max-w-2xl mx-auto rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
-            <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-2">No projects yet</h1>
-            <p className="text-sm text-muted-foreground mt-3">
+          <div className="max-w-2xl mx-auto rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]">
+            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#F37F20' }}>Projects</span>
+            <h1 className="text-3xl md:text-4xl font-display font-bold mt-2" style={{ color: '#074a75' }}>No projects yet</h1>
+            <p className="text-sm text-slate-500 mt-3">
               Create the first project for your validated group to start managing tasks and members.
             </p>
             {board.canCreateProjects && (
               <div className="mt-6 flex justify-center gap-2">
-                <Button onClick={() => board.setProjectFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Project Details Form
+                <Button className="rounded-lg h-11 px-6 font-semibold" style={{ background: '#F37F20', color: '#fff' }} onClick={() => board.setProjectFormOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" /> Project Details Form
                 </Button>
               </div>
             )}
@@ -150,9 +150,9 @@ const ProjectBoard = () => {
         {/* Resources */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-serif font-semibold text-foreground">Resources</h2>
+            <h2 className="text-xl font-display font-bold" style={{ color: '#074a75' }}>Resources</h2>
             {(!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
-              <Button size="sm" variant="outline" onClick={() => board.setResourceFormOpen(true)}>
+              <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white" onClick={() => board.setResourceFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add Resource
               </Button>
             )}
@@ -164,21 +164,21 @@ const ProjectBoard = () => {
                 const Icon = resourceIcons[res.resource_type] || ExternalLink;
                 const creator = board.getUserById(res.created_by || NaN);
                 return (
-                  <div key={res.id} className="relative group p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-colors">
+                  <div key={res.id} className="relative group p-4 rounded-2xl border border-slate-100 bg-white hover:border-[#F37F20]/30 transition-colors shadow-sm">
                     <a
                       href={res.url || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 pr-6 block h-full w-full"
                     >
-                      <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                        <Icon className="h-4 w-4 text-secondary-foreground" />
+                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#F37F20', color: '#fff' }}>
+                        <Icon className="h-4 w-4" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm font-medium text-foreground block truncate" title={res.title}>{res.title}</span>
-                        <span className="text-xs font-mono text-muted-foreground truncate block">{res.resource_type.replace('_', ' ')} · {creator?.full_name || 'System'}</span>
+                        <span className="text-sm font-semibold text-[#0F172A] block truncate" title={res.title}>{res.title}</span>
+                        <span className="text-xs uppercase font-bold tracking-widest text-[#94A3B8] truncate block mt-1">{res.resource_type.replace('_', ' ')} · {creator?.full_name || 'System'}</span>
                       </div>
-                      <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ExternalLink className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#F37F20' }} />
                     </a>
                     
                     {(board.canManageProjects || board.user?.id === res.created_by) && (

@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { GoogleLogin } from '@react-oauth/google';
 import { GOOGLE_CLIENT_ID } from '@/lib/googleAuth';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -109,17 +110,21 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-20 w-auto mb-4">
-            <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
+    <PublicLayout>
+      <div className="flex-1 flex flex-col md:flex-row items-center justify-center p-4 py-12 bg-[#F8FAFC] gap-12 md:gap-24">
+        {/* Left Side: Logo & Text */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col items-center md:items-start text-center md:text-left max-w-sm">
+          <div className="h-16 w-16 rounded-2xl bg-[#F37F20] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
+            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10 brightness-0 invert" />
           </div>
-          <h1 className="text-xl font-display font-semibold text-foreground">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to ENSIA Research Hub</p>
-        </div>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-[#074a75] mb-3">Welcome back</h1>
+          <p className="text-base text-slate-500 leading-relaxed">Sign in to ENSIA Nexus to access your research projects, connect with your lab, and discover new opportunities.</p>
+        </motion.div>
 
-        <form onSubmit={handleSubmit(onFormSubmit)} className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4">
+        {/* Right Side: Form */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-sm">
+
+        <form onSubmit={handleSubmit(onFormSubmit)} className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] flex flex-col gap-5 border border-slate-100">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="you@ensia.edu.dz" className={errors.email ? 'border-destructive' : ''} {...register('email')} autoComplete="email" />
@@ -133,12 +138,13 @@ const SignIn = () => {
           </div>
 
           <p className="text-xs text-right -mt-1">
-            <a href="/forgot-password" className="text-primary hover:underline">Forgot password?</a>
+            <a href="/forgot-password" style={{ color: '#F37F20' }} className="font-medium hover:underline">Forgot password?</a>
           </p>
 
           <Button
             type="submit"
-            className="w-full h-11 mt-1"
+            className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
+            style={{ background: '#F37F20', color: '#fff' }}
             disabled={submitting || isLoading}
           >
             {submitting ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : null}
@@ -196,12 +202,13 @@ const SignIn = () => {
             </Button>
           )}
 
-          <p className="text-xs text-muted-foreground text-center">
-            Don't have an account? <a href="/signup" className="text-primary hover:underline">Sign up</a>
+          <p className="text-sm text-center mt-2" style={{ color: '#64748B' }}>
+            Don't have an account? <a href="/signup" style={{ color: '#F37F20' }} className="font-semibold hover:underline">Sign up</a>
           </p>
         </form>
       </motion.div>
-    </div>
+      </div>
+    </PublicLayout>
   );
 };
 

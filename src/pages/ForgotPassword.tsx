@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { apiRepository } from '@/repositories/apiRepository';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -48,21 +49,22 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <PublicLayout>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 py-20 bg-[#F8FAFC]">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="w-full max-w-sm"
       >
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-20 w-auto mb-4">
-            <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
+        <div className="flex flex-col items-center mb-10">
+          <div className="h-14 w-14 rounded-xl bg-[#F37F20] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
+            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-8 w-8 brightness-0 invert" />
           </div>
-          <h1 className="text-xl font-display font-semibold text-foreground">Forgot password</h1>
-          <p className="text-sm text-muted-foreground mt-1">Enter your ENSIA email to get a reset link</p>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-[#074a75]">Forgot password</h1>
+          <p className="text-sm md:text-base mt-2" style={{ color: '#64748B' }}>Enter your ENSIA email to get a reset link</p>
         </div>
 
-        <form onSubmit={handleSubmit(onFormSubmit)} className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] flex flex-col gap-5 border border-slate-100">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -78,20 +80,22 @@ const ForgotPassword = () => {
 
           <Button
             type="submit"
-            className="w-full h-11 mt-1"
+            className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
+            style={{ background: '#F37F20', color: '#fff' }}
             disabled={submitting}
           >
             {submitting ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : null}
             Send reset link
           </Button>
 
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-sm text-center mt-2" style={{ color: '#64748B' }}>
             Remembered your password?{' '}
-            <a href="/signin" className="text-primary hover:underline">Sign in</a>
+            <a href="/signin" style={{ color: '#F37F20' }} className="font-semibold hover:underline">Sign in</a>
           </p>
         </form>
       </motion.div>
-    </div>
+      </div>
+    </PublicLayout>
   );
 };
 

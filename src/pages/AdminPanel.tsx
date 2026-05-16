@@ -533,8 +533,8 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     <div className="container py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="relative mb-12">
-        <div className="absolute -top-10 -left-10 w-40 h-40 bg-destructive/5 rounded-full blur-3xl" />
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-destructive/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="flex items-center gap-4">
@@ -581,12 +581,12 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
 
           <div className="flex items-center gap-3">
             {isPlatformAdmin && (
-              <Button onClick={() => setAddLabOpen(true)} size="sm" className="rounded-full shadow-lg shadow-primary/20">
+              <Button onClick={() => setAddLabOpen(true)} size="sm" className="rounded-lg h-9 font-semibold" style={{ background: '#F37F20', color: '#fff' }}>
                 <Plus className="h-4 w-4 mr-1.5" />New Lab
               </Button>
             )}
             {manageableLabs.length > 0 && (
-              <Button onClick={() => setAddGroupOpen(true)} size="sm" variant="secondary" className="rounded-full">
+              <Button onClick={() => setAddGroupOpen(true)} size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white">
                 <Plus className="h-4 w-4 mr-1.5" />New Group
               </Button>
             )}
@@ -607,7 +607,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="group overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300">
+                  <Card className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:shadow-xl transition-all duration-300">
                     <CardHeader className="p-6">
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">
@@ -699,10 +699,10 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
               );
             })}
             {visibleLabs.length === 0 && (
-              <div className="col-span-full rounded-3xl border-2 border-dashed border-border bg-secondary/20 p-16 text-center">
-                <FlaskConical className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-1">No labs found</h3>
-                <p className="text-sm text-muted-foreground max-w-sm mx-auto">You don't have administrative access to any labs at the moment.</p>
+              <div className="col-span-full rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] p-16 text-center">
+                <FlaskConical className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold mb-1 text-[#074a75]">No labs found</h3>
+                <p className="text-sm text-slate-500 max-w-sm mx-auto">You don't have administrative access to any labs at the moment.</p>
               </div>
             )}
           </div>
@@ -731,7 +731,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <Card className="border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/[0.08] transition-colors relative group">
+                      <Card className="rounded-2xl border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/[0.08] transition-colors relative group shadow-sm">
                         <div className="absolute top-4 right-4 flex gap-2">
                           <Button
                             variant="outline"

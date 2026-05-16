@@ -86,12 +86,12 @@ export function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
                 <Link to="/projects">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg" style={{ background: '#F37F20' }}>
                     <img src="/logo_small.svg" alt="Logo" className="size-6 object-contain brightness-0 invert" />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold text-foreground">ENSIA Research Hub</span>
-                    <span className="truncate text-xs text-muted-foreground italic font-mono uppercase tracking-tighter">Innovate · Discover</span>
+                    <span className="truncate font-semibold text-sidebar-foreground">ENSIA Nexus</span>
+                    <span className="truncate text-xs text-sidebar-foreground/70 italic font-mono uppercase tracking-tighter">Innovate · Discover</span>
                   </div>
                 </Link>
               </SidebarMenuButton>
@@ -152,14 +152,14 @@ export function AppSidebar() {
                   <ProfileAvatar
                     userId={user?.id}
                     name={user?.full_name}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary ring-1 ring-primary/20 overflow-hidden"
-                    textClassName="text-xs font-semibold text-primary"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white ring-1 ring-white/20 overflow-hidden"
+                    textClassName="text-xs font-semibold text-white"
                   />
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold text-foreground">{user?.full_name}</span>
-                    <span className="truncate text-xs text-muted-foreground capitalize">{user?.role.toLowerCase()}</span>
+                    <span className="truncate font-semibold text-sidebar-foreground">{user?.full_name}</span>
+                    <span className="truncate text-xs text-sidebar-foreground/70 capitalize">{user?.role.toLowerCase()}</span>
                   </div>
-                  <MoreHorizontal className="ml-auto size-4 text-muted-foreground" />
+                  <MoreHorizontal className="ml-auto size-4 text-sidebar-foreground/70" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
