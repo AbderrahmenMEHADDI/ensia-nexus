@@ -23,7 +23,10 @@
 
 <body>
   <script>
-    (function () { var t = localStorage.getItem('theme'); if (t === 'dark') { document.documentElement.classList.add('dark') } })();
+    (function () {
+      localStorage.removeItem('theme');
+      document.documentElement.classList.remove('dark');
+    })();
   </script>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>

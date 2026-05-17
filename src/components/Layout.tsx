@@ -1,7 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Breadcrumb,
@@ -96,7 +95,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 </BreadcrumbList>
               </Breadcrumb>
             </div>
-            <ThemeToggle />
           </header>
           <main className="flex-1 relative z-0 flex flex-col overflow-y-auto">{children}</main>
         </div>
