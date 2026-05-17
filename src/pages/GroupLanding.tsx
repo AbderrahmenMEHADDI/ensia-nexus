@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Loader2,
   Share2,
+  Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiRepository } from '@/repositories/apiRepository';
@@ -25,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const GroupLanding = () => {
   const { toast } = useToast();
@@ -91,169 +93,215 @@ const GroupLanding = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20">
-      {/* Header/Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border py-4">
-        <div className="container px-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Discovery Hub</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full"
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                toast({ title: "Link Copied", description: "The group profile link is now in your clipboard." });
-              }}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Link to="/signup">
-              <Button size="sm" className="rounded-full px-4">Join Network</Button>
+    <PublicLayout>
+      {/* Top Header Banner */}
+      <div className="w-full bg-white border-b border-slate-200 border-t-[3px] border-t-[#F37F20] pt-8 pb-10 px-4 sm:px-12 relative">
+        <div className="container max-w-5xl mx-auto relative z-10 flex flex-col">
+          {/* Top Navigation */}
+          <div className="flex items-center justify-between mb-10">
+            <Link to="/" className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#F37F20' }}>
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Discovery Hub</span>
             </Link>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative pt-16 pb-24 overflow-hidden border-b border-border">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/5 -z-10 blur-[120px]" />
-        
-        <div className="container px-4">
-          <div className="flex flex-col lg:flex-row gap-12 items-start">
-            <div className="flex-1 space-y-8">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 py-1 px-3 rounded-full text-xs font-bold uppercase tracking-widest">
-                    Research Group
-                  </Badge>
-                  <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                    <FlaskConical className="h-3 w-3" />
-                    {team.lab_name}
-                  </span>
-                </div>
-                <h1 className="text-4xl md:text-6xl font-display font-extrabold tracking-tight leading-tight">
-                  {team.name}
-                </h1>
-                <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
-                  {team.description || "Advancing the frontiers of artificial intelligence through rigorous experimentation, cross-disciplinary collaboration, and academic excellence."}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-6">
-                <StatCard icon={BookOpen} label="Publications" value={team.publication_count} />
-                <StatCard icon={FolderOpen} label="Projects" value={team.project_count} />
-                <StatCard icon={Users} label="Members" value={members.length} />
-              </div>
-            </div>
-
-            <div className="w-full lg:w-80">
-              <Card className="rounded-[2rem] border-2 border-primary/10 shadow-xl shadow-primary/5">
-                <CardHeader className="text-center pb-2">
-                  <div className="mx-auto mb-4 p-1 rounded-full bg-primary/5 border border-primary/10 w-fit">
-                    <ProfileAvatar 
-                      userId={team.leader_user_id} 
-                      className="h-20 w-20 rounded-full border-4 border-background shadow-lg"
-                      textClassName="text-xl font-bold"
-                    />
-                  </div>
-                  <CardTitle className="text-xl">Group Leader</CardTitle>
-                  <CardDescription>Scientific Direction</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center space-y-4">
-                  <p className="text-sm font-semibold">ENSIA Professor</p>
-                  <Button 
-                    className="w-full rounded-full gap-2" 
-                    variant="secondary"
-                    onClick={() => {
-                      const leader = members.find(m => m.user_id === team.leader_user_id);
-                      if (leader?.user_email) {
-                        window.location.href = `mailto:${leader.user_email}`;
-                      }
-                    }}
-                  >
-                    <Mail className="h-4 w-4" /> Contact Leader
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Projects Section */}
-      <section className="py-24 bg-muted/20">
-        <div className="container px-4">
-          <div className="flex items-center justify-between mb-12">
-            <div className="space-y-1">
-              <h2 className="text-3xl font-display font-bold">Research Projects</h2>
-              <p className="text-muted-foreground">Active and completed scientific endeavors.</p>
-            </div>
-            <Link to="/discovery/projects">
-              <Button variant="ghost" className="gap-1">View all board <ChevronRight className="h-4 w-4" /></Button>
-            </Link>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {projects.map((project, i) => (
-              <ProjectCard key={project.id} project={project} />
-            ))}
-            {projects.length === 0 && (
-              <div className="col-span-full py-12 text-center border-2 border-dashed border-border rounded-[2rem] bg-background">
-                <FolderOpen className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <p className="text-muted-foreground">No public projects listed yet.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Members Section */}
-      <section className="py-24">
-        <div className="container px-4">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-display font-bold mb-4">Scientific Team</h2>
-            <p className="text-muted-foreground">The brilliant minds behind our research breakthroughs.</p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
-            {members.map((member, i) => (
-              <motion.div
-                key={member.user_id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="group flex flex-col items-center text-center"
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full text-[#074a75] hover:bg-slate-100"
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  toast({ title: "Link Copied", description: "The group profile link is now in your clipboard." });
+                }}
               >
-                <div className="relative mb-4">
-                  <div className="absolute inset-0 rounded-full bg-primary/20 scale-0 group-hover:scale-110 transition-transform duration-300" />
-                  <ProfileAvatar 
-                    userId={member.user_id} 
-                    name={member.user_name}
-                    className="h-20 w-20 rounded-full border-2 border-background shadow-md relative z-10"
-                    textClassName="text-xl font-bold"
-                  />
+                <Share2 className="h-4 w-4" />
+              </Button>
+              <Link to="/signup">
+                <Button size="sm" className="rounded-full px-5 h-9 font-semibold" style={{ background: '#F37F20', color: '#fff' }}>
+                  Join Network
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 text-slate-500 text-xs font-bold tracking-widest uppercase">
+              <Building2 className="h-3 w-3" />
+              {team.lab_name || 'Research Laboratory'}
+            </div>
+            
+            <div className="space-y-3">
+              <h1 className="text-4xl sm:text-5xl font-display font-bold text-[#074a75] tracking-tight">
+                {team.name}
+              </h1>
+              <p className="text-lg text-slate-600 max-w-2xl leading-relaxed">
+                {team.description || "Advancing research and innovation through collaborative projects and academic excellence in this specialized research domain."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 pt-2">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#074a75] shadow-sm ring-1 ring-slate-200">
+                  {members.find(m => m.user_id === team.leader_user_id)?.user_name?.[0] || 'L'}
                 </div>
-                <h4 className="font-bold text-sm mb-1 line-clamp-1">{member.user_name}</h4>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-70">
-                  {member.user_id === team.leader_user_id ? "Leader" : "Researcher"}
-                </p>
-              </motion.div>
-            ))}
+                <span className="font-medium">Led by <span className="text-[#0F172A]">{members.find(m => m.user_id === team.leader_user_id)?.user_name || 'Group Leader'}</span></span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-7 rounded-full text-xs font-semibold px-3 border-slate-200 text-[#074a75] hover:bg-slate-50"
+                onClick={() => {
+                  const leader = members.find(m => m.user_id === team.leader_user_id);
+                  if (leader?.user_email) {
+                    window.location.href = `mailto:${leader.user_email}`;
+                  }
+                }}
+              >
+                <Mail className="h-3 w-3 mr-1.5" /> Contact Leader
+              </Button>
+              <div className="h-4 w-[1px] bg-slate-200" />
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-50" />
+                <span className="font-medium">Active Research Group</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="flex items-center gap-8 mt-10 pt-6 border-t border-slate-100">
+            <div className="flex flex-col">
+              <span className="text-2xl font-display font-bold text-[#0F172A] leading-none mb-1">{team.project_count}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Projects</span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-2xl font-display font-bold text-[#0F172A] leading-none mb-1">{members.length}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Members</span>
+            </div>
+            <div className="h-8 w-[1px] bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-2xl font-display font-bold text-[#0F172A] leading-none mb-1">{team.publication_count}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Publications</span>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      <div className="container max-w-5xl mx-auto px-4 sm:px-12 relative z-20 space-y-16 py-16">
+        <div className="grid md:grid-cols-5 gap-10">
+          
+          {/* Left Column: Projects */}
+          <div className="md:col-span-3 space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-[#074a75]" /> Public Projects
+              </h2>
+              <Link to="/discovery/projects">
+                <Button variant="ghost" size="sm" className="text-[#F37F20] hover:text-[#F37F20] hover:bg-[#F37F20]/10">View Board <ChevronRight className="h-4 w-4 ml-1" /></Button>
+              </Link>
+            </div>
+            
+            <div className="space-y-4">
+              {projects.map((proj, index) => {
+                const isFeatured = index === 0;
+                return (
+                  <Link
+                    key={proj.id}
+                    to={`/discovery/projects/${proj.id}`}
+                    className={`block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${
+                      isFeatured ? 'border-l-4 border-l-[#F37F20]' : ''
+                    }`}
+                  >
+                    {isFeatured && (
+                      <div className="absolute -top-3 left-4 bg-[#F37F20] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+                        Featured
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#074a75] transition-colors truncate">
+                            {proj.title}
+                          </h3>
+                          {proj.accepting_collaborators ? (
+                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
+                              Hiring
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-slate-200 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-500 line-clamp-1">
+                          {proj.description || "A collaborative research initiative focusing on advanced methodologies."}
+                        </p>
+                      </div>
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#074a75] group-hover:bg-[#F37F20] group-hover:text-white transition-all">
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+              {projects.length === 0 && (
+                <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                  <p className="text-sm text-slate-500 italic">No public projects listed yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Members */}
+          <aside className="md:col-span-2 space-y-6">
+            <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2 mb-6">
+              <Users className="h-5 w-5 text-[#074a75]" /> Research Team
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {members.map(member => {
+                const isLeader = member.user_id === team.leader_user_id;
+                
+                // Assign a consistent pastel color based on user ID
+                const colors = [
+                  'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700', 
+                  'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700',
+                  'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700'
+                ];
+                const colorClass = colors[member.user_id % colors.length];
+
+                return (
+                  <div key={member.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#074a75]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
+                    <div className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${colorClass}`}>
+                      {member.user_name?.[0] || '?'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-[#0F172A] truncate block">{member.user_name || 'Unknown'}</span>
+                        {isLeader ? (
+                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#074a75] px-1.5 py-0.5 rounded w-fit mt-0.5">
+                            Lead
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-medium text-slate-500 truncate block capitalize">
+                            Researcher
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+        </div>
+      </div>
 
       {/* Achievements Section */}
-      <section className="py-24 bg-foreground text-background">
+      <section className="py-24 text-white" style={{ background: '#074a75' }}>
         <div className="container px-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
             <div className="space-y-4">
-              <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none rounded-full px-4">
+              <Badge className="bg-white/10 text-white hover:bg-white/20 border-none rounded-full px-4">
                 Impact & Achievements
               </Badge>
               <h2 className="text-4xl md:text-5xl font-display font-bold">Latest Publications</h2>
@@ -287,18 +335,18 @@ const GroupLanding = () => {
       {/* Footer CTA */}
       <section className="py-24 border-t border-border">
         <div className="container px-4 text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl font-display font-bold mb-6">Interested in our work?</h2>
+          <h2 className="text-3xl font-display font-bold mb-6" style={{ color: '#074a75' }}>Interested in our work?</h2>
           <p className="text-muted-foreground mb-10 leading-relaxed">
             We are always looking for passionate students and collaborators to join our research efforts. Explore our open projects or contact the group leader for more information.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/discovery/projects">
-              <Button size="lg" className="rounded-full px-8">Explore Projects</Button>
+              <Button size="lg" className="rounded-lg px-8 h-12 font-semibold" style={{ background: '#F37F20', color: '#fff' }}>Explore Projects</Button>
             </Link>
             <Button 
               variant="outline" 
               size="lg" 
-              className="rounded-full px-8"
+              className="rounded-lg px-8 h-12 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white"
               onClick={() => toast({
                 title: "Research Followed",
                 description: `You will now receive updates from ${team.name}.`
@@ -309,7 +357,7 @@ const GroupLanding = () => {
           </div>
         </div>
       </section>
-    </div>
+    </PublicLayout>
   );
 };
 

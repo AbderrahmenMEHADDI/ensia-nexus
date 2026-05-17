@@ -25,6 +25,7 @@ import { apiRepository } from '@/repositories/apiRepository';
 import type { Project, ResearchGroup, ResearchLab, User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const PublicProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -96,30 +97,26 @@ const PublicProjectDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border py-4">
-        <div className="container px-4 flex items-center justify-between">
-          <Link to="/discovery/projects" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Discovery Hub</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => {
-              navigator.clipboard.writeText(window.location.href);
-              toast({ title: "Link copied to clipboard" });
-            }}>
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Bookmark className="h-4 w-4" />
-            </Button>
+    <PublicLayout>
+      {/* Hero Header */}
+      <header className="relative pt-12 pb-24 overflow-hidden border-b border-border bg-[#F8FAFC]">
+        <div className="container px-4 mb-8">
+          <div className="max-w-4xl mx-auto flex items-center justify-between">
+            <Link to="/discovery/projects" className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#F37F20' }}>
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Discovery Hub</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="rounded-full text-[#074a75] hover:bg-[#074a75]/10" onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast({ title: "Link copied to clipboard" });
+              }}>
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
-      </nav>
-
-      {/* Hero Header */}
-      <header className="relative pt-16 pb-24 overflow-hidden border-b border-border bg-muted/30">
+        
         <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.02] -z-10" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-primary/5 rounded-full blur-[120px] -z-10" />
         
@@ -137,42 +134,42 @@ const PublicProjectDetails = () => {
               )}
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-display font-extrabold tracking-tight mb-8 leading-tight">
+            <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight mb-8 leading-tight" style={{ color: '#074a75' }}>
               {project.title}
             </h1>
 
             <div className="flex flex-wrap gap-6 items-center">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center border border-border shadow-sm">
-                  <FlaskConical className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                  <FlaskConical className="h-6 w-6" style={{ color: '#F37F20' }} />
                 </div>
                 <div>
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Laboratory</div>
-                  <div className="text-sm font-bold">{lab?.name || "Independent"}</div>
+                  <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#94A3B8' }}>Laboratory</div>
+                  <div className="text-sm font-bold" style={{ color: '#0F172A' }}>{lab?.name || "Independent"}</div>
                 </div>
               </div>
 
               <Separator orientation="vertical" className="h-10 hidden md:block" />
 
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center border border-border shadow-sm">
-                  <Users className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                  <Users className="h-6 w-6" style={{ color: '#F37F20' }} />
                 </div>
                 <div>
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Research Group</div>
-                  <div className="text-sm font-bold">{group?.name || "General"}</div>
+                  <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#94A3B8' }}>Research Group</div>
+                  <div className="text-sm font-bold" style={{ color: '#0F172A' }}>{group?.name || "General"}</div>
                 </div>
               </div>
 
               <Separator orientation="vertical" className="h-10 hidden md:block" />
 
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-background flex items-center justify-center border border-border shadow-sm">
-                  <Calendar className="h-6 w-6 text-primary" />
+                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                  <Calendar className="h-6 w-6" style={{ color: '#F37F20' }} />
                 </div>
                 <div>
-                  <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Deadline</div>
-                  <div className="text-sm font-bold">{project.deadline ? new Date(project.deadline).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : "Open Ended"}</div>
+                  <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#94A3B8' }}>Deadline</div>
+                  <div className="text-sm font-bold" style={{ color: '#0F172A' }}>{project.deadline ? new Date(project.deadline).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : "Open Ended"}</div>
                 </div>
               </div>
             </div>
@@ -212,21 +209,20 @@ const PublicProjectDetails = () => {
             </section>
 
             {/* Application Info for non-logged in */}
-            <section className="p-8 rounded-[2.5rem] bg-primary/5 border border-primary/10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl" />
+            <section className="p-8 rounded-2xl bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100 relative overflow-hidden">
               <div className="relative z-10">
-                <h3 className="text-xl font-bold mb-4">Want to join this project?</h3>
+                <h3 className="text-xl font-bold mb-4" style={{ color: '#074a75' }}>Want to join this project?</h3>
                 <p className="text-muted-foreground mb-6">
                   Collaboration on this project is managed through the Nexus portal. You need to be a registered student or researcher at ENSIA to apply.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link to={`/signin?redirect=/discovery/projects/${project.id}`}>
-                    <Button className="rounded-full px-8 py-6 h-auto shadow-lg shadow-primary/20 gap-2">
+                    <Button className="rounded-lg px-8 h-11 font-semibold gap-2 transition-all hover:brightness-110" style={{ background: '#F37F20', color: '#fff' }}>
                       Sign In to Apply <ExternalLink className="h-4 w-4" />
                     </Button>
                   </Link>
                   <Link to="/signup">
-                    <Button variant="outline" className="rounded-full px-8 py-6 h-auto bg-transparent">
+                    <Button variant="outline" className="rounded-lg px-8 h-11 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white transition-colors">
                       Create Account
                     </Button>
                   </Link>
@@ -237,36 +233,36 @@ const PublicProjectDetails = () => {
 
           {/* Sidebar Info */}
           <div className="space-y-8">
-            <Card className="rounded-[2rem] border-border bg-card shadow-sm overflow-hidden">
-              <div className="bg-primary p-6 text-primary-foreground">
-                <h3 className="font-display font-bold text-lg">Project Lead</h3>
+            <Card className="rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] overflow-hidden">
+              <div className="p-6" style={{ background: '#074a75' }}>
+                <h3 className="font-display font-bold text-lg text-white">Project Lead</h3>
               </div>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center border-2 border-background shadow-md overflow-hidden">
+                  <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden">
                     {leader?.profile_picture_url ? (
                       <img src={leader.profile_picture_url} alt={leader.full_name} className="h-full w-full object-cover" />
                     ) : (
-                      <Users className="h-8 w-8 text-muted-foreground/30" />
+                      <Users className="h-8 w-8 text-slate-400" />
                     )}
                   </div>
                   <div>
-                    <div className="font-bold text-lg">{leader?.full_name || "Nexus Researcher"}</div>
-                    <div className="text-sm text-muted-foreground">{leader?.institution || "ENSIA Academic"}</div>
+                    <div className="font-bold text-lg text-[#0F172A]">{leader?.full_name || "Nexus Researcher"}</div>
+                    <div className="text-sm text-slate-500">{leader?.institution || "ENSIA Academic"}</div>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <Mail className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3 text-sm text-slate-500">
+                    <Mail className="h-4 w-4 text-[#F37F20]" />
                     <span className="truncate">{leader?.email || "Email restricted"}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <Shield className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3 text-sm text-slate-500">
+                    <Shield className="h-4 w-4 text-[#F37F20]" />
                     <span>Validated Researcher</span>
                   </div>
                 </div>
                 <Separator className="my-6" />
-                <Button variant="secondary" className="w-full rounded-xl py-6 h-auto font-bold gap-2" onClick={() => {
+                <Button className="w-full rounded-lg h-11 font-semibold gap-2 bg-slate-100 text-[#074a75] hover:bg-slate-200" onClick={() => {
                   if (leader?.email) window.location.href = `mailto:${leader.email}?subject=Inquiry: ${project.title}`;
                   else toast({ title: "Contact info restricted" });
                 }}>
@@ -275,7 +271,7 @@ const PublicProjectDetails = () => {
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2rem] border-border bg-card shadow-sm">
+            <Card className="rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)]">
               <CardHeader>
                 <CardTitle className="text-lg font-display font-bold">Research Impact</CardTitle>
               </CardHeader>
@@ -299,20 +295,7 @@ const PublicProjectDetails = () => {
           </div>
         </div>
       </main>
-
-      {/* Footer Branding */}
-      <footer className="py-12 border-t border-border bg-muted/10">
-        <div className="container px-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4 opacity-50">
-            <img src="/logo_small.svg" alt="Nexus" className="h-5 w-5 grayscale" />
-            <span className="font-display font-bold text-sm tracking-tight">ENSIA Nexus Discovery Hub</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em]">
-            Advancing the frontiers of knowledge through open collaboration
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PublicLayout>
   );
 };
 

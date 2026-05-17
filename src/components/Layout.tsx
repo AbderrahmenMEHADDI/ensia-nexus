@@ -20,6 +20,9 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const pathnames = location.pathname.split('/').filter((x) => x);
 
   const getBreadcrumbLabel = (path: string) => {
+    if (typeof window !== 'undefined' && window.__dynamicBreadcrumbs && window.__dynamicBreadcrumbs[path]) {
+      return window.__dynamicBreadcrumbs[path];
+    }
     const labels: Record<string, string> = {
       'dashboard': 'Projects',
       'projects': 'Projects',
@@ -36,9 +39,16 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     return labels[path] || path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
   };
 
+  const [tick, setTick] = React.useState(0);
+  React.useEffect(() => {
+    const handler = () => setTick(t => t + 1);
+    window.addEventListener('breadcrumb-update', handler);
+    return () => window.removeEventListener('breadcrumb-update', handler);
+  }, []);
+
   const publicPaths = ['/', '/signin', '/signup', '/forgot-password', '/reset-password', '/discovery', '/group'];
   const isPublicPath = publicPaths.some(path => 
-    location.pathname === path || (path !== '/' && location.pathname.startsWith(path))
+    location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'))
   );
 
   if (!isAuthenticated || isPublicPath) {
@@ -47,10 +57,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex w-full overflow-hidden">
+      <div className="h-screen flex w-full overflow-hidden bg-[#F8FAFC]">
         <AppSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center justify-between border-b border-border bg-background sticky top-0 z-50 px-4">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]">
+          <header className="h-14 flex items-center justify-between border-b border-slate-200/60 bg-white sticky top-0 z-50 px-4">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="h-4 w-[1px] bg-border mx-1" />

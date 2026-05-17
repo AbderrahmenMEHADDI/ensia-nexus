@@ -43,13 +43,13 @@ export const TaskCard = ({
       role="button"
       tabIndex={0}
       aria-label={`Task: ${task.title}. Click to edit.`}
-      className={`p-3 rounded-lg border border-border bg-card border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-grab active:cursor-grabbing hover:border-primary/30 focus-visible:ring-2 focus-visible:ring-primary focus:outline-none transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
+      className={`p-4 rounded-xl border border-slate-100 bg-white border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-grab active:cursor-grabbing hover:border-[#F37F20]/30 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.1)] focus-visible:ring-2 focus-visible:ring-[#F37F20] focus:outline-none transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-sm font-medium text-foreground leading-tight">{task.title}</span>
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground shrink-0 mt-0.5" />
+        <span className="text-sm font-bold text-[#0F172A] leading-tight">{task.title}</span>
+        <GripVertical className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-400 shrink-0 mt-0.5" />
       </div>
-      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{task.description}</p>
+      <p className="text-xs text-slate-500 line-clamp-2 mb-3">{task.description}</p>
       <div className="flex items-center justify-between">
         <PriorityBadge priority={task.priority} />
         {assignee && (
@@ -57,15 +57,15 @@ export const TaskCard = ({
             <ProfileAvatar
               userId={assignee.id}
               name={assignee.full_name}
-              className="h-5 w-5 rounded-full bg-secondary text-[10px] font-medium text-secondary-foreground"
-              textClassName="text-[10px] font-medium text-secondary-foreground"
+              className="h-6 w-6 rounded-full bg-slate-100 text-[10px] font-bold text-[#074a75] ring-2 ring-white"
+              textClassName="text-[10px] font-bold text-[#074a75]"
             />
           </span>
         )}
       </div>
       {task.due_date && (
-        <div className="flex items-center gap-1 mt-2 text-xs font-mono text-muted-foreground">
-          <Calendar className="h-3 w-3" /> {task.due_date}
+        <div className="flex items-center gap-1.5 mt-3 text-xs font-bold tracking-widest uppercase text-slate-400">
+          <Calendar className="h-3.5 w-3.5" style={{ color: '#F37F20' }} /> {task.due_date}
         </div>
       )}
     </motion.div>

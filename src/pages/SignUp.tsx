@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -125,21 +126,21 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="w-full max-w-md"
-      >
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-20 w-auto mb-4">
-            <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
+    <PublicLayout>
+      <div className="flex-1 flex flex-col md:flex-row items-center justify-center p-4 py-12 bg-[#F8FAFC] gap-12 md:gap-24">
+        {/* Left Side: Logo & Text */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col items-center md:items-start text-center md:text-left max-w-sm">
+          <div className="h-16 w-16 rounded-2xl bg-[#F37F20] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
+            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10 brightness-0 invert" />
           </div>
-          <h1 className="text-xl font-display font-semibold text-foreground">Create your account</h1>
-          <p className="text-sm text-muted-foreground mt-1">Join ENSIA Research Hub</p>
-        </div>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-[#074a75] mb-3">Create your account</h1>
+          <p className="text-base text-slate-500 leading-relaxed">Join ENSIA Nexus to start collaborating on high-impact research projects with the brightest minds.</p>
+        </motion.div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        {/* Right Side: Form */}
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-md">
+
+        <div className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100">
           <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
@@ -207,7 +208,8 @@ const SignUp = () => {
 
             <Button
               type="submit"
-              className="w-full h-11"
+              className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
+              style={{ background: '#F37F20', color: '#fff' }}
               disabled={submitting || isLoading}
             >
               {submitting ? (
@@ -268,13 +270,14 @@ const SignUp = () => {
             </Button>
           )}
 
-          <p className="text-xs text-muted-foreground text-center mt-6">
+          <p className="text-sm text-center mt-6" style={{ color: '#64748B' }}>
             Already have an account?{' '}
-            <a href="/signin" className="text-primary hover:underline font-medium">Sign in</a>
+            <a href="/signin" style={{ color: '#F37F20' }} className="font-semibold hover:underline">Sign in</a>
           </p>
         </div>
       </motion.div>
-    </div>
+      </div>
+    </PublicLayout>
   );
 };
 

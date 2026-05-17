@@ -230,13 +230,13 @@ const Groups = () => {
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                   >
-                    <Card className="border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
+                    <Card className="rounded-2xl border-[#F37F20]/20 bg-[#F37F20]/5 hover:bg-[#F37F20]/10 transition-colors shadow-sm">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg">{group.name}</CardTitle>
-                          <Mail className="h-5 w-5 text-primary opacity-50" />
+                          <CardTitle className="text-lg text-[#0F172A]">{group.name}</CardTitle>
+                          <Mail className="h-5 w-5 text-[#F37F20] opacity-80" />
                         </div>
-                        <CardDescription className="line-clamp-2">
+                        <CardDescription className="line-clamp-2 text-slate-500">
                           {group.description || "No description provided for this research group."}
                         </CardDescription>
                       </CardHeader>
@@ -266,7 +266,8 @@ const Groups = () => {
                       </CardContent>
                       <CardFooter className="pt-0 flex gap-2">
                         <Button
-                          className="flex-1 rounded-xl"
+                          className="flex-1 rounded-lg h-9 font-semibold"
+                          style={{ background: '#F37F20', color: '#fff' }}
                           size="sm"
                           onClick={() => respond(inv, 'ACCEPTED')}
                           disabled={actingId === inv.id}
@@ -282,7 +283,7 @@ const Groups = () => {
                         </Button>
                         <Button
                           variant="ghost"
-                          className="flex-1 rounded-xl hover:bg-destructive/10 hover:text-destructive"
+                          className="flex-1 rounded-lg h-9 font-semibold hover:bg-red-50 hover:text-red-600"
                           size="sm"
                           onClick={() => respond(inv, 'REJECTED')}
                           disabled={actingId === inv.id}
@@ -303,13 +304,13 @@ const Groups = () => {
       {/* My Groups Section */}
       <div>
         {myGroups.length === 0 ? (
-          <div className="p-12 rounded-3xl border-2 border-dashed border-border bg-secondary/30 flex flex-col items-center text-center">
-            <div className="h-20 w-20 rounded-full bg-background flex items-center justify-center mb-6 shadow-sm">
-              <Users className="h-10 w-10 text-muted-foreground/40" />
+          <div className="p-16 rounded-2xl border border-slate-100 bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.1)] flex flex-col items-center text-center">
+            <div className="h-24 w-24 rounded-full bg-[#074a75]/5 flex items-center justify-center mb-6 shadow-inner">
+              <Users className="h-10 w-10 text-[#074a75]/40" />
             </div>
-            <h3 className="text-xl font-bold mb-2">No research groups found</h3>
-            <p className="text-muted-foreground max-w-sm mb-8">
-              You haven't joined or created any research groups yet. Once you're invited, they'll appear here.
+            <h3 className="text-2xl font-bold text-[#0F172A] mb-3">No active groups</h3>
+            <p className="text-slate-500 max-w-sm mb-2 text-base leading-relaxed">
+              You haven't joined or created any research groups yet. Once you're invited to a lab group, it will appear here.
             </p>
           </div>
         ) : (
@@ -328,38 +329,42 @@ const Groups = () => {
                   transition={{ delay: index * 0.1 }}
                 >
                   <Card className={cn(
-                    "group overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                    isLeader ? "border-primary/20" : "border-border"
+                    "group relative overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.1)]",
+                    isLeader ? "border-[#F37F20]/30 bg-white" : "border-slate-100 bg-white"
                   )}>
-                    <CardHeader>
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#074a75] to-[#F37F20] opacity-80" />
+                    <CardHeader className="pb-4">
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">
-                          <CardTitle className="text-2xl font-bold group-hover:text-primary transition-colors">
+                          <CardTitle className="text-xl font-bold text-[#0F172A] group-hover:text-[#074a75] transition-colors">
                             {group.name}
                           </CardTitle>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mt-2">
                             {isLeader && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-widest border border-primary/20">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#F37F20]/10 text-[#F37F20] uppercase tracking-widest border border-[#F37F20]/20">
                                 <UserCheck className="h-3 w-3 mr-1" />
-                                My Group
+                                Group Leader
                               </span>
                             )}
-                            <span className="text-xs text-muted-foreground">
-                              Created {new Date().getFullYear()} • Research Unit
-                            </span>
+                            {!isLeader && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#074a75]/10 text-[#074a75] uppercase tracking-widest border border-[#074a75]/20">
+                                <Users className="h-3 w-3 mr-1" />
+                                Member
+                              </span>
+                            )}
                           </div>
                         </div>
                         <Link
-                          to={`/my-labs/${group.id}`}
-                          className="h-10 w-10 rounded-full bg-secondary hover:bg-primary hover:text-white transition-all flex items-center justify-center group/btn"
+                          to={`/groups/${group.id}`}
+                          className="flex items-center justify-center shrink-0 h-10 w-10 rounded-full bg-slate-50 border border-slate-100 text-[#074a75] hover:bg-[#F37F20] hover:text-white hover:border-[#F37F20] shadow-sm transition-all group/btn"
                         >
                           <ArrowRight className="h-5 w-5 group-hover/btn:translate-x-0.5 transition-transform" />
                         </Link>
                       </div>
                     </CardHeader>
 
-                    <CardContent className="space-y-6">
-                      <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                    <CardContent className="space-y-5">
+                      <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed h-10">
                         {group.description || "Advancing research and innovation through collaborative projects and academic excellence in this specialized research domain."}
                       </p>
 
@@ -468,10 +473,10 @@ const Groups = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 pt-4">
-            <AlertDialogCancel className="rounded-xl border-border hover:bg-muted">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-lg border-slate-200 hover:bg-slate-50">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemoveMember}
-              className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-lg h-10 px-4 font-semibold bg-red-600 text-white hover:bg-red-700"
             >
               Remove Member
             </AlertDialogAction>

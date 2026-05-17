@@ -21,6 +21,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AdminPanel from "./pages/AdminPanel";
 import Groups from "./pages/Groups";
+import GroupDetails from "./pages/GroupDetails";
 import GroupLeadership from "./pages/GroupLeadership";
 import StudentCV from "./pages/StudentCV";
 import MyLabDetails from "./pages/MyLabDetails";
@@ -104,6 +105,7 @@ const AppRoutes = () => (
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/groups" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><Groups /></RoleProtectedRoute>} />
+      <Route path="/groups/:groupId" element={<RoleProtectedRoute allowedRoles={['TEACHER', 'STUDENT']}><GroupDetails /></RoleProtectedRoute>} />
       <Route path="/group-leadership" element={<RoleProtectedRoute allowedRoles={['TEACHER']}><GroupLeadership /></RoleProtectedRoute>} />
       <Route path="/student-cv" element={<RoleProtectedRoute allowedRoles={['STUDENT']}><StudentCV /></RoleProtectedRoute>} />
       <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminPanel /></RoleProtectedRoute>} />

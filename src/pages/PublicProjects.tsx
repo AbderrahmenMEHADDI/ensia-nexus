@@ -3,32 +3,50 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Search,
-  Filter,
   ArrowRight,
-  FlaskConical,
   Users,
   Calendar,
   ExternalLink,
   Loader2,
-  ChevronRight,
-  ArrowLeft,
-  Briefcase,
+  FlaskConical,
+  FileText,
+  FolderOpen,
+  Send,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { apiRepository } from '@/repositories/apiRepository';
 import type { Project, ResearchGroup, ResearchLab } from '@/types';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 const PublicProjects = () => {
+  const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
   const [labs, setLabs] = useState<ResearchLab[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLabId, setSelectedLabId] = useState<string>('all');
+  const [selectedLabId, setSelectedLabId] = useState('all');
+  const [selectedGroupId, setSelectedGroupId] = useState('all');
+  const [showCollabOnly, setShowCollabOnly] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
+  const [applyProjectId, setApplyProjectId] = useState<number | null>(null);
+  const [applyForm, setApplyForm] = useState({ fullName: '', email: '', institution: '', cv: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -38,7 +56,6 @@ const PublicProjects = () => {
           apiRepository.getGroups(),
           apiRepository.getLabs(),
         ]);
-        // Only show approved and public projects
         setProjects(p.filter(project => project.status === 'APPROVED' && project.visibility === 'PUBLIC'));
         setGroups(g);
         setLabs(l);
@@ -52,233 +69,304 @@ const PublicProjects = () => {
   }, []);
 
   const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          p.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const group = groups.find(g => g.id === p.group_id);
     const matchesLab = selectedLabId === 'all' || (group && String(group.lab_id) === selectedLabId);
-    return matchesSearch && matchesLab;
+    const matchesGroup = selectedGroupId === 'all' || String(p.group_id) === selectedGroupId;
+    const matchesCollab = !showCollabOnly || p.accepting_collaborators;
+    return matchesSearch && matchesLab && matchesGroup && matchesCollab;
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
-        <p className="text-muted-foreground font-medium animate-pulse">Scanning research board...</p>
-      </div>
-    );
-  }
+  // Get groups filtered by selected lab for cascading filter
+  const filteredGroups = selectedLabId === 'all'
+    ? groups
+    : groups.filter(g => String(g.lab_id) === selectedLabId);
 
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/20">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border py-4">
-        <div className="container px-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Discovery</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link to="/signin">
-              <Button variant="ghost" size="sm" className="rounded-full px-4">Sign In</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm" className="rounded-full px-4 shadow-lg shadow-primary/20">Join Nexus</Button>
-            </Link>
+    <PublicLayout activePath="/discovery/projects">
+      {/* ── Compact Header + Filters ── */}
+      <div className="border-b" style={{ borderColor: '#E2E8F0' }}>
+        <div className="container px-4 py-6">
+          {/* Title row */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-display font-bold" style={{ color: '#074a75' }}>
+                Project Board
+              </h1>
+              <div className="w-10 h-1 rounded-full mt-2 mb-1" style={{ background: '#F37F20' }} />
+              <p className="text-sm" style={{ color: '#64748B' }}>
+                Explore {projects.length} research projects across ENSIA.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#64748B' }}>
+              <FolderOpen className="h-4 w-4" />
+              {filteredProjects.length} results
+            </div>
           </div>
-        </div>
-      </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-16 overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/5 -z-10 blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-1/4 h-1/2 bg-blue-500/5 -z-10 blur-[100px]" />
-        
-        <div className="container px-4 text-center max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Badge variant="outline" className="mb-6 bg-primary/5 text-primary border-primary/20 py-1 px-4 rounded-full text-xs font-bold uppercase tracking-widest">
-              Research Opportunities
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-display font-extrabold tracking-tight mb-6 leading-tight">
-              Open Project Board
-            </h1>
-            <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-              Explore ongoing research endeavors across ENSIA. From AI safety to advanced robotics, find projects looking for collaborators and impact.
-            </p>
-          </motion.div>
-
-          {/* Search & Filter Bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex flex-col md:flex-row gap-4 bg-card border border-border p-2 rounded-[2rem] shadow-xl shadow-primary/5"
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search by title, topic, or tech..." 
-                className="pl-11 h-12 rounded-full border-none focus-visible:ring-0 text-base"
+          {/* Search + Filters row */}
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#94A3B8' }} />
+              <Input
+                placeholder="Search by title, topic, or tech..."
+                className="pl-10 h-10 rounded-lg border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#074a75]/30"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
-              <select 
-                className="bg-muted/50 border-none rounded-full px-6 h-12 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer min-w-[160px]"
-                value={selectedLabId}
-                onChange={(e) => setSelectedLabId(e.target.value)}
-              >
-                <option value="all">All Laboratories</option>
-                {labs.map(lab => (
-                  <option key={lab.id} value={String(lab.id)}>{lab.name}</option>
-                ))}
-              </select>
-              <Button size="icon" variant="secondary" className="h-12 w-12 rounded-full shrink-0">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
-          </motion.div>
+
+            {/* Filter selects */}
+            <select
+              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#074a75]/30 outline-none"
+              value={selectedLabId}
+              onChange={(e) => { setSelectedLabId(e.target.value); setSelectedGroupId('all'); }}
+            >
+              <option value="all">All Labs</option>
+              {labs.map(lab => (
+                <option key={lab.id} value={String(lab.id)}>{lab.name}</option>
+              ))}
+            </select>
+
+            <select
+              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#074a75]/30 outline-none"
+              value={selectedGroupId}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+            >
+              <option value="all">All Teams</option>
+              {filteredGroups.map(g => (
+                <option key={g.id} value={String(g.id)}>{g.name}</option>
+              ))}
+            </select>
+
+            {/* Collab toggle */}
+            <button
+              className={cn(
+                "h-10 px-4 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shrink-0",
+                showCollabOnly
+                  ? "text-white border-transparent"
+                  : "border-slate-200 text-[#475569] hover:border-[#074a75]/30"
+              )}
+              style={showCollabOnly ? { background: '#074a75' } : {}}
+              onClick={() => setShowCollabOnly(!showCollabOnly)}
+            >
+              <span className={cn("h-2 w-2 rounded-full", showCollabOnly ? "bg-emerald-400" : "bg-slate-300")} />
+              Open for Collaboration
+            </button>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Projects Grid */}
-      <section className="py-16">
-        <div className="container px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <Briefcase className="h-4 w-4" />
-              <span>{filteredProjects.length} Projects found</span>
+      {/* ── Projects Grid ── */}
+      <div className="flex-1">
+        <div className="container px-4 py-8">
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="rounded-2xl bg-white p-6 animate-pulse h-64">
+                  <div className="h-4 w-20 rounded-full bg-slate-200 mb-4" />
+                  <div className="h-5 w-3/4 rounded bg-slate-200 mb-3" />
+                  <div className="h-3 w-full rounded bg-slate-100 mb-2" />
+                  <div className="h-3 w-5/6 rounded bg-slate-100 mb-6" />
+                  <div className="border-t border-slate-100 pt-4 flex justify-between">
+                    <div className="h-6 w-24 rounded-full bg-slate-100" />
+                    <div className="h-8 w-20 rounded-full bg-slate-200" />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project, i) => (
-              <ProjectDiscoveryCard 
-                key={project.id} 
-                project={project} 
-                group={groups.find(g => g.id === project.group_id)}
-                index={i}
-              />
-            ))}
-          </div>
-
-          {filteredProjects.length === 0 && (
-            <div className="py-32 text-center border-2 border-dashed border-border rounded-[3rem] bg-muted/5">
-              <div className="h-20 w-20 bg-background rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-border">
-                <Search className="h-8 w-8 text-muted-foreground/30" />
+          ) : filteredProjects.length === 0 ? (
+            <div className="py-24 text-center">
+              <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(7,74,117,0.06)' }}>
+                <Search className="h-7 w-7" style={{ color: '#94A3B8' }} />
               </div>
-              <h3 className="text-xl font-bold mb-2">No matching projects</h3>
-              <p className="text-muted-foreground max-w-sm mx-auto">Try adjusting your filters or search terms to find what you're looking for.</p>
-              <Button 
-                variant="link" 
-                className="mt-4 text-primary"
-                onClick={() => { setSearchQuery(''); setSelectedLabId('all'); }}
+              <h3 className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>No matching projects</h3>
+              <p className="text-sm mb-4" style={{ color: '#64748B' }}>Try adjusting your filters or search terms.</p>
+              <button
+                className="text-sm font-semibold"
+                style={{ color: '#F37F20' }}
+                onClick={() => { setSearchQuery(''); setSelectedLabId('all'); setSelectedGroupId('all'); setShowCollabOnly(false); }}
               >
                 Clear all filters
-              </Button>
+              </button>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProjects.map((project, i) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  group={groups.find(g => g.id === project.group_id)}
+                  index={i}
+                  onApply={(id) => {
+                    setApplyProjectId(id);
+                    setApplyDialogOpen(true);
+                    setSubmitted(false);
+                    setApplyForm({ fullName: '', email: '', institution: '', cv: '' });
+                  }}
+                />
+              ))}
             </div>
           )}
         </div>
-      </section>
+      </div>
 
-      {/* Call to Action */}
-      <section className="py-24 border-t border-border bg-primary/[0.02]">
-        <div className="container px-4">
-          <div className="bg-foreground text-background rounded-[3rem] p-12 md:p-20 relative overflow-hidden flex flex-col items-center text-center">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px]" />
-            <div className="relative z-10 max-w-2xl">
-              <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">Want to lead your own research?</h2>
-              <p className="text-lg text-background/60 mb-10 leading-relaxed">
-                Join ENSIA Nexus to create projects, recruit team members, and publish your findings. Our platform provides the tools you need for modern research management.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/signup">
-                  <Button size="lg" className="rounded-full px-8 py-6 text-lg h-auto shadow-xl shadow-primary/20">Get Started Now</Button>
-                </Link>
-                <Link to="/signin">
-                  <Button size="lg" variant="outline" className="rounded-full px-8 py-6 text-lg h-auto border-background/20 hover:bg-background/10 text-background">Sign In</Button>
-                </Link>
-              </div>
+      {/* ── Apply Dialog ── */}
+      <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl" style={{ color: '#074a75' }}>Apply to Collaborate</DialogTitle>
+            <DialogDescription className="text-sm" style={{ color: '#64748B' }}>
+              Submit your details to express interest in this project.
+            </DialogDescription>
+          </DialogHeader>
+          {submitted ? (
+            <div className="py-8 text-center">
+              <CheckCircle2 className="h-12 w-12 mx-auto mb-4" style={{ color: '#059669' }} />
+              <h4 className="font-display font-bold text-lg mb-1" style={{ color: '#0F172A' }}>Application Submitted!</h4>
+              <p className="text-sm" style={{ color: '#64748B' }}>The research team will review your application.</p>
             </div>
-          </div>
-        </div>
-      </section>
-    </div>
+          ) : (
+            <form
+              className="space-y-4 pt-2"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setSubmitting(true);
+                try {
+                  await apiRepository.createCollaborationSubmission({
+                    collaboration_call_id: applyProjectId ?? undefined,
+                    full_name: applyForm.fullName,
+                    email: applyForm.email,
+                    institution: applyForm.institution,
+                    cv_url: applyForm.cv,
+                  } as any);
+                  setSubmitted(true);
+                } catch {
+                  toast({ title: 'Error', description: 'Failed to submit. Please try again.', variant: 'destructive' });
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium" style={{ color: '#334155' }}>Full Name</Label>
+                <Input className="rounded-lg" required value={applyForm.fullName} onChange={(e) => setApplyForm(f => ({ ...f, fullName: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium" style={{ color: '#334155' }}>Email</Label>
+                <Input type="email" className="rounded-lg" required value={applyForm.email} onChange={(e) => setApplyForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium" style={{ color: '#334155' }}>Institution</Label>
+                <Input className="rounded-lg" required value={applyForm.institution} onChange={(e) => setApplyForm(f => ({ ...f, institution: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium" style={{ color: '#334155' }}>CV / Portfolio URL</Label>
+                <Input className="rounded-lg" placeholder="https://..." value={applyForm.cv} onChange={(e) => setApplyForm(f => ({ ...f, cv: e.target.value }))} />
+              </div>
+              <Button type="submit" disabled={submitting} className="w-full rounded-lg h-11 font-semibold text-white" style={{ background: '#F37F20' }}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-2" /> Submit Application</>}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </PublicLayout>
   );
 };
 
-/* --- Helper Component --- */
+/* ── Project Card ── */
 
-const ProjectDiscoveryCard = ({ project, group, index }: { project: Project; group?: ResearchGroup; index: number }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay: index * 0.05 }}
-  >
-    <Card className="h-full rounded-[2.5rem] border-border bg-card hover:border-primary/20 transition-all group shadow-sm hover:shadow-2xl hover:shadow-primary/5 flex flex-col">
-      <CardHeader className="pb-4">
-        <div className="flex justify-between items-start mb-4">
-          {project.accepting_collaborators ? (
-            <Badge className="bg-green-500/10 text-green-600 border-green-500/20 py-0.5 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest">
-              Hiring Researchers
-            </Badge>
+const ProjectCard = ({ project, group, index, onApply }: { project: Project; group?: ResearchGroup; index: number; onApply?: (projectId: number) => void }) => {
+  const isOpen = project.accepting_collaborators;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.04 }}
+      className="group/card relative rounded-2xl bg-white flex flex-col cursor-default overflow-hidden shadow-[0_2px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300"
+      style={{ borderTop: isOpen ? '3px solid #F37F20' : '3px solid #074a75' }}
+    >
+      {/* Card front */}
+      <div className="p-6 flex flex-col flex-1">
+        {/* Status row */}
+        <div className="flex items-center justify-between mb-4">
+          {isOpen ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: '#059669' }}>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              Open for Collaboration
+            </span>
           ) : (
-            <Badge variant="outline" className="py-0.5 px-3 rounded-full text-[10px] font-bold uppercase tracking-widest border-border text-muted-foreground">
-              Internal Project
-            </Badge>
+            <span className="text-[11px] font-medium" style={{ color: '#94A3B8' }}>Internal Project</span>
           )}
-          <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-tighter">
-            #{project.id}
-          </span>
+          <span className="text-[10px] font-medium" style={{ color: '#CBD5E1' }}>#{project.id}</span>
         </div>
-        <CardTitle className="text-2xl font-display group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+
+        {/* Title */}
+        <h4 className="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style={{ color: '#0F172A' }}>
           {project.title}
-        </CardTitle>
-        <CardDescription className="line-clamp-3 leading-relaxed mt-4 min-h-[4.5rem]">
-          {project.description || "Advancing research and innovation through collaborative efforts and rigorous scientific experimentation."}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="mt-auto pt-4 flex flex-col gap-6">
-        <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 border border-border/50">
-          <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center border border-border shadow-sm">
-            <Users className="h-5 w-5 text-primary" />
+        </h4>
+
+        {/* Description */}
+        <p className="text-[13px] leading-relaxed line-clamp-2 mb-auto pb-4" style={{ color: '#64748B' }}>
+          {project.description || 'Advancing research through collaborative efforts and rigorous experimentation.'}
+        </p>
+
+        {/* Divider + bottom row */}
+        <div className="border-t" style={{ borderColor: '#F1F5F9' }} />
+        <div className="flex items-center justify-between pt-4">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: '#94A3B8' }}>Team</span>
+            <span className="text-sm font-semibold truncate" style={{ color: '#334155' }}>{group?.name || 'Independent'}</span>
           </div>
-          <div className="min-w-0">
-            <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Research Team</div>
-            <div className="text-sm font-bold truncate">{group?.name || "Independent Group"}</div>
-          </div>
+          {project.deadline && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium shrink-0" style={{ color: '#94A3B8' }}>
+              <Calendar className="h-3 w-3" />
+              {new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          )}
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Deadline</div>
-            <div className="text-xs font-semibold flex items-center gap-1.5">
-              <Calendar className="h-3 w-3 text-primary" />
-              {project.deadline ? new Date(project.deadline).toLocaleDateString() : "No Deadline"}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Visibility</div>
-            <div className="text-xs font-semibold flex items-center gap-1.5 capitalize">
-              <ExternalLink className="h-3 w-3 text-primary" />
-              {project.visibility.toLowerCase()}
-            </div>
-          </div>
+      {/* Full-cover sliding navy panel */}
+      <div
+        className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-4 -translate-x-full group-hover/card:translate-x-0 px-6"
+        style={{
+          background: '#074a75',
+          transition: 'transform 420ms cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <h4 className="text-xl font-display font-bold text-white text-center leading-snug">{project.title}</h4>
+        <p className="text-sm text-center leading-relaxed line-clamp-2" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          {group?.name || 'Independent Research'}
+        </p>
+        <div className="flex flex-col items-center gap-2 mt-2">
+          <Link
+            to={`/discovery/projects/${project.id}`}
+            className="inline-flex items-center gap-2 text-sm font-semibold group/link"
+            style={{ color: '#F37F20' }}
+          >
+            View Project Details
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1" />
+          </Link>
+          {isOpen && onApply && (
+            <button
+              className="inline-flex items-center gap-2 mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110"
+              style={{ background: '#F37F20' }}
+              onClick={(e) => { e.stopPropagation(); onApply(project.id); }}
+            >
+              <Send className="h-3.5 w-3.5" /> Apply Now
+            </button>
+          )}
         </div>
-
-        <Link to={`/discovery/projects/${project.id}`} className="mt-4">
-          <Button className="w-full rounded-2xl py-6 h-auto group-hover:shadow-lg group-hover:shadow-primary/20 transition-all font-bold gap-2">
-            View details & Apply <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
-
+      </div>
+    </motion.div>
+  );
+};
 export default PublicProjects;

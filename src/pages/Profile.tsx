@@ -239,8 +239,8 @@ const Profile = () => {
           <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-8">
 
             {/* Profile Header Card */}
-            <div className="relative overflow-hidden p-6 rounded-3xl border border-border bg-card shadow-sm group">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+            <div className="relative overflow-hidden p-6 rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] group">
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#F37F20]/40 via-[#F37F20] to-[#F37F20]/40" />
 
               <div className="flex flex-col items-center text-center space-y-6">
                 <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
@@ -249,8 +249,8 @@ const Profile = () => {
                       <ProfileAvatar
                         userId={user.id}
                         name={user.full_name}
-                        className="h-32 w-32 rounded-3xl bg-primary/10 ring-4 ring-background shadow-xl"
-                        textClassName="text-4xl font-display font-bold text-primary"
+                        className="h-32 w-32 rounded-3xl bg-[#F37F20]/10 ring-4 ring-white shadow-xl"
+                        textClassName="text-4xl font-display font-bold text-[#F37F20]"
                       />
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/60 backdrop-blur-sm rounded-3xl">
                         <span className="text-sm font-semibold text-foreground">Change</span>
@@ -313,11 +313,11 @@ const Profile = () => {
 
                 <div className="flex flex-col w-full gap-2 pt-2">
                   {user.role === 'STUDENT' && (
-                    <Button variant="default" className="w-full rounded-xl shadow-sm" asChild>
+                    <Button className="w-full rounded-lg h-11 shadow-sm font-semibold transition-all hover:brightness-110" style={{ background: '#F37F20', color: '#fff' }} asChild>
                       <Link to="/student-cv">Manage Student CV</Link>
                     </Button>
                   )}
-                  <Button variant="outline" className="w-full rounded-xl" asChild>
+                  <Button variant="outline" className="w-full rounded-lg h-11 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white" asChild>
                     <Link to="/settings">
                       <Settings className="h-4 w-4 mr-2" /> Settings
                     </Link>
@@ -327,9 +327,9 @@ const Profile = () => {
             </div>
 
             {/* Information Sidebar Section */}
-            <div className="p-6 rounded-3xl border border-border bg-card shadow-sm space-y-6">
-              <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+            <div className="p-6 rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] space-y-6">
+              <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: '#94A3B8' }}>
+                <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#F37F20' }} />
                 Information
               </h2>
 
@@ -382,13 +382,13 @@ const Profile = () => {
             {user.role !== 'PARTNER' && (
               <>
                 {/* Profile Details */}
-                <section className="p-8 rounded-3xl border border-border bg-card shadow-sm space-y-6">
+                <section className="p-8 rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: '#94A3B8' }}>
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#F37F20' }} />
                       Detailed Profile
                     </h2>
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditingProfileDetails(true)} className="text-xs h-8">
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditingProfileDetails(true)} className="text-xs h-8 text-[#074a75] hover:bg-[#074a75]/10">
                       Edit Details
                     </Button>
                   </div>
@@ -444,7 +444,7 @@ const Profile = () => {
 
                 {/* About & Bio */}
                 {student && (student.bio || student.experience || student.skills) && (
-                  <section className="p-8 rounded-3xl border border-border bg-card shadow-sm space-y-8">
+                  <section className="p-8 rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] space-y-8">
                     {student?.bio && (
                       <div>
                         <h2 className="text-lg font-display font-bold text-foreground mb-4">About</h2>
@@ -463,11 +463,11 @@ const Profile = () => {
                 {/* Previous Projects */}
                 <section>
                   <div className="flex items-center justify-between mb-6 px-2">
-                    <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <h2 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2" style={{ color: '#94A3B8' }}>
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: '#F37F20' }} />
                       Portfolio
                     </h2>
-                    <Button variant="outline" size="sm" onClick={() => setShowPreviousProjectForm(v => !v)} className="rounded-xl border-primary/20 text-primary hover:bg-primary/5">
+                    <Button variant="outline" size="sm" onClick={() => setShowPreviousProjectForm(v => !v)} className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white">
                       <Plus className="h-4 w-4 mr-1" /> Add Project
                     </Button>
                   </div>
@@ -505,7 +505,7 @@ const Profile = () => {
                           target={item.project_link ? "_blank" : undefined}
                           rel="noopener noreferrer"
                           className={cn(
-                            "p-6 rounded-3xl border border-border bg-card hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all block h-full",
+                            "p-6 rounded-2xl border border-slate-100 bg-white hover:border-[#F37F20]/40 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all block h-full",
                             !item.project_link && "cursor-default"
                           )}
                           onClick={(e) => {
@@ -552,7 +552,7 @@ const Profile = () => {
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {myProjects.map(p => (
-                    <Link key={p.id} to={`/projects/${p.id}`} className="group p-6 rounded-3xl border border-border bg-card hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <Link key={p.id} to={`/projects/${p.id}`} className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-[#F37F20]/40 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
                       <div className="flex flex-col h-full space-y-6">
                         <div className="space-y-2">
                           <h3 className="font-bold text-foreground group-hover:text-primary transition-colors text-lg line-clamp-1">{p.title}</h3>
@@ -583,7 +583,7 @@ const Profile = () => {
                   <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                   Recent Activity
                 </h2>
-                <div className="rounded-3xl border border-border bg-card shadow-sm overflow-hidden divide-y divide-border/50">
+                <div className="rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] overflow-hidden divide-y divide-slate-100">
                   {recentTasks.map(task => {
                     const proj = (projects || []).find(p => p.id === task.project_id);
                     return (
