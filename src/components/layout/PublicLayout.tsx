@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Users, FileText, FlaskConical } from 'lucide-react';
+import { Search, Users, FileText, FlaskConical, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { getCookie, setCookie } from '@/lib/cookies';
 
 interface NavLinkItem {
   label: string;
@@ -18,12 +19,31 @@ interface PublicLayoutProps {
 
 export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
   const [scrolled, setScrolled] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const consent = getCookie('cookie_consent_accepted');
+    if (!consent) {
+      const timer = setTimeout(() => setShowConsent(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleAccept = () => {
+    setCookie('cookie_consent_accepted', 'true', 365);
+    setShowConsent(false);
+  };
+
+  const handleDecline = () => {
+    setCookie('cookie_consent_accepted', 'false', 365);
+    setShowConsent(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background selection:bg-primary/20">
@@ -161,6 +181,40 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
           </div>
         </div>
       </footer>
+
+      {/* ── Cookie Consent Banner (Option B) ── */}
+      {showConsent && (
+        <div className="fixed bottom-6 left-6 right-6 md:left-auto md:max-w-md z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
+          <div className="p-5 rounded-2xl bg-white/95 border border-slate-200/80 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] backdrop-blur-md flex flex-col gap-4">
+            <div className="flex gap-3">
+              <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                <Cookie className="h-5 w-5 text-[#F37F20]" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-[#0F172A]">We value your privacy</h4>
+                <p className="text-xs text-[#64748B] leading-relaxed">
+                  We use cookies to improve your browsing experience, analyze site traffic, and remember your research collaboration submissions.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                onClick={handleDecline}
+                className="text-xs font-semibold px-4 py-2 rounded-lg border border-slate-200 text-[#64748B] hover:bg-slate-50 transition-colors"
+              >
+                Decline Optional
+              </button>
+              <button
+                onClick={handleAccept}
+                className="text-xs font-semibold px-4 py-2 rounded-lg text-white transition-all hover:brightness-110"
+                style={{ background: '#F37F20' }}
+              >
+                Accept All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
