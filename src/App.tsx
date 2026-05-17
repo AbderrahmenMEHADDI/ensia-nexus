@@ -112,6 +112,7 @@ const AppRoutes = () => (
       <Route path="/my-labs" element={<LabAdminProtectedRoute><AdminPanel myLabsOnly /></LabAdminProtectedRoute>} />
       <Route path="/my-labs/labs/:labId" element={<LabAdminProtectedRoute><MyLabDetails /></LabAdminProtectedRoute>} />
       <Route path="/my-labs/groups/:groupId" element={<LabAdminProtectedRoute><MyLabGroupDetails /></LabAdminProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><Navigate to="/projects" replace /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>

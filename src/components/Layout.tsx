@@ -76,7 +76,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     const to = `/${pathnames.slice(0, index + 1).join('/')}`;
                     const label = getBreadcrumbLabel(value);
 
-                    if (value === 'dashboard') return null;
+
 
                     return (
                       <React.Fragment key={to}>
