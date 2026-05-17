@@ -81,25 +81,6 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
-<<<<<<< HEAD
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link to="/projects">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <img src="/logo_small.svg" alt="Logo" className="size-6 object-contain brightness-0 invert" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold text-foreground">ENSIA Research Hub</span>
-                  <span className="truncate text-xs text-muted-foreground italic font-mono uppercase tracking-tighter">Innovate · Discover</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-=======
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -117,7 +98,6 @@ export function AppSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarHeader>
->>>>>>> 52751b215e613772a07cc359c0245394d95ba204
 
         {/* Navigation */}
         <SidebarGroup>

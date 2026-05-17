@@ -21,10 +21,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   const getBreadcrumbLabel = (path: string) => {
     const labels: Record<string, string> = {
-<<<<<<< HEAD
-=======
       'dashboard': 'Projects',
->>>>>>> 52751b215e613772a07cc359c0245394d95ba204
       'projects': 'Projects',
       'my-labs': 'My Labs',
       'groups': 'Groups',
