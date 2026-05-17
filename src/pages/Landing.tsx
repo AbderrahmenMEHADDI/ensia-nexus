@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { SectionHeader } from '@/components/shared/SectionHeader';
+import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cookies';
 
 const Landing = () => {
   const { toast } = useToast();
@@ -42,6 +43,11 @@ const Landing = () => {
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [showAllTeams, setShowAllTeams] = useState(false);
   const [applyCallId, setApplyCallId] = useState<number | null>(null);
+  const [appliedCallIds, setAppliedCallIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    setAppliedCallIds(getAppliedCollaborations());
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -191,6 +197,7 @@ const Landing = () => {
                     deadline={deadline}
                     index={i}
                     featured={i % 3 === 0}
+                    applied={callId ? appliedCallIds.includes(callId) : false}
                     onApply={(cId: number) => {
                       setApplyCallId(cId);
                       setApplyDialogOpen(true);
@@ -217,6 +224,10 @@ const Landing = () => {
         open={applyDialogOpen}
         onOpenChange={setApplyDialogOpen}
         callId={applyCallId}
+        onApplied={(cId) => {
+          markCollaborationAsApplied(cId);
+          setAppliedCallIds(getAppliedCollaborations());
+        }}
       />
 
 
@@ -509,8 +520,8 @@ const TeamCard = ({ team, index }: { team: TeamSummary; index: number }) => {
   );
 };
 
-const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featured, onApply }: {
-  project: any; callId?: number | null; callTitle?: string | null; deadline?: string | null; index: number; featured?: boolean; onApply?: (callId: number) => void;
+const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featured, applied, onApply }: {
+  project: any; callId?: number | null; callTitle?: string | null; deadline?: string | null; index: number; featured?: boolean; applied?: boolean; onApply?: (callId: number) => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -525,17 +536,24 @@ const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featu
     style={{ borderTop: 'none', borderRight: 'none', borderBottom: 'none', borderLeft: featured ? undefined : 'none' }}
   >
     {/* Top row: status dot + date */}
-    <div className="flex items-center gap-2 mb-5 text-xs">
-      <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-      </span>
-      <span className="text-emerald-600 font-medium">Open</span>
-      {deadline && (
-        <>
-          <span className="text-slate-300">/</span>
-          <span className="text-slate-400">{new Date(deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-        </>
+    <div className="flex items-center justify-between gap-2 mb-5 text-xs">
+      <div className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        </span>
+        <span className="text-emerald-600 font-medium">Open</span>
+        {deadline && (
+          <>
+            <span className="text-slate-300">/</span>
+            <span className="text-slate-400">{new Date(deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          </>
+        )}
+      </div>
+      {applied && (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <CheckCircle2 className="h-3 w-3" /> Applied
+        </span>
       )}
     </div>
 
@@ -566,13 +584,22 @@ const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featu
         <span className="text-sm font-semibold" style={{ color: '#334155' }}>{project.team_name}</span>
       </div>
       {callId && onApply ? (
-        <button
-          onClick={() => onApply(callId)}
-          className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-semibold text-white transition-all duration-200 hover:brightness-110 group/btn"
-          style={{ background: '#F37F20' }}
-        >
-          <Send className="h-3 w-3 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Apply
-        </button>
+        applied ? (
+          <button
+            disabled
+            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" /> Applied
+          </button>
+        ) : (
+          <button
+            onClick={() => onApply(callId)}
+            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-semibold text-white transition-all duration-200 hover:brightness-110 group/btn"
+            style={{ background: '#F37F20' }}
+          >
+            <Send className="h-3 w-3 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Apply
+          </button>
+        )
       ) : (
         <Link to={`/discovery/projects/${project.id}`}>
           <button className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-xs font-medium transition-colors duration-200 group/btn" style={{ color: '#074a75' }}>
@@ -585,7 +612,9 @@ const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featu
 );
 
 /* ── Apply Dialog ── */
-const ApplyDialog = ({ open, onOpenChange, callId }: { open: boolean; onOpenChange: (v: boolean) => void; callId: number | null }) => {
+const ApplyDialog = ({ open, onOpenChange, callId, onApplied }: {
+  open: boolean; onOpenChange: (v: boolean) => void; callId: number | null; onApplied?: (callId: number) => void;
+}) => {
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -617,6 +646,9 @@ const ApplyDialog = ({ open, onOpenChange, callId }: { open: boolean; onOpenChan
         cv_url: form.cv_url.trim(),
         status: 'PENDING',
       });
+      if (onApplied) {
+        onApplied(callId);
+      }
       setSubmitted(true);
     } catch (err: any) {
       toast({ title: 'Submission failed', description: err?.message || 'Something went wrong. Please try again.', variant: 'destructive' });
