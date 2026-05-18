@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar, FileText, Sparkles, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,8 @@ import type { Project, ProjectApplication, ResearchGroup } from '@/types';
 
 interface StudentDiscoveryViewProps {
   publicProjects: Project[];
+  projects: Project[];
+  applications: ProjectApplication[];
   getGroupById: (id: number) => ResearchGroup | undefined;
   getBlockingApplication: (projectId: number) => ProjectApplication | undefined;
   getApplyButtonLabel: (projectId: number) => string;
@@ -24,6 +26,8 @@ interface StudentDiscoveryViewProps {
 
 export const StudentDiscoveryView = ({
   publicProjects,
+  projects,
+  applications,
   getGroupById,
   getBlockingApplication,
   getApplyButtonLabel,
@@ -38,51 +42,191 @@ export const StudentDiscoveryView = ({
 }: StudentDiscoveryViewProps) => {
   return (
     <div className={className}>
-      <motion.div >
-        <div className="mb-8">
-          <span className="text-xs font-mono text-primary uppercase tracking-wider">Projects</span>
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground mt-1">Public Projects</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Apply to approved public projects. Pending or accepted applications cannot be submitted again.
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className="mb-8 border-b pb-6" style={{ borderColor: '#F1F5F9' }}>
+          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#F37F20' }}>Student Portal</span>
+          <h1 className="text-3xl md:text-4xl font-display font-extrabold mt-1" style={{ color: '#074a75' }}>Project Hub</h1>
+          <p className="text-sm text-slate-500 mt-2">
+            Explore approved public research projects and track your application progress in real-time.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-3">
-          {publicProjects.map(pubProject => {
-            const pubGroup = getGroupById(pubProject.group_id);
-            const blockingApplication = getBlockingApplication(pubProject.id);
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Left Column: Public Projects (Available to Join) */}
+          <div className="lg:col-span-7 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-display font-bold flex items-center gap-2" style={{ color: '#0F172A' }}>
+                <FolderKanban className="h-5 w-5" style={{ color: '#F37F20' }} />
+                Available Projects
+              </h2>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                {publicProjects.length} Available
+              </span>
+            </div>
 
-            return (
-              <div key={pubProject.id} className="rounded-lg border border-border p-4 bg-card">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h3 className="text-sm font-medium text-foreground">{pubProject.title}</h3>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/15 text-success">PUBLIC</span>
+            <div className="grid sm:grid-cols-1 gap-4">
+              {publicProjects.map(pubProject => {
+                const pubGroup = pubProject.group_id ? getGroupById(pubProject.group_id) : undefined;
+                const blockingApplication = getBlockingApplication(pubProject.id);
+
+                return (
+                  <div
+                    key={pubProject.id}
+                    className="rounded-xl border border-slate-100 p-5 bg-white shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <h3 className="font-semibold text-sm text-slate-800" style={{ color: '#0F172A' }}>{pubProject.title}</h3>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
+                          OPEN
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mb-3 leading-relaxed">{pubProject.description || 'No description provided.'}</p>
+                      
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs font-medium text-slate-400">
+                        <span>Group: <strong className="text-slate-600">{pubGroup?.name || 'Independent'}</strong></span>
+                        {pubProject.deadline && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3.5 w-3.5" />
+                            Deadline: <strong className="text-slate-600">{new Date(pubProject.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t pt-4 mt-2" style={{ borderColor: '#F1F5F9' }}>
+                      {blockingApplication ? (
+                        <div className="flex items-center gap-2">
+                          <ApplicationStatusBadge status={blockingApplication.status} />
+                          {blockingApplication.ranking?.model_score !== undefined && (
+                            <span className="text-[11px] font-semibold text-slate-500 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
+                              {blockingApplication.ranking.model_score.toFixed(0)}% Fit
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+                      <Button
+                        size="sm"
+                        className="rounded-lg font-semibold shadow-sm transition-all duration-200 hover:brightness-105"
+                        style={{
+                          background: blockingApplication ? '#E2E8F0' : '#F37F20',
+                          color: blockingApplication ? '#94A3B8' : '#FFFFFF'
+                        }}
+                        onClick={() => handleOpenApply(pubProject.id)}
+                        disabled={Boolean(blockingApplication)}
+                      >
+                        {getApplyButtonLabel(pubProject.id)}
+                      </Button>
+                    </div>
                   </div>
+                );
+              })}
+              {publicProjects.length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                  <FolderKanban className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+                  <p className="text-sm font-medium text-slate-600">No public projects available right now</p>
+                  <p className="text-xs text-slate-400 mt-1">Check back later for new opportunities!</p>
                 </div>
-                <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{pubProject.description}</p>
-                <p className="text-xs text-muted-foreground mb-3">Group: {pubGroup?.name || 'N/A'}</p>
-                {blockingApplication && (
-                  <div className="mb-3">
-                    <ApplicationStatusBadge status={blockingApplication.status} />
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      Model score: {blockingApplication.ranking?.model_score?.toFixed?.(2) ?? '-'} / 100
-                    </p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: My Applications & Statuses */}
+          <div className="lg:col-span-5 space-y-6 lg:border-l lg:pl-8" style={{ borderColor: '#F1F5F9' }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-display font-bold flex items-center gap-2" style={{ color: '#074a75' }}>
+                <FileText className="h-5 w-5" style={{ color: '#074a75' }} />
+                My Applications
+              </h2>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                {applications.length} Total
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {applications.map(app => {
+                const appProject = projects.find(p => p.id === app.project_id);
+                const appGroup = appProject && appProject.group_id ? getGroupById(appProject.group_id) : undefined;
+                
+                return (
+                  <div
+                    key={app.id}
+                    className="rounded-xl border border-slate-100 p-4 bg-white shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
+                    style={{
+                      borderLeft: app.status === 'ACCEPTED' ? '4px solid #10B981' : 
+                                  app.status === 'REJECTED' ? '4px solid #EF4444' : 
+                                  '4px solid #F37F20'
+                    }}
+                  >
+                    <div className="flex justify-between items-start gap-3 mb-2">
+                      <div>
+                        <h4 className="font-semibold text-sm text-slate-800 line-clamp-1">
+                          {appProject ? appProject.title : `Project #${app.project_id}`}
+                        </h4>
+                        <span className="text-[11px] font-medium text-slate-400 block mt-0.5">
+                          Group: {appGroup?.name || 'Independent'}
+                        </span>
+                      </div>
+                      <ApplicationStatusBadge status={app.status} />
+                    </div>
+
+                    {/* Matching score & Date */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mt-3 pt-2 border-t" style={{ borderColor: '#F8FAFC' }}>
+                      <span className="flex items-center gap-1 font-mono">
+                        Applied: {new Date(app.created_at).toLocaleDateString()}
+                      </span>
+                      {app.ranking?.model_score !== undefined && (
+                        <span className="font-bold text-slate-600 flex items-center gap-1 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded">
+                          <Sparkles className="h-3 w-3 text-amber-500" />
+                          {app.ranking.model_score.toFixed(0)}% Match
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Motivation snippet */}
+                    {app.motivation && (
+                      <div className="mt-3 bg-slate-50/70 p-2.5 rounded-lg border border-slate-50">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">Your Motivation:</span>
+                        <p className="text-[11px] text-slate-600 italic line-clamp-2 leading-relaxed">
+                          "{app.motivation}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Decision note / Feedback */}
+                    {app.decision_note && (
+                      <div
+                        className="mt-3 p-3 rounded-lg border text-xs leading-relaxed"
+                        style={{
+                          background: app.status === 'ACCEPTED' ? '#ECFDF5' : '#FEF2F2',
+                          borderColor: app.status === 'ACCEPTED' ? '#A7F3D0' : '#FCA5A5',
+                          color: app.status === 'ACCEPTED' ? '#065F46' : '#991B1B'
+                        }}
+                      >
+                        <span className="font-bold block mb-0.5">Feedback from Team:</span>
+                        "{app.decision_note}"
+                      </div>
+                    )}
                   </div>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => handleOpenApply(pubProject.id)}
-                  disabled={Boolean(blockingApplication)}
-                >
-                  {getApplyButtonLabel(pubProject.id)}
-                </Button>
-              </div>
-            );
-          })}
-          {publicProjects.length === 0 && (
-            <p className="text-sm text-muted-foreground">No public projects available right now.</p>
-          )}
+                );
+              })}
+
+              {applications.length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                  <FileText className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+                  <p className="text-sm font-medium text-slate-600">No active applications</p>
+                  <p className="text-xs text-slate-400 mt-1">Browse public projects and submit your application to trace its status here.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </motion.div>
 
