@@ -43,20 +43,30 @@ const PublicProjectDetails = () => {
         const p = await apiRepository.getProject(Number(projectId));
         setProject(p);
         
-        const [g, l] = await Promise.all([
-          apiRepository.getGroup(p.group_id),
-          apiRepository.getLabs().then(labs => labs.find(lab => lab.id === p.group_id)) // This logic might be wrong, groups have lab_id
-        ]);
-        
-        setGroup(g);
-        
-        // Correcting lab fetch
-        const labData = await apiRepository.getLab(g.lab_id);
-        setLab(labData);
-
-        // Fetch leader info
-        const leaderData = await apiRepository.getUser(g.leader_user_id);
-        setLeader(leaderData);
+        if (p.group_id) {
+          const [g, labs] = await Promise.all([
+            apiRepository.getGroup(p.group_id),
+            apiRepository.getLabs()
+          ]);
+          setGroup(g);
+          
+          if (g && g.lab_id) {
+            const labData = await apiRepository.getLab(g.lab_id);
+            setLab(labData);
+          }
+          
+          if (g && g.leader_user_id) {
+            const leaderData = await apiRepository.getUser(g.leader_user_id);
+            setLeader(leaderData);
+          }
+        } else {
+          setGroup(null);
+          setLab(null);
+          if (p.created_by) {
+            const leaderData = await apiRepository.getUser(p.created_by);
+            setLeader(leaderData);
+          }
+        }
 
       } catch (err) {
         console.error('Failed to load project details', err);

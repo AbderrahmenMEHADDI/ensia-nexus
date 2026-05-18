@@ -17,6 +17,8 @@ import type {
   ProjectParticipant,
   ProjectReviewStatus,
   GroupMember,
+  CollaborationCall,
+  CollaborationSubmission,
 } from '@/types';
 import {
   FileText,
@@ -35,8 +37,12 @@ import {
   Microscope,
   MessagesSquare,
   Activity,
-  ArrowRight
+  ArrowRight,
+  Building2,
+  Mail,
+  ExternalLink
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { StudentProfileModal } from '@/components/StudentProfileModal';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
@@ -80,9 +86,18 @@ const Applications = () => {
   const [viewingProfileUser, setViewingProfileUser] = useState<User | null>(null);
   const [expandedAnalysis, setExpandedAnalysis] = useState<number[]>([]);
 
+  // Collaboration reviews state
+  const [activeTab, setActiveTab] = useState<'students' | 'collaborations'>('students');
+  const [collabCalls, setCollabCalls] = useState<CollaborationCall[]>([]);
+  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
+  const [collabSubmissions, setCollabSubmissions] = useState<CollaborationSubmission[]>([]);
+  const [collabLoading, setCollabLoading] = useState(false);
+  const [collabDecisionNote, setCollabDecisionNote] = useState<Record<number, string>>({});
+  const [submittingReviewId, setSubmittingReviewId] = useState<number | null>(null);
+
   const getUserById = (id: number) => users.find(u => u.id === id);
   const getProjectById = (id: number) => projects.find(p => p.id === id);
-  const getGroupById = (id: number) => groups.find(g => g.id === id);
+  const getGroupById = (id?: number | null) => id ? groups.find(g => g.id === id) : undefined;
 
   useEffect(() => {
     const load = async () => {
@@ -101,6 +116,15 @@ const Applications = () => {
         setGroups(g);
         setParticipants(pp);
         setGroupMembers(gm);
+
+        if (user && user.role !== 'STUDENT') {
+          try {
+            const calls = await apiRepository.getEligibleCollaborationCalls();
+            setCollabCalls(calls);
+          } catch (e) {
+            console.error('Error fetching eligible collaboration calls:', e);
+          }
+        }
       } catch (e) {
         console.error('Applications load error:', e);
         toast({ title: 'Error loading applications', variant: 'destructive' });
@@ -109,7 +133,52 @@ const Applications = () => {
       }
     };
     load();
-  }, [toast]);
+  }, [toast, user]);
+
+  const fetchSubmissionsForCall = async (callId: number) => {
+    setCollabLoading(true);
+    try {
+      const subs = await apiRepository.getCollaborationSubmissions(callId);
+      setCollabSubmissions(subs);
+      setSelectedCallId(callId);
+    } catch (e) {
+      console.error('Error fetching submissions:', e);
+      toast({ title: 'Failed to load submissions', variant: 'destructive' });
+    } finally {
+      setCollabLoading(false);
+    }
+  };
+
+  const handleReviewCollaboration = async (submissionId: number, status: 'ACCEPTED' | 'REJECTED') => {
+    setSubmittingReviewId(submissionId);
+    try {
+      const note = collabDecisionNote[submissionId] || '';
+      const updated = await apiRepository.updateCollaborationSubmission(submissionId, {
+        status,
+        decision_note: note.trim() || undefined
+      });
+      
+      setCollabSubmissions(prev =>
+        prev.map(sub => (sub.id === submissionId ? updated : sub))
+      );
+
+      toast({
+        title: `Submission ${status === 'ACCEPTED' ? 'Approved' : 'Rejected'}`,
+        description: `Successfully processed collaboration response.`
+      });
+      
+      setCollabDecisionNote(prev => {
+        const next = { ...prev };
+        delete next[submissionId];
+        return next;
+      });
+    } catch (e) {
+      console.error('Error reviewing collaboration:', e);
+      toast({ title: 'Failed to save review', variant: 'destructive' });
+    } finally {
+      setSubmittingReviewId(null);
+    }
+  };
 
   const pendingProjectsForReview = useMemo(
     () =>
@@ -262,7 +331,7 @@ const Applications = () => {
   return (
     <div className="container py-8 max-w-6xl mx-auto px-4">
       {/* Header Section */}
-      <div className="relative mb-12">
+      <div className="relative mb-8">
         <div className="absolute -top-10 -left-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
           <div>
@@ -271,7 +340,7 @@ const Applications = () => {
             </h1>
           </div>
 
-          {uniqueProjectIdsInApps.length > 0 && (
+          {activeTab === 'students' && uniqueProjectIdsInApps.length > 0 && (
             <div className="flex items-center gap-3">
               <div className="bg-secondary/50 p-1 rounded-xl border border-border flex items-center gap-2">
                 <Select
@@ -295,339 +364,616 @@ const Applications = () => {
         </div>
       </div>
 
-      {/* Pending Projects Alert Section */}
-      <AnimatePresence>
-        {pendingProjectsForReview.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-10"
+      {/* Segmented Tab Switcher */}
+      {user?.role !== 'STUDENT' && (
+        <div className="flex border-b border-border mb-8 gap-6">
+          <button
+            onClick={() => setActiveTab('students')}
+            className={cn(
+              "pb-4 text-sm font-semibold tracking-wide border-b-2 transition-all px-2 flex items-center gap-2",
+              activeTab === 'students'
+                ? "border-primary text-primary font-bold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
           >
-            <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-bold">Action Required: Projects Awaiting Approval</h2>
-              </div>
-              <div className="grid gap-3">
-                {pendingProjectsForReview.map(project => (
-                  <Card key={project.id} className="border-border/50 shadow-sm overflow-hidden group">
-                    <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-primary">
-                          {project.title.charAt(0)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-sm">{project.title}</CardTitle>
-                          <CardDescription className="text-[10px]">
-                            Research Group: {getGroupById(project.group_id)?.name}
-                          </CardDescription>
-                        </div>
-                      </div>
-                      <Button
-                        variant={selectedProject === project.id ? "secondary" : "ghost"}
-                        size="sm"
-                        className="text-xs h-8"
-                        onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
-                      >
-                        {selectedProject === project.id ? 'Cancel' : 'Review Project'}
-                        <ArrowRight className="h-3 w-3 ml-1.5" />
-                      </Button>
-                    </CardHeader>
-                    {selectedProject === project.id && (
-                      <CardContent className="px-4 pb-4 pt-2 border-t bg-secondary/10">
-                        <textarea
-                          value={projectDecisionNote}
-                          onChange={e => setProjectDecisionNote(e.target.value)}
-                          rows={2}
-                          placeholder="Add a decision note (optional)..."
-                          className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none mb-3"
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => handleProjectReview(project.id, 'APPROVED')}>
-                            Approve Project
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleProjectReview(project.id, 'REJECTED')}>
-                            Reject
-                          </Button>
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Student Applications
+            <Badge variant="secondary" className="px-1.5 py-0.5 rounded-full text-[10px]">
+              {displayApps.length}
+            </Badge>
+          </button>
+          <button
+            onClick={() => setActiveTab('collaborations')}
+            className={cn(
+              "pb-4 text-sm font-semibold tracking-wide border-b-2 transition-all px-2 flex items-center gap-2",
+              activeTab === 'collaborations'
+                ? "border-primary text-primary font-bold"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Collaboration Reviews
+            <Badge variant="secondary" className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#F37F20]/10 text-[#F37F20] border-[#F37F20]/20">
+              {collabCalls.length}
+            </Badge>
+          </button>
+        </div>
+      )}
 
-      {/* Applications list */}
-      <div className="space-y-6">
-        {displayApps.map((app, i) => {
-          const student = getUserById(app.student_user_id);
-          const project = getProjectById(app.project_id);
-          const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
-          const isSelected = selectedApp === app.id;
-          const isAnalysisExpanded = expandedAnalysis.includes(app.id);
-
-          const canReviewThisApp = project ? canUserReviewProjectApplication(user?.id, project, groups, participants) : false;
-          const canRateAcceptedApp = project ? (
-            participants.some(p => p.project_id === project.id && p.user_id === user?.id) ||
-            groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id) ||
-            groupMembers.some(m => m.group_id === project.group_id && m.user_id === user?.id && m.is_active)
-          ) : false;
-
-          const draft = getRatingDraft(app);
-          const myExistingRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
-
-          return (
-            <motion.div
-              key={app.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: i * 0.05 }}
-            >
-              <Card className="overflow-hidden border-border hover:shadow-md transition-shadow group">
-                <div className={cn(
-                  "h-1 w-full bg-gradient-to-r",
-                  app.status === 'ACCEPTED' ? "from-success/50 to-success" : "from-primary/50 to-primary"
-                )} />
-
-                <CardHeader className="pb-4">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <ProfileAvatar
-                        userId={student?.id}
-                        name={student?.full_name}
-                        className="h-14 w-14 rounded-2xl ring-2 ring-secondary shadow-sm"
-                        textClassName="text-lg font-bold"
-                      />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <CardTitle className="text-xl">{student?.full_name || 'Candidate'}</CardTitle>
-                          <ApplicationStatusBadge status={app.status} />
-                          {isTeacher && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-widest border border-primary/20">
-                              {app.status === 'ACCEPTED' ? 'Review' : 'Pending'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Applied {new Date(app.created_at).toLocaleDateString()}</span>
-                          <span className="flex items-center gap-1"><UserCircle2 className="h-3.5 w-3.5" />{project?.title || 'Unknown Project'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="bg-secondary/30 px-4 py-2 rounded-2xl border border-border flex items-center gap-4">
-                        <div className="text-center">
-                          <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Rank</div>
-                          <div className="text-lg font-black text-primary">#{app.ranking?.rank_position ?? '-'}</div>
-                        </div>
-                        <div className="w-px h-8 bg-border/50" />
-                        <div className="text-center">
-                          <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Final Score</div>
-                          <div className="text-lg font-black text-foreground">{app.ranking?.final_score != null ? app.ranking.final_score.toFixed(1) : '-'}</div>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-[10px] h-7 font-bold uppercase tracking-widest gap-1.5"
-                        onClick={() => toggleAnalysis(app.id)}
-                      >
-                        <BarChart3 className="h-3 w-3" />
-                        {isAnalysisExpanded ? 'Hide Analysis' : 'Show Analysis'}
-                      </Button>
-                    </div>
+      {activeTab === 'students' ? (
+        <>
+          {/* Pending Projects Alert Section */}
+          <AnimatePresence>
+            {pendingProjectsForReview.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mb-10"
+              >
+                <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-4">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <h2 className="text-lg font-bold">Action Required: Projects Awaiting Approval</h2>
                   </div>
-                </CardHeader>
-
-                <CardContent className="space-y-6">
-                  {/* Analysis Dropdown */}
-                  <AnimatePresence>
-                    {isAnalysisExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                              <Star className="h-3.5 w-3.5 text-primary" />
-                              Scoring Breakdown
-                            </h4>
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-muted-foreground">AI Model Score</span>
-                                <span className="font-mono font-bold text-primary">{app.ranking?.model_score?.toFixed(1) || '0.0'}</span>
-                              </div>
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-muted-foreground">Reviewer Average</span>
-                                <span className="font-mono font-bold text-primary">{app.ranking?.reviewer_score?.toFixed(1) || '0.0'}</span>
-                              </div>
-                              <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden mt-1">
-                                <div className="h-full bg-primary" style={{ width: `${app.ranking?.final_score || 0}%` }} />
-                              </div>
+                  <div className="grid gap-3">
+                    {pendingProjectsForReview.map(project => (
+                      <Card key={project.id} className="border-border/50 shadow-sm overflow-hidden group">
+                        <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-primary">
+                              {project.title.charAt(0)}
+                            </div>
+                            <div>
+                              <CardTitle className="text-sm">{project.title}</CardTitle>
+                              <CardDescription className="text-[10px]">
+                                Research Group: {getGroupById(project.group_id)?.name}
+                              </CardDescription>
                             </div>
                           </div>
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                              <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                              AI Insights
-                            </h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed italic">
-                              "{app.ranking?.explanation || "No automated explanation generated for this ranking."}"
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Motivation Section */}
-                  <div className="relative p-3 rounded-2xl bg-secondary/40 border border-border/50 italic text-sm text-foreground/80 leading-relaxed group-hover:bg-secondary/60 transition-colors">
-                    "{app.motivation || "No motivation letter provided."}"
-                  </div>
-
-                  {/* Decision Info */}
-                  {app.decision_note && (
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 text-sm">
-                      <UserCircle2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Note from {reviewer?.full_name}:</span>
-                        <p className="mt-1 text-foreground/90 leading-relaxed">{app.decision_note}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Member Evaluation Form */}
-                  {canRateAcceptedApp && app.status === 'ACCEPTED' && (
-                    <div className="pt-6 border-t border-border/50">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 text-primary" />
-                          <h4 className="text-sm font-bold uppercase tracking-widest">Mentor Evaluation</h4>
-                        </div>
-                        {myExistingRating && (
-                          <span className="text-[10px] font-bold text-success flex items-center gap-1 bg-success/10 px-2 py-0.5 rounded-full">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Already Rated
-                          </span>
+                          <Button
+                            variant={selectedProject === project.id ? "secondary" : "ghost"}
+                            size="sm"
+                            className="text-xs h-8"
+                            onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
+                          >
+                            {selectedProject === project.id ? 'Cancel' : 'Review Project'}
+                            <ArrowRight className="h-3 w-3 ml-1.5" />
+                          </Button>
+                        </CardHeader>
+                        {selectedProject === project.id && (
+                          <CardContent className="px-4 pb-4 pt-2 border-t bg-secondary/10">
+                            <textarea
+                              value={projectDecisionNote}
+                              onChange={e => setProjectDecisionNote(e.target.value)}
+                              rows={2}
+                              placeholder="Add a decision note (optional)..."
+                              className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none mb-3"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => handleProjectReview(project.id, 'APPROVED')}>
+                                Approve Project
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => handleProjectReview(project.id, 'REJECTED')}>
+                                Reject
+                              </Button>
+                            </div>
+                          </CardContent>
                         )}
-                      </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                        {[
-                          { key: 'technical_fit', label: 'Technical Fit', icon: Cpu },
-                          { key: 'research_fit', label: 'Research Fit', icon: Microscope },
-                          { key: 'communication', label: 'Communication', icon: MessagesSquare },
-                          { key: 'reliability_potential', label: 'Reliability', icon: Activity },
-                        ].map(({ key, label, icon: Icon }) => (
-                          <div key={key} className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
-                              <Icon className="h-3 w-3" />
-                              {label}
-                            </label>
-                            <Select
-                              value={draft[key as keyof ProjectApplicationReviewerRatingInput]?.toString()}
-                              onValueChange={(v) => updateRatingDraft(app.id, key as any, Number(v))}
-                            >
-                              <SelectTrigger className="h-10 rounded-xl bg-background shadow-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[1, 2, 3, 4, 5].map(v => (
-                                  <SelectItem key={v} value={v.toString()}>{v} — {['Poor', 'Fair', 'Good', 'Very Good', 'Expert'][v - 1]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
+          {/* Applications list */}
+          <div className="space-y-6">
+            {displayApps.map((app, i) => {
+              const student = getUserById(app.student_user_id);
+              const project = getProjectById(app.project_id);
+              const reviewer = app.reviewed_by ? getUserById(app.reviewed_by) : null;
+              const isSelected = selectedApp === app.id;
+              const isAnalysisExpanded = expandedAnalysis.includes(app.id);
 
-                      <div className="flex gap-3">
-                        <textarea
-                          value={draft.note || ''}
-                          onChange={e => updateRatingDraft(app.id, 'note', e.target.value)}
-                          rows={1}
-                          placeholder="Confidential reviewer notes for this student..."
-                          className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none transition-all"
-                        />
-                        <Button
-                          className="h-auto rounded-xl px-6 self-stretch shadow-sm"
-                          onClick={() => handleSaveMyRating(app)}
-                          disabled={savingRatingAppId === app.id}
-                        >
-                          {savingRatingAppId === app.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            null
-                          )}
-                          Save Scores
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+              const canReviewThisApp = project ? canUserReviewProjectApplication(user?.id, project, groups, participants) : false;
+              const canRateAcceptedApp = project ? (
+                participants.some(p => p.project_id === project.id && p.user_id === user?.id) ||
+                groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id) ||
+                groupMembers.some(m => m.group_id === project.group_id && m.user_id === user?.id && m.is_active)
+              ) : false;
 
-                  {/* Decision Buttons for Pending */}
-                  {canReviewThisApp && app.status === 'PENDING' && (
-                    <div className="pt-6 border-t border-border/50">
-                      {!isSelected ? (
-                        <Button className="w-full rounded-2xl h-12 text-sm font-bold shadow-sm group/btn" onClick={() => setSelectedApp(app.id)}>
-                          Evaluate Candidate Decision
-                          <ArrowRight className="h-4 w-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
-                      ) : (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="space-y-4"
-                        >
-                          <textarea
-                            value={decisionNote}
-                            onChange={e => setDecisionNote(e.target.value)}
-                            rows={2}
-                            placeholder="Add a reason for your decision..."
-                            className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+              const draft = getRatingDraft(app);
+              const myExistingRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
+
+              return (
+                <motion.div
+                  key={app.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card className="overflow-hidden border-border hover:shadow-md transition-shadow group">
+                    <div className={cn(
+                      "h-1 w-full bg-gradient-to-r",
+                      app.status === 'ACCEPTED' ? "from-success/50 to-success" : "from-primary/50 to-primary"
+                    )} />
+
+                    <CardHeader className="pb-4">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <ProfileAvatar
+                            userId={student?.id}
+                            name={student?.full_name}
+                            className="h-14 w-14 rounded-2xl ring-2 ring-secondary shadow-sm"
+                            textClassName="text-lg font-bold"
                           />
-                          <div className="flex gap-2">
-                            <Button className="flex-1 h-11 rounded-xl bg-success hover:bg-success/90 font-bold" onClick={() => handleReview(app.id, 'ACCEPTED')}>
-                              Approve Candidate
-                            </Button>
-                            <Button className="flex-1 h-11 rounded-xl bg-destructive hover:bg-destructive/90 font-bold" onClick={() => handleReview(app.id, 'REJECTED')}>
-                              Reject Application
-                            </Button>
-                            <Button variant="ghost" className="h-11 rounded-xl px-6 font-semibold" onClick={() => { setSelectedApp(null); setDecisionNote(''); }}>
-                              Cancel
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <CardTitle className="text-xl">{student?.full_name || 'Candidate'}</CardTitle>
+                              <ApplicationStatusBadge status={app.status} />
+                              {isTeacher && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-widest border border-primary/20">
+                                  {app.status === 'ACCEPTED' ? 'Review' : 'Pending'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Applied {new Date(app.created_at).toLocaleDateString()}</span>
+                              <span className="flex items-center gap-1"><UserCircle2 className="h-3.5 w-3.5" />{project?.title || 'Unknown Project'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="bg-secondary/30 px-4 py-2 rounded-2xl border border-border flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Rank</div>
+                              <div className="text-lg font-black text-primary">#{app.ranking?.rank_position ?? '-'}</div>
+                            </div>
+                            <div className="w-px h-8 bg-border/50" />
+                            <div className="text-center">
+                              <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Final Score</div>
+                              <div className="text-lg font-black text-foreground">{app.ranking?.final_score != null ? app.ranking.final_score.toFixed(1) : '-'}</div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-[10px] h-7 font-bold uppercase tracking-widest gap-1.5"
+                            onClick={() => toggleAnalysis(app.id)}
+                          >
+                            <BarChart3 className="h-3 w-3" />
+                            {isAnalysisExpanded ? 'Hide Analysis' : 'Show Analysis'}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-6">
+                      {/* Analysis Dropdown */}
+                      <AnimatePresence>
+                        {isAnalysisExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                              <div className="space-y-3">
+                                <h4 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                  <Star className="h-3.5 w-3.5 text-primary" />
+                                  Scoring Breakdown
+                                </h4>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-muted-foreground">AI Model Score</span>
+                                    <span className="font-mono font-bold text-primary">{app.ranking?.model_score?.toFixed(1) || '0.0'}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-muted-foreground">Reviewer Average</span>
+                                    <span className="font-mono font-bold text-primary">{app.ranking?.reviewer_score?.toFixed(1) || '0.0'}</span>
+                                  </div>
+                                  <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden mt-1">
+                                    <div className="h-full bg-primary" style={{ width: `${app.ranking?.final_score || 0}%` }} />
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="space-y-3">
+                                <h4 className="text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                  <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                                  AI Insights
+                                </h4>
+                                <p className="text-xs text-muted-foreground leading-relaxed italic">
+                                  "{app.ranking?.explanation || "No automated explanation generated for this ranking."}"
+                                </p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Motivation Section */}
+                      <div className="relative p-3 rounded-2xl bg-secondary/40 border border-border/50 italic text-sm text-foreground/80 leading-relaxed group-hover:bg-secondary/60 transition-colors">
+                        "{app.motivation || "No motivation letter provided."}"
+                      </div>
+
+                      {/* Decision Info */}
+                      {app.decision_note && (
+                        <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 text-sm">
+                          <UserCircle2 className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Note from {reviewer?.full_name}:</span>
+                            <p className="mt-1 text-foreground/90 leading-relaxed">{app.decision_note}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Member Evaluation Form */}
+                      {canRateAcceptedApp && app.status === 'ACCEPTED' && (
+                        <div className="pt-6 border-t border-border/50">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <Star className="h-4 w-4 text-primary" />
+                              <h4 className="text-sm font-bold uppercase tracking-widest">Mentor Evaluation</h4>
+                            </div>
+                            {myExistingRating && (
+                              <span className="text-[10px] font-bold text-success flex items-center gap-1 bg-success/10 px-2 py-0.5 rounded-full">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Already Rated
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            {[
+                              { key: 'technical_fit', label: 'Technical Fit', icon: Cpu },
+                              { key: 'research_fit', label: 'Research Fit', icon: Microscope },
+                              { key: 'communication', label: 'Communication', icon: MessagesSquare },
+                              { key: 'reliability_potential', label: 'Reliability', icon: Activity },
+                            ].map(({ key, label, icon: Icon }) => (
+                              <div key={key} className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                                  <Icon className="h-3 w-3" />
+                                  {label}
+                                </label>
+                                <Select
+                                  value={draft[key as keyof ProjectApplicationReviewerRatingInput]?.toString()}
+                                  onValueChange={(v) => updateRatingDraft(app.id, key as any, Number(v))}
+                                >
+                                  <SelectTrigger className="h-10 rounded-xl bg-background shadow-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {[1, 2, 3, 4, 5].map(v => (
+                                      <SelectItem key={v} value={v.toString()}>{v} — {['Poor', 'Fair', 'Good', 'Very Good', 'Expert'][v - 1]}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-3">
+                            <textarea
+                              value={draft.note || ''}
+                              onChange={e => updateRatingDraft(app.id, 'note', e.target.value)}
+                              rows={1}
+                              placeholder="Confidential reviewer notes for this student..."
+                              className="flex-1 px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none transition-all"
+                            />
+                            <Button
+                              className="h-auto rounded-xl px-6 self-stretch shadow-sm"
+                              onClick={() => handleSaveMyRating(app)}
+                              disabled={savingRatingAppId === app.id}
+                            >
+                              {savingRatingAppId === app.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                null
+                              )}
+                              Save Scores
                             </Button>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
 
-        {displayApps.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-3xl bg-secondary/20">
-            <div className="h-16 w-16 rounded-full bg-background flex items-center justify-center mb-4 shadow-sm">
-              <FileText className="h-8 w-8 text-muted-foreground/30" />
-            </div>
-            <h3 className="text-lg font-bold">No records found</h3>
-            <p className="text-sm text-muted-foreground max-w-xs text-center">
-              {isTeacher
-                ? (isAnyGroupLeader ? 'There are currently no new applications for your research projects.' : 'No students have been assigned to your projects for evaluation yet.')
-                : 'You have not submitted any applications yet.'}
-            </p>
+                      {/* Decision Buttons for Pending */}
+                      {canReviewThisApp && app.status === 'PENDING' && (
+                        <div className="pt-6 border-t border-border/50">
+                          {!isSelected ? (
+                            <Button className="w-full rounded-2xl h-12 text-sm font-bold shadow-sm group/btn" onClick={() => setSelectedApp(app.id)}>
+                              Evaluate Candidate Decision
+                              <ArrowRight className="h-4 w-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                            </Button>
+                          ) : (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="space-y-4"
+                            >
+                              <textarea
+                                value={decisionNote}
+                                onChange={e => setDecisionNote(e.target.value)}
+                                rows={2}
+                                placeholder="Add a reason for your decision..."
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                              />
+                              <div className="flex gap-2">
+                                <Button className="flex-1 h-11 rounded-xl bg-success hover:bg-success/90 font-bold" onClick={() => handleReview(app.id, 'ACCEPTED')}>
+                                  Approve Candidate
+                                </Button>
+                                <Button className="flex-1 h-11 rounded-xl bg-destructive hover:bg-destructive/90 font-bold" onClick={() => handleReview(app.id, 'REJECTED')}>
+                                  Reject Application
+                                </Button>
+                                <Button variant="ghost" className="h-11 rounded-xl px-6 font-semibold" onClick={() => { setSelectedApp(null); setDecisionNote(''); }}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+
+            {displayApps.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-3xl bg-secondary/20">
+                <div className="h-16 w-16 rounded-full bg-background flex items-center justify-center mb-4 shadow-sm">
+                  <FileText className="h-8 w-8 text-muted-foreground/30" />
+                </div>
+                <h3 className="text-lg font-bold">No records found</h3>
+                <p className="text-sm text-muted-foreground max-w-xs text-center">
+                  {isTeacher
+                    ? (isAnyGroupLeader ? 'There are currently no new applications for your research projects.' : 'No students have been assigned to your projects for evaluation yet.')
+                    : 'You have not submitted any applications yet.'}
+                </p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : (
+        /* Render Collaboration Reviews Tab Content! */
+        <div className="space-y-6">
+          {collabCalls.map((call, i) => {
+            const project = getProjectById(call.project_id);
+            const group = project ? getGroupById(project.group_id) : null;
+            const isCallExpanded = selectedCallId === call.id;
+
+            return (
+              <motion.div
+                key={call.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Card className="overflow-hidden border-border hover:shadow-md transition-shadow group">
+                  <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-[#F37F20]" />
+                  
+                  <CardHeader className="pb-4">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className="h-14 w-14 rounded-2xl bg-orange-50 flex items-center justify-center border border-orange-100 shadow-sm shrink-0">
+                          <MessagesSquare className="h-7 w-7 text-[#F37F20]" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <CardTitle className="text-xl">{call.title}</CardTitle>
+                            <Badge className={cn(
+                              "text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full",
+                              call.status === 'OPEN' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-slate-400/10 text-slate-500 border-slate-400/20'
+                            )}>
+                              {call.status}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <UserCircle2 className="h-3.5 w-3.5" /> Project: {project?.title || 'Unknown Project'}
+                            </span>
+                            {group && (
+                              <span className="flex items-center gap-1">
+                                <Microscope className="h-3.5 w-3.5" /> Group: {group.name}
+                              </span>
+                            )}
+                            {call.deadline && (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5" /> Deadline: {new Date(call.deadline).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant={isCallExpanded ? "secondary" : "default"}
+                        className={cn(
+                          "rounded-xl h-10 px-5 text-sm font-semibold gap-1.5 shrink-0 transition-all",
+                          isCallExpanded ? "" : "bg-[#F37F20] hover:bg-[#F37F20]/90 text-white shadow-sm"
+                        )}
+                        onClick={() => {
+                          if (isCallExpanded) {
+                            setSelectedCallId(null);
+                          } else {
+                            fetchSubmissionsForCall(call.id);
+                          }
+                        }}
+                      >
+                        {isCallExpanded ? 'Close Submissions' : 'Review Submissions'}
+                        <ChevronDown className={cn("h-4 w-4 transition-transform", isCallExpanded && "rotate-180")} />
+                      </Button>
+                    </div>
+                  </CardHeader>
+
+                  {/* Submission Collapsible Details */}
+                  {isCallExpanded && (
+                    <CardContent className="border-t bg-slate-50/50 p-6 space-y-6">
+                      {collabLoading ? (
+                        <div className="flex flex-col items-center justify-center py-10 gap-3">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <span className="text-xs text-muted-foreground animate-pulse">Fetching submissions dossier...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+                            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                              <Activity className="h-4 w-4 text-[#F37F20]" />
+                              Submission Dossiers ({collabSubmissions.length})
+                            </h3>
+                          </div>
+
+                          <div className="grid gap-4">
+                            {collabSubmissions.map((sub) => {
+                              const isSubReviewing = submittingReviewId === sub.id;
+                              const reviewerName = sub.reviewed_by ? getUserById(sub.reviewed_by)?.full_name : null;
+
+                              return (
+                                <Card key={sub.id} className="border-border/60 shadow-sm overflow-hidden bg-white hover:border-[#F37F20]/20 transition-all">
+                                  <div className="p-5 flex flex-col gap-4">
+                                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="font-bold text-base text-slate-800">{sub.full_name}</span>
+                                          <Badge className={cn(
+                                            "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
+                                            sub.status === 'ACCEPTED' ? 'bg-success/10 text-success border-success/20' :
+                                            sub.status === 'REJECTED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                                            'bg-amber-400/10 text-amber-600 border-amber-400/20'
+                                          )}>
+                                            {sub.status}
+                                          </Badge>
+                                        </div>
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-0.5">
+                                          {sub.institution && (
+                                            <span className="flex items-center gap-1">
+                                              <Building2 className="h-3.5 w-3.5" /> {sub.institution}
+                                            </span>
+                                          )}
+                                          <span className="flex items-center gap-1">
+                                            <Mail className="h-3.5 w-3.5" />
+                                            <a href={`mailto:${sub.email}`} className="hover:text-primary hover:underline">{sub.email}</a>
+                                          </span>
+                                          {sub.submitted_at && (
+                                            <span className="flex items-center gap-1">
+                                              <Calendar className="h-3.5 w-3.5" /> Submitted {new Date(sub.submitted_at).toLocaleDateString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {sub.cv_url && (
+                                        <a
+                                          href={sub.cv_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F37F20] hover:text-[#F37F20]/80 bg-orange-50/50 hover:bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 transition-all shrink-0"
+                                        >
+                                          <FileText className="h-3.5 w-3.5" />
+                                          View CV/Portfolio
+                                          <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                      )}
+                                    </div>
+
+                                    {/* Motivation text */}
+                                    {sub.motivation && (
+                                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <div className="text-[10px] uppercase font-bold tracking-widest text-[#94A3B8] mb-1">Collaboration Motivation</div>
+                                        <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{sub.motivation}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Review Actions or Decision Display */}
+                                    {sub.status === 'PENDING' ? (
+                                      <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
+                                        <textarea
+                                          value={collabDecisionNote[sub.id] || ''}
+                                          onChange={e => setCollabDecisionNote(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                                          rows={2}
+                                          placeholder="Enter review decision notes (optional)..."
+                                          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-background text-sm focus:outline-none focus:ring-1 focus:ring-[#F37F20] resize-none"
+                                        />
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            className="h-10 rounded-xl bg-success hover:bg-success/90 font-bold px-6 shadow-sm flex items-center gap-1.5"
+                                            onClick={() => handleReviewCollaboration(sub.id, 'ACCEPTED')}
+                                            disabled={isSubReviewing}
+                                          >
+                                            {isSubReviewing ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <CheckCircle2 className="h-4 w-4" />
+                                            )}
+                                            Approve Collaboration
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            className="h-10 rounded-xl font-bold px-6 shadow-sm flex items-center gap-1.5"
+                                            onClick={() => handleReviewCollaboration(sub.id, 'REJECTED')}
+                                            disabled={isSubReviewing}
+                                          >
+                                            {isSubReviewing ? (
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                              <XCircle className="h-4 w-4" />
+                                            )}
+                                            Reject
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="pt-3 border-t border-slate-100/60 flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                          <CheckCircle2 className={cn("h-4 w-4", sub.status === 'ACCEPTED' ? 'text-success' : 'text-slate-400')} />
+                                          <span>
+                                            Decision: <span className={cn("font-bold", sub.status === 'ACCEPTED' ? 'text-success' : 'text-slate-500')}>{sub.status}</span>
+                                            {reviewerName && ` by ${reviewerName}`}
+                                            {sub.reviewed_at && ` on ${new Date(sub.reviewed_at).toLocaleDateString()}`}
+                                          </span>
+                                        </div>
+                                        {sub.decision_note && (
+                                          <div className="text-xs italic bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 text-slate-500 whitespace-pre-wrap">
+                                            &ldquo;{sub.decision_note}&rdquo;
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </Card>
+                              );
+                            })}
+
+                            {collabSubmissions.length === 0 && (
+                              <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                                <p className="text-sm text-slate-400 italic">No collaboration dossiers submitted yet for this call.</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
+                </Card>
+              </motion.div>
+            );
+          })}
+
+          {collabCalls.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-3xl bg-secondary/20">
+              <div className="h-16 w-16 rounded-full bg-background flex items-center justify-center mb-4 shadow-sm">
+                <MessagesSquare className="h-8 w-8 text-muted-foreground/30" />
+              </div>
+              <h3 className="text-lg font-bold">No recruitment calls found</h3>
+              <p className="text-sm text-muted-foreground max-w-xs text-center">
+                There are no open collaboration recruitment calls belonging to your research groups.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <StudentProfileModal user={viewingProfileUser} onClose={() => setViewingProfileUser(null)} />
     </div>

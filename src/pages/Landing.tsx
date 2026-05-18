@@ -597,7 +597,7 @@ const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featu
             className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-semibold text-white transition-all duration-200 hover:brightness-110 group/btn"
             style={{ background: '#F37F20' }}
           >
-            <Send className="h-3 w-3 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Apply
+            <Send className="h-3 w-3 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Join
           </button>
         )
       ) : (

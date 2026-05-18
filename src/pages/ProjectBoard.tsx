@@ -89,6 +89,10 @@ const ProjectBoard = () => {
           setFormGroupId={board.setFormGroupId}
           formVisibility={board.formVisibility}
           setFormVisibility={board.setFormVisibility}
+          formAcceptingCollaborators={board.formAcceptingCollaborators}
+          setFormAcceptingCollaborators={board.setFormAcceptingCollaborators}
+          formDeadline={board.formDeadline}
+          setFormDeadline={board.setFormDeadline}
           formCreateProjectLoading={board.formCreateProjectLoading}
           handleCreateProjectFromForm={board.handleCreateProjectFromForm}
           validatedGroups={board.validatedGroups}
@@ -247,6 +251,10 @@ const ProjectBoard = () => {
         setFormGroupId={board.setFormGroupId}
         formVisibility={board.formVisibility}
         setFormVisibility={board.setFormVisibility}
+        formAcceptingCollaborators={board.formAcceptingCollaborators}
+        setFormAcceptingCollaborators={board.setFormAcceptingCollaborators}
+        formDeadline={board.formDeadline}
+        setFormDeadline={board.setFormDeadline}
         formCreateProjectLoading={board.formCreateProjectLoading}
         handleCreateProjectFromForm={board.handleCreateProjectFromForm}
         validatedGroups={board.validatedGroups}
