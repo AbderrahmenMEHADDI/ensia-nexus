@@ -295,6 +295,7 @@ export interface CollaborationSubmission {
   reviewed_at?: string;
   decision_note?: string;
   submitted_at?: string;
+  call?: CollaborationCall;
 }
 
 // Notification types
