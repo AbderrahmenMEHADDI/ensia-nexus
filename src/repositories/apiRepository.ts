@@ -195,6 +195,8 @@ export const apiRepository = {
     api.put<CollaborationCall>(`/collaboration-calls/${id}`, data),
   deleteCollaborationCall: (id: number) =>
     api.delete<void>(`/collaboration-calls/${id}`),
+  getEligibleCollaborationCalls: () =>
+    api.get<CollaborationCall[]>('/collaboration-calls/user/eligible'),
 
   getReceivedCollaborationSubmissions: () =>
     api.get<CollaborationSubmission[]>('/collaboration-submissions/user/received'),

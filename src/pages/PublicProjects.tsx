@@ -20,16 +20,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { apiRepository } from '@/repositories/apiRepository';
-import type { Project, ResearchGroup, ResearchLab } from '@/types';
+import type { Project, ResearchGroup, ResearchLab, CollaborationCall } from '@/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
+import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cookies';
 
 const PublicProjects = () => {
   const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
   const [labs, setLabs] = useState<ResearchLab[]>([]);
+  const [openCalls, setOpenCalls] = useState<CollaborationCall[]>([]);
+  const [appliedCallIds, setAppliedCallIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLabId, setSelectedLabId] = useState('all');
@@ -37,10 +40,7 @@ const PublicProjects = () => {
   const [showCollabOnly, setShowCollabOnly] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
-  const [applyProjectId, setApplyProjectId] = useState<number | null>(null);
-  const [applyForm, setApplyForm] = useState({ fullName: '', email: '', institution: '', cv: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [applyCallId, setApplyCallId] = useState<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -51,14 +51,17 @@ const PublicProjects = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [p, g, l] = await Promise.all([
+        const [p, g, l, calls] = await Promise.all([
           apiRepository.getProjects(),
           apiRepository.getGroups(),
           apiRepository.getLabs(),
+          apiRepository.getOpenCollaborationCalls(500),
         ]);
         setProjects(p.filter(project => project.status === 'APPROVED' && project.visibility === 'PUBLIC'));
         setGroups(g);
         setLabs(l);
+        setOpenCalls(calls);
+        setAppliedCallIds(getAppliedCollaborations());
       } catch (err) {
         console.error('Failed to load projects', err);
       } finally {
@@ -194,92 +197,61 @@ const PublicProjects = () => {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project, i) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  group={groups.find(g => g.id === project.group_id)}
-                  index={i}
-                  onApply={(id) => {
-                    setApplyProjectId(id);
-                    setApplyDialogOpen(true);
-                    setSubmitted(false);
-                    setApplyForm({ fullName: '', email: '', institution: '', cv: '' });
-                  }}
-                />
-              ))}
+              {filteredProjects.map((project, i) => {
+                const assocCall = openCalls.find(c => c.project_id === project.id);
+                const callId = assocCall ? assocCall.id : null;
+                const applied = callId ? appliedCallIds.includes(callId) : false;
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    group={groups.find(g => g.id === project.group_id)}
+                    index={i}
+                    callId={callId}
+                    applied={applied}
+                    onApply={(cId) => {
+                      setApplyCallId(cId);
+                      setApplyDialogOpen(true);
+                    }}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Apply Dialog ── */}
-      <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl" style={{ color: '#074a75' }}>Apply to Collaborate</DialogTitle>
-            <DialogDescription className="text-sm" style={{ color: '#64748B' }}>
-              Submit your details to express interest in this project.
-            </DialogDescription>
-          </DialogHeader>
-          {submitted ? (
-            <div className="py-8 text-center">
-              <CheckCircle2 className="h-12 w-12 mx-auto mb-4" style={{ color: '#059669' }} />
-              <h4 className="font-display font-bold text-lg mb-1" style={{ color: '#0F172A' }}>Application Submitted!</h4>
-              <p className="text-sm" style={{ color: '#64748B' }}>The research team will review your application.</p>
-            </div>
-          ) : (
-            <form
-              className="space-y-4 pt-2"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setSubmitting(true);
-                try {
-                  await apiRepository.createCollaborationSubmission({
-                    collaboration_call_id: applyProjectId ?? undefined,
-                    full_name: applyForm.fullName,
-                    email: applyForm.email,
-                    institution: applyForm.institution,
-                    cv_url: applyForm.cv,
-                  } as any);
-                  setSubmitted(true);
-                } catch {
-                  toast({ title: 'Error', description: 'Failed to submit. Please try again.', variant: 'destructive' });
-                } finally {
-                  setSubmitting(false);
-                }
-              }}
-            >
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium" style={{ color: '#334155' }}>Full Name</Label>
-                <Input className="rounded-lg" required value={applyForm.fullName} onChange={(e) => setApplyForm(f => ({ ...f, fullName: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium" style={{ color: '#334155' }}>Email</Label>
-                <Input type="email" className="rounded-lg" required value={applyForm.email} onChange={(e) => setApplyForm(f => ({ ...f, email: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium" style={{ color: '#334155' }}>Institution</Label>
-                <Input className="rounded-lg" required value={applyForm.institution} onChange={(e) => setApplyForm(f => ({ ...f, institution: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium" style={{ color: '#334155' }}>CV / Portfolio URL</Label>
-                <Input className="rounded-lg" placeholder="https://..." value={applyForm.cv} onChange={(e) => setApplyForm(f => ({ ...f, cv: e.target.value }))} />
-              </div>
-              <Button type="submit" disabled={submitting} className="w-full rounded-lg h-11 font-semibold text-white" style={{ background: '#F37F20' }}>
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-2" /> Submit Application</>}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* ── Apply/Join Dialog ── */}
+      <ApplyDialog
+        open={applyDialogOpen}
+        onOpenChange={setApplyDialogOpen}
+        callId={applyCallId}
+        onApplied={(cId) => {
+          markCollaborationAsApplied(cId);
+          setAppliedCallIds(getAppliedCollaborations());
+        }}
+      />
     </PublicLayout>
   );
 };
 
 /* ── Project Card ── */
 
-const ProjectCard = ({ project, group, index, onApply }: { project: Project; group?: ResearchGroup; index: number; onApply?: (projectId: number) => void }) => {
+const ProjectCard = ({
+  project,
+  group,
+  index,
+  callId,
+  applied,
+  onApply
+}: {
+  project: Project;
+  group?: ResearchGroup;
+  index: number;
+  callId: number | null;
+  applied: boolean;
+  onApply?: (callId: number) => void;
+}) => {
   const isOpen = project.accepting_collaborators;
 
   return (
@@ -355,18 +327,127 @@ const ProjectCard = ({ project, group, index, onApply }: { project: Project; gro
             View Project Details
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1" />
           </Link>
-          {isOpen && onApply && (
-            <button
-              className="inline-flex items-center gap-2 mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110"
-              style={{ background: '#F37F20' }}
-              onClick={(e) => { e.stopPropagation(); onApply(project.id); }}
-            >
-              <Send className="h-3.5 w-3.5" /> Apply Now
-            </button>
+          {isOpen && callId && onApply && (
+            applied ? (
+              <button
+                disabled
+                className="inline-flex items-center gap-1.5 mt-2 h-9 px-5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Applied
+              </button>
+            ) : (
+              <button
+                className="inline-flex items-center gap-1.5 mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110 group/btn"
+                style={{ background: '#F37F20' }}
+                onClick={(e) => { e.stopPropagation(); onApply(callId); }}
+              >
+                <Send className="h-3.5 w-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Join
+              </button>
+            )
           )}
         </div>
       </div>
     </motion.div>
   );
 };
+
+/* ── Apply Dialog ── */
+const ApplyDialog = ({ open, onOpenChange, callId, onApplied }: {
+  open: boolean; onOpenChange: (v: boolean) => void; callId: number | null; onApplied?: (callId: number) => void;
+}) => {
+  const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({ full_name: '', email: '', institution: '', cv_url: '', motivation: '' });
+
+  const handleClose = (v: boolean) => {
+    if (!v) {
+      setSubmitted(false);
+      setForm({ full_name: '', email: '', institution: '', cv_url: '', motivation: '' });
+    }
+    onOpenChange(v);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!callId) return;
+    if (!form.full_name.trim() || !form.email.trim() || !form.cv_url.trim()) {
+      toast({ title: 'Missing fields', description: 'Please fill in your name, email, and CV link.', variant: 'destructive' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await apiRepository.createCollaborationSubmission({
+        call_id: callId,
+        full_name: form.full_name.trim(),
+        email: form.email.trim(),
+        institution: form.institution.trim() || undefined,
+        motivation: form.motivation.trim() || undefined,
+        cv_url: form.cv_url.trim(),
+        status: 'PENDING',
+      });
+      if (onApplied) {
+        onApplied(callId);
+      }
+      setSubmitted(true);
+    } catch (err: any) {
+      toast({ title: 'Submission failed', description: err?.message || 'Something went wrong. Please try again.', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-lg">
+        {submitted ? (
+          <div className="flex flex-col items-center text-center py-8 gap-4">
+            <div className="h-14 w-14 rounded-full bg-green-500/10 flex items-center justify-center">
+              <CheckCircle2 className="h-7 w-7 text-green-600" />
+            </div>
+            <DialogTitle className="text-2xl font-display font-bold">Application Submitted!</DialogTitle>
+            <p className="text-muted-foreground max-w-xs">
+              Your application has been received. The project team will review it and get back to you via email.
+            </p>
+            <Button className="mt-4 rounded-full px-8" onClick={() => handleClose(false)}>Close</Button>
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-display font-bold">Apply for Project</DialogTitle>
+              <DialogDescription>Fill in your details below. No account required.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <div className="space-y-2">
+                <Label htmlFor="apply-name">Full Name <span className="text-destructive">*</span></Label>
+                <Input id="apply-name" placeholder="Your full name" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apply-email">Email <span className="text-destructive">*</span></Label>
+                <Input id="apply-email" type="email" placeholder="you@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apply-institution">Institution</Label>
+                <Input id="apply-institution" placeholder="University or organization" value={form.institution} onChange={e => setForm(f => ({ ...f, institution: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apply-cv">CV / Resume Link <span className="text-destructive">*</span></Label>
+                <Input id="apply-cv" type="url" placeholder="https://drive.google.com/..." value={form.cv_url} onChange={e => setForm(f => ({ ...f, cv_url: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apply-motivation">Motivation</Label>
+                <Textarea id="apply-motivation" placeholder="Briefly describe your interest and relevant experience..." rows={3} value={form.motivation} onChange={e => setForm(f => ({ ...f, motivation: e.target.value }))} />
+              </div>
+              <Button type="submit" className="w-full rounded-lg h-11 text-sm font-semibold gap-2" style={{ background: '#F37F20', color: '#fff' }} disabled={submitting}>
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {submitting ? 'Submitting...' : 'Submit Application'}
+              </Button>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export default PublicProjects;

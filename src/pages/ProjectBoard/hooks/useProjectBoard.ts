@@ -182,11 +182,11 @@ export const useProjectBoard = () => {
     }
     return undefined;
   };
-  const getGroupById = (id: number) => groups.find(g => g.id === id);
-  const getLabById = (id: number) => labs.find(l => l.id === id);
+  const getGroupById = (id?: number | null) => id ? groups.find(g => g.id === id) : undefined;
+  const getLabById = (id?: number | null) => id ? labs.find(l => l.id === id) : undefined;
 
   const project = projects.find(p => Number(p.id) === Number(selectedProjectId));
-  const group = project ? getGroupById(project.group_id) : null;
+  const group = project && project.group_id ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
 
   const selectedMemberFormProject = projects.find(p => Number(p.id) === Number(formMemberProjectId));
@@ -380,7 +380,7 @@ export const useProjectBoard = () => {
     setFormCreateProjectLoading(true);
     try {
       const created = await apiRepository.createProject({
-        group_id: Number(formGroupId),
+        group_id: formGroupId === 'none' ? undefined : Number(formGroupId),
         title: formProjectTitle.trim(),
         description: formProjectDescription.trim(),
         visibility: formVisibility,

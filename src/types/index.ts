@@ -125,7 +125,7 @@ export interface GroupInvitation {
 
 export interface Project {
   id: number;
-  group_id: number;
+  group_id?: number | null;
   title: string;
   description: string;
   visibility: Visibility;

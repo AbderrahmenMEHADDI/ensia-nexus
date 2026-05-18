@@ -44,6 +44,8 @@ const ProjectBoard = () => {
     return (
       <StudentDiscoveryView
         publicProjects={board.publicProjects}
+        projects={board.projects}
+        applications={board.applications}
         getGroupById={board.getGroupById}
         getBlockingApplication={board.getBlockingApplication}
         getApplyButtonLabel={board.getApplyButtonLabel}
@@ -89,6 +91,10 @@ const ProjectBoard = () => {
           setFormGroupId={board.setFormGroupId}
           formVisibility={board.formVisibility}
           setFormVisibility={board.setFormVisibility}
+          formAcceptingCollaborators={board.formAcceptingCollaborators}
+          setFormAcceptingCollaborators={board.setFormAcceptingCollaborators}
+          formDeadline={board.formDeadline}
+          setFormDeadline={board.setFormDeadline}
           formCreateProjectLoading={board.formCreateProjectLoading}
           handleCreateProjectFromForm={board.handleCreateProjectFromForm}
           validatedGroups={board.validatedGroups}
@@ -247,6 +253,10 @@ const ProjectBoard = () => {
         setFormGroupId={board.setFormGroupId}
         formVisibility={board.formVisibility}
         setFormVisibility={board.setFormVisibility}
+        formAcceptingCollaborators={board.formAcceptingCollaborators}
+        setFormAcceptingCollaborators={board.setFormAcceptingCollaborators}
+        formDeadline={board.formDeadline}
+        setFormDeadline={board.setFormDeadline}
         formCreateProjectLoading={board.formCreateProjectLoading}
         handleCreateProjectFromForm={board.handleCreateProjectFromForm}
         validatedGroups={board.validatedGroups}
@@ -281,6 +291,8 @@ const ProjectBoard = () => {
         <div className="mt-16 pt-10 border-t border-border/50">
           <StudentDiscoveryView
             publicProjects={board.publicProjects}
+            projects={board.projects}
+            applications={board.applications}
             getGroupById={board.getGroupById}
             getBlockingApplication={board.getBlockingApplication}
             getApplyButtonLabel={board.getApplyButtonLabel}

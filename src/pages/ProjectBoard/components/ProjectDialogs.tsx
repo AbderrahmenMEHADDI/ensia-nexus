@@ -98,14 +98,10 @@ export const ProjectDialogs = ({
                     <SelectValue placeholder="Select group" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">None (Independent Project)</SelectItem>
                     {validatedGroups.map(g => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {validatedGroups.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No validated groups are available for project creation.
-                  </p>
-                )}
               </div>
               <div className="space-y-2">
                 <Label>Visibility</Label>
