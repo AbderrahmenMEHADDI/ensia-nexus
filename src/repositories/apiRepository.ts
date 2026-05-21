@@ -202,6 +202,8 @@ export const apiRepository = {
   getEligibleCollaborationCalls: () =>
     api.get<CollaborationCall[]>('/collaboration-calls/user/eligible'),
 
+  getReceivedCollaborationSubmissions: () =>
+    api.get<CollaborationSubmission[]>('/collaboration-submissions/user/received'),
   getCollaborationSubmissions: (callId: number) =>
     api.get<CollaborationSubmission[]>(`/collaboration-submissions/call/${callId}`),
   getCollaborationSubmission: (id: number) =>

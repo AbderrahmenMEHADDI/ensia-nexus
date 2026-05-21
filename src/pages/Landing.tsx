@@ -39,7 +39,6 @@ import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cook
 import { BASE_URL } from '@/lib/apiClient';
 
 const Landing = () => {
-  const { toast } = useToast();
   const [data, setData] = useState<LandingPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);

@@ -55,7 +55,6 @@ const Settings = () => {
     }
   };
 
-
   return (
     <div className="max-w-5xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
@@ -133,8 +132,6 @@ const Settings = () => {
               </div>
             </div>
           </section>
-
-
 
           {/* Account */}
           <section>
