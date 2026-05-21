@@ -21,6 +21,8 @@ import {
   BarChart3,
   FolderOpen,
   BookOpen,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -45,6 +47,13 @@ const Landing = () => {
   const [showAllTeams, setShowAllTeams] = useState(false);
   const [applyCallId, setApplyCallId] = useState<number | null>(null);
   const [appliedCallIds, setAppliedCallIds] = useState<number[]>([]);
+  
+  // Hero day/night mode state
+  const [heroMode, setHeroMode] = useState<'light' | 'dark'>('light');
+
+  const toggleHeroMode = () => {
+    setHeroMode(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   useEffect(() => {
     setAppliedCallIds(getAppliedCollaborations());
@@ -82,23 +91,103 @@ const Landing = () => {
     >
 
       {/* ── Hero Section ── */}
-      <section className="relative overflow-hidden" style={{ background: '#074a75', minHeight: 'calc(100vh - 96px)' }}>
+      <section className="relative overflow-hidden" style={{ minHeight: 'calc(100vh - 96px)' }}>
+        {/* Day/Night Blur Dissolve Background Images */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
+          {/* Night Image Layer */}
+          <div
+            className="absolute inset-0 bg-fade-layer bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/hero_night.png')",
+              opacity: heroMode === 'dark' ? 1 : 0,
+              filter: heroMode === 'dark' ? 'blur(0px)' : 'blur(12px)',
+            }}
+          />
+          {/* Day Image Layer */}
+          <div
+            className="absolute inset-0 bg-fade-layer bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/hero_day.jpg')",
+              opacity: heroMode === 'light' ? 1 : 0,
+              filter: heroMode === 'light' ? 'blur(0px)' : 'blur(12px)',
+            }}
+          />
+          {/* Medium opacity blue layer on the images */}
+          <div className="absolute inset-0 bg-[#074a75]/40 mix-blend-multiply animate-fade-in" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#074a75] via-[#074a75]/30 to-[#074a75]/25" />
+        </div>
+
         {/* Orange gradient top edge */}
-        <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, #F37F20 0%, #FF9A44 40%, transparent 80%)' }} />
+        <div className="absolute top-0 left-0 right-0 h-[3px] z-10" style={{ background: 'linear-gradient(90deg, #F37F20 0%, #FF9A44 40%, transparent 80%)' }} />
 
         {/* Dot grid pattern */}
-        <div className="absolute inset-0" style={{
+        <div className="absolute inset-0 z-10" style={{
           backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
           backgroundSize: '28px 28px',
         }} />
 
         {/* Soft glow upper-right */}
-        <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full" style={{
+        <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full z-10" style={{
           background: 'radial-gradient(circle, rgba(243,127,32,0.08) 0%, rgba(243,127,32,0.02) 40%, transparent 70%)',
         }} />
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full" style={{
+        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full z-10" style={{
           background: 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 60%)',
         }} />
+
+        {/* Neumorphic Mode Toggle Switcher */}
+        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
+          <button
+            onClick={toggleHeroMode}
+            className={cn(
+              "relative w-[100px] h-[48px] rounded-full p-1.5 transition-all duration-500 ease-in-out cursor-pointer select-none border border-transparent shadow-[inset_0_2px_6px_rgba(0,0,0,0.15)]",
+              heroMode === 'light'
+                ? "bg-[#e2e8f0] border-gray-200/20"
+                : "bg-[#1e293b] border-slate-700/20"
+            )}
+            aria-label="Toggle hero background theme"
+          >
+            {/* Faint Background Icons */}
+            <div className="absolute inset-0 flex items-center justify-between px-3.5 pointer-events-none">
+              {/* Sun Icon on the left (faint in Dark mode, hidden under knob in Light mode) */}
+              <Sun
+                className={cn(
+                  "h-4.5 w-4.5 transition-all duration-500",
+                  heroMode === 'light'
+                    ? "opacity-0 scale-50 -translate-x-2"
+                    : "opacity-25 text-slate-500 scale-100 translate-x-0"
+                )}
+              />
+              {/* Moon Icon on the right (faint in Light mode, hidden under knob in Dark mode) */}
+              <Moon
+                className={cn(
+                  "h-4.5 w-4.5 transition-all duration-500",
+                  heroMode === 'dark'
+                    ? "opacity-0 scale-50 translate-x-2"
+                    : "opacity-35 text-[#074a75] scale-100 translate-x-0"
+                )}
+              />
+            </div>
+
+            {/* Slider Knob */}
+            <div
+              className={cn(
+                "absolute top-[5px] left-[5px] h-[36px] w-[36px] rounded-full flex items-center justify-center shadow-[0_3px_8px_rgba(0,0,0,0.15)] transition-transform duration-500",
+                heroMode === 'light'
+                  ? "translate-x-0 bg-gradient-to-br from-[#FF9F00] to-[#F37F20] shadow-[0_3px_8px_rgba(243,127,32,0.35)]"
+                  : "translate-x-[52px] bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] shadow-[0_3px_8px_rgba(59,130,246,0.35)]"
+              )}
+              style={{
+                transitionTimingFunction: 'var(--return-easing)'
+              }}
+            >
+              {heroMode === 'light' ? (
+                <Sun className="h-4.5 w-4.5 text-white fill-white animate-fade-in" />
+              ) : (
+                <Moon className="h-4.5 w-4.5 text-white fill-white animate-fade-in" />
+              )}
+            </div>
+          </button>
+        </div>
 
         {/* Hero Content */}
         <div className="container relative z-10 px-4 sm:px-6 flex items-center" style={{ minHeight: 'calc(100vh - 96px)' }}>
