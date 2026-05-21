@@ -1,7 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Breadcrumb,
@@ -44,6 +43,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     const handler = () => setTick(t => t + 1);
     window.addEventListener('breadcrumb-update', handler);
     return () => window.removeEventListener('breadcrumb-update', handler);
+  }, []);
+
+  React.useEffect(() => {
+    // Keep user dashboard strictly in light mode
+    document.documentElement.classList.remove('dark');
   }, []);
 
   const publicPaths = ['/', '/signin', '/signup', '/forgot-password', '/reset-password', '/discovery', '/group'];
@@ -96,7 +100,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 </BreadcrumbList>
               </Breadcrumb>
             </div>
-            <ThemeToggle />
           </header>
           <main className="flex-1 relative z-0 flex flex-col overflow-y-auto">{children}</main>
         </div>

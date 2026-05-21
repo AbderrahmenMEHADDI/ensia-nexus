@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { LogOut, Moon, Sun, Loader2 } from 'lucide-react';
+import { LogOut, Loader2 } from 'lucide-react';
 
 const Settings = () => {
   const { user, signOut, checkAuth } = useAuth();
@@ -19,7 +19,6 @@ const Settings = () => {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [applicationUpdates, setApplicationUpdates] = useState(true);
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   // Sync state if user loads later
   useEffect(() => {
@@ -56,16 +55,6 @@ const Settings = () => {
     }
   };
 
-  const toggleTheme = (dark: boolean) => {
-    setIsDark(dark);
-    if (dark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
 
   return (
     <div className="max-w-5xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
@@ -145,24 +134,7 @@ const Settings = () => {
             </div>
           </section>
 
-          {/* Appearance */}
-          <section>
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Appearance</h2>
-            <div className="rounded-2xl border border-border bg-card shadow-sm p-6 sm:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                <div className="flex items-start sm:items-center gap-4">
-                  <div className="p-3 bg-muted rounded-full">
-                    {isDark ? <Moon className="h-5 w-5 text-foreground" /> : <Sun className="h-5 w-5 text-foreground" />}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-foreground">Dark mode</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">Switch between light and dark theme.</p>
-                  </div>
-                </div>
-                <Switch checked={isDark} onCheckedChange={toggleTheme} className="data-[state=checked]:bg-primary" />
-              </div>
-            </div>
-          </section>
+
 
           {/* Account */}
           <section>
