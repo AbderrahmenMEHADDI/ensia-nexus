@@ -99,6 +99,8 @@ export const apiRepository = {
   createGroup: (data: Partial<ResearchGroup>) => api.post<ResearchGroup>('/groups/', data),
   updateGroup: (id: number, data: Partial<ResearchGroup>) =>
     api.put<ResearchGroup>(`/groups/${id}`, data),
+  updateGroupPicture: (id: number, data: FormData) =>
+    api.put<ResearchGroup>(`/groups/${id}/picture`, data),
   validateGroup: (id: number) => api.post<ResearchGroup>(`/groups/${id}/approve`),
   deleteGroup: (id: number) => api.delete<void>(`/groups/${id}`),
 
