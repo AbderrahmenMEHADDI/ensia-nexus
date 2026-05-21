@@ -45,6 +45,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     return () => window.removeEventListener('breadcrumb-update', handler);
   }, []);
 
+  React.useEffect(() => {
+    // Keep user dashboard strictly in light mode
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   const publicPaths = ['/', '/signin', '/signup', '/forgot-password', '/reset-password', '/discovery', '/group'];
   const isPublicPath = publicPaths.some(path => 
     location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'))
