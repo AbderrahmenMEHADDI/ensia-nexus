@@ -230,7 +230,7 @@ export const useProjectBoard = () => {
 
   const getApplyButtonLabel = (projectId: number) => {
     const application = getBlockingApplication(projectId);
-    if (!application) return 'Apply';
+    if (!application) return 'Request to Join';
     if (application.status === 'PENDING') return 'Pending Review';
     return 'Already Accepted';
   };

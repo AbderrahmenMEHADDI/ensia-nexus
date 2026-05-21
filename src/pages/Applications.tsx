@@ -136,14 +136,16 @@ const Applications = () => {
   }, [toast, user]);
 
   const fetchSubmissionsForCall = async (callId: number) => {
+    setSelectedCallId(callId);
+    setCollabSubmissions([]);
     setCollabLoading(true);
     try {
       const subs = await apiRepository.getCollaborationSubmissions(callId);
       setCollabSubmissions(subs);
-      setSelectedCallId(callId);
     } catch (e) {
       console.error('Error fetching submissions:', e);
       toast({ title: 'Failed to load submissions', variant: 'destructive' });
+      setSelectedCallId(null);
     } finally {
       setCollabLoading(false);
     }
