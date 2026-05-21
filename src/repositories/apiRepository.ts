@@ -126,6 +126,8 @@ export const apiRepository = {
     api.get<Project[]>(groupId ? `/projects/?group_id=${groupId}` : '/projects/'),
   getProject: (id: number) => api.get<Project>(`/projects/${id}`),
   createProject: (data: Partial<Project>) => api.post<Project>('/projects/', data),
+  updateProject: (id: number, data: Partial<Project>) => api.put<Project>(`/projects/${id}`, data),
+  deleteProject: (id: number) => api.delete<void>(`/projects/${id}`),
   reviewProject: (id: number, data: { status: ProjectReviewStatus; decision_note?: string }) =>
     api.post<Project>(`/projects/${id}/review`, data),
 

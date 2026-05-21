@@ -31,6 +31,15 @@ const mockApi = vi.hoisted(() => ({
   deleteGroup: vi.fn(),
   addLabAdmin: vi.fn(),
   removeLabAdmin: vi.fn(),
+  getProjects: vi.fn(),
+  getEligibleCollaborationCalls: vi.fn(),
+  getApplications: vi.fn(),
+  updateGroup: vi.fn(),
+  updateProject: vi.fn(),
+  deleteProject: vi.fn(),
+  updateCollaborationCall: vi.fn(),
+  deleteCollaborationCall: vi.fn(),
+  reviewApplication: vi.fn(),
 }));
 
 let authState: any = {};
@@ -103,6 +112,16 @@ beforeEach(() => {
   mockApi.validateGroup.mockResolvedValue({ ...baseGroups[0], is_validated: true });
   mockApi.deleteGroup.mockResolvedValue(undefined);
   mockApi.createGroup.mockImplementation(async data => ({ id: 99, leader_user_id: 0, created_at: 'now', ...data }));
+  
+  mockApi.getProjects.mockResolvedValue([]);
+  mockApi.getEligibleCollaborationCalls.mockResolvedValue([]);
+  mockApi.getApplications.mockResolvedValue([]);
+  mockApi.updateGroup.mockImplementation(async (id, data) => ({ id, ...data }));
+  mockApi.updateProject.mockImplementation(async (id, data) => ({ id, ...data }));
+  mockApi.deleteProject.mockResolvedValue(undefined);
+  mockApi.updateCollaborationCall.mockImplementation(async (id, data) => ({ id, ...data }));
+  mockApi.deleteCollaborationCall.mockResolvedValue(undefined);
+  mockApi.reviewApplication.mockImplementation(async (id, data) => ({ id, ...data }));
 });
 
 describe('AdminPanel permissions', () => {
@@ -110,7 +129,7 @@ describe('AdminPanel permissions', () => {
     setAuth(5, 'ADMIN');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    expect(screen.getByRole('button', { name: /Add Lab/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New Lab/i })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Admins/i }).length).toBeGreaterThan(0);
   });
 
@@ -118,7 +137,7 @@ describe('AdminPanel permissions', () => {
     setAuth(1, 'TEACHER');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: /Add Lab/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /New Lab/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Admins/i })).toBeInTheDocument();
   });
 
@@ -126,7 +145,7 @@ describe('AdminPanel permissions', () => {
     setAuth(2, 'STUDENT');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getGroups).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: /Assign Leader/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Change Leader/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Validate/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Delete/i })).not.toBeInTheDocument();
   });
@@ -135,7 +154,7 @@ describe('AdminPanel permissions', () => {
     setAuth(1, 'TEACHER');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getGroups).toHaveBeenCalled());
-    expect(screen.getByRole('button', { name: /Assign Leader/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Change Leader/i })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Validate/i })).not.toHaveLength(0);
   });
 
@@ -143,11 +162,11 @@ describe('AdminPanel permissions', () => {
     setAuth(1, 'TEACHER');
     render(<AdminPanel />);
     await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText(/Add Group/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/New Group/i)).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText(/Add Group/i));
-    fireEvent.change(screen.getByPlaceholderText(/NLP .* Understanding/i), { target: { value: 'New Group' } });
-    fireEvent.change(screen.getByPlaceholderText(/Brief description/i), { target: { value: 'Desc' } });
+    fireEvent.click(screen.getByText(/New Group/i));
+    fireEvent.change(screen.getByPlaceholderText(/Group name\.\.\./i), { target: { value: 'New Group' } });
+    fireEvent.change(screen.getByPlaceholderText(/Description\.\.\./i), { target: { value: 'Desc' } });
     const labSelect = screen.getAllByTestId('lab-select').find(
       node => node.textContent?.includes('LRIA')
     );
@@ -159,5 +178,22 @@ describe('AdminPanel permissions', () => {
     const payload = mockApi.createGroup.mock.calls[0][0];
     expect(payload.is_validated).toBe(true);
     expect(payload.validated_by_admin_id).toBe(1);
+  });
+
+  it('shows Projects tab and allows group editing', async () => {
+    setAuth(5, 'ADMIN');
+    render(<AdminPanel />);
+    await waitFor(() => expect(mockApi.getLabs).toHaveBeenCalled());
+    
+    // Verify Projects tab trigger is present
+    expect(screen.getByRole('button', { name: /Projects/i })).toBeInTheDocument();
+    
+    // Active group Edit button is rendered
+    mockApi.getGroups.mockResolvedValue([
+      { id: 1, lab_id: 1, name: 'Active Group', description: 'desc', leader_user_id: 1, is_validated: true, created_at: '2024-01-01' }
+    ]);
+    render(<AdminPanel />);
+    await waitFor(() => expect(screen.getByText(/Active Group/i)).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: /^Edit$/i })).toBeInTheDocument();
   });
 });
