@@ -12,6 +12,7 @@ interface TaskCardProps {
   handleDragEnd: () => void;
   handleOpenEdit: (task: Task) => void;
   isDragging: boolean;
+  canParticipate?: boolean;
 }
 
 export const TaskCard = ({
@@ -22,6 +23,7 @@ export const TaskCard = ({
   handleDragEnd,
   handleOpenEdit,
   isDragging,
+  canParticipate = true,
 }: TaskCardProps) => {
   const assignee = task.assignee_user_id ? getUserById(task.assignee_user_id) : null;
 
@@ -30,9 +32,15 @@ export const TaskCard = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       transition={{ delay: index * 0.03 }}
-      draggable
-      onDragStartCapture={(e: React.DragEvent) => handleDragStart(e, task.id)}
-      onDragEnd={handleDragEnd}
+      draggable={canParticipate}
+      onDragStartCapture={(e: React.DragEvent) => {
+        if (canParticipate) {
+          handleDragStart(e, task.id);
+        } else {
+          e.preventDefault();
+        }
+      }}
+      onDragEnd={canParticipate ? handleDragEnd : undefined}
       onClick={() => handleOpenEdit(task)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -43,11 +51,13 @@ export const TaskCard = ({
       role="button"
       tabIndex={0}
       aria-label={`Task: ${task.title}. Click to edit.`}
-      className={`p-4 rounded-xl border border-slate-100 bg-white border-l-4 ${getPriorityBorderClass(task.priority)} group cursor-grab active:cursor-grabbing hover:border-[#F37F20]/30 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.1)] focus-visible:ring-2 focus-visible:ring-[#F37F20] focus:outline-none transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
+      className={`p-4 rounded-xl border border-slate-100 bg-white border-l-4 ${getPriorityBorderClass(task.priority)} group ${canParticipate ? 'cursor-grab active:cursor-grabbing hover:border-[#F37F20]/30' : 'cursor-default hover:border-slate-200'} shadow-[0_4px_20px_-8px_rgba(0,0,0,0.1)] focus-visible:ring-2 focus-visible:ring-[#F37F20] focus:outline-none transition-all ${isDragging ? 'scale-95 shadow-lg' : ''}`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-sm font-bold text-[#0F172A] leading-tight">{task.title}</span>
-        <GripVertical className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-400 shrink-0 mt-0.5" />
+        {canParticipate && (
+          <GripVertical className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-400 shrink-0 mt-0.5" />
+        )}
       </div>
       <p className="text-xs text-slate-500 line-clamp-2 mb-3">{task.description}</p>
       <div className="flex items-center justify-between">

@@ -148,7 +148,7 @@ const ProjectBoard = () => {
           handleDragLeave={board.handleDragLeave}
           handleDrop={board.handleDrop}
           handleOpenEdit={board.handleOpenEdit}
-          canParticipate={!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)}
+          canParticipate={board.user?.role !== 'ADMIN' && (!board.isStudent || board.participants.some(p => p.user_id === board.user?.id))}
           onAddTask={(status) => { board.setCreateStatus(status); board.setCreateOpen(true); }}
           getUserById={board.getUserById}
         />
@@ -157,7 +157,7 @@ const ProjectBoard = () => {
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-display font-bold" style={{ color: '#074a75' }}>Resources</h2>
-            {(!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
+            {board.user?.role !== 'ADMIN' && (!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
               <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white" onClick={() => board.setResourceFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add Resource
               </Button>
@@ -240,6 +240,7 @@ const ProjectBoard = () => {
         statusColumns={statusColumns}
         participants={board.participants}
         getUserById={board.getUserById}
+        isReadOnly={board.user?.role === 'ADMIN'}
       />
 
       <ProjectDialogs

@@ -42,9 +42,9 @@ export const KanbanColumn = ({
   return (
     <div
       className={`rounded-2xl border border-slate-100 bg-[#F8FAFC]/50 p-3 transition-colors min-h-[200px] shadow-sm ${isOver ? 'border-[#F37F20]/40 bg-[#F37F20]/5' : ''}`}
-      onDragOver={e => handleDragOver(e, status)}
-      onDragLeave={handleDragLeave}
-      onDrop={e => handleDrop(e, status)}
+      onDragOver={canParticipate ? e => handleDragOver(e, status) : undefined}
+      onDragLeave={canParticipate ? handleDragLeave : undefined}
+      onDrop={canParticipate ? e => handleDrop(e, status) : undefined}
     >
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
@@ -63,6 +63,7 @@ export const KanbanColumn = ({
             handleDragEnd={handleDragEnd}
             handleOpenEdit={handleOpenEdit}
             isDragging={draggedTaskId === task.id}
+            canParticipate={canParticipate}
           />
         ))}
       </div>
