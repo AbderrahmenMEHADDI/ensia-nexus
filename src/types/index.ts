@@ -98,6 +98,7 @@ export interface ResearchGroup {
   leader_user_id: number;
   is_validated: boolean;
   show_on_landing_page: boolean;
+  picture_url?: string;
   validated_by_admin_id?: number; 
   validated_at?: string;
   created_at: string;
@@ -359,6 +360,7 @@ export interface TeamSummary {
   name: string;
   description?: string;
   leader_user_id?: number;
+  picture_url?: string;
   project_count: number;
   open_project_count: number;
   publication_count: number;

@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cookies';
+import { BASE_URL } from '@/lib/apiClient';
 
 const Landing = () => {
   const { toast } = useToast();
@@ -502,7 +503,14 @@ const TeamCard = ({ team, index }: { team: TeamSummary; index: number }) => {
       <div
         className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-4 -translate-x-full group-hover/card:translate-x-0 px-6"
         style={{
-          background: '#074a75',
+          background: team.picture_url
+            ? `linear-gradient(rgba(7, 74, 117, 0.85), rgba(7, 74, 117, 0.95))`
+            : '#074a75',
+          backgroundImage: team.picture_url
+            ? `linear-gradient(rgba(7, 74, 117, 0.85), rgba(7, 74, 117, 0.95)), url(${team.picture_url.startsWith('/') ? `${BASE_URL}${team.picture_url}` : team.picture_url})`
+            : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           transition: 'transform 420ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >

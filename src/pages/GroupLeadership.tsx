@@ -12,7 +12,10 @@ import {
   LayoutGrid,
   Mail,
   UserCheck,
-  History
+  History,
+  Edit,
+  Trash2,
+  FlaskConical
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
@@ -31,6 +34,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { BASE_URL } from '@/lib/apiClient';
 
 const GroupLeadership = () => {
   const { user } = useAuth();
@@ -45,6 +57,62 @@ const GroupLeadership = () => {
   const [cancellingInvitationId, setCancellingInvitationId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState<Record<number, boolean>>({});
   const [teacherSearch, setTeacherSearch] = useState<Record<number, string>>({});
+
+  // Edit Group states
+  const [editGroupOpen, setEditGroupOpen] = useState(false);
+  const [selectedGroupForEdit, setSelectedGroupForEdit] = useState<ResearchGroup | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
+  const [editGroupPictureUrl, setEditGroupPictureUrl] = useState('');
+  const [editGroupPictureFile, setEditGroupPictureFile] = useState<File | null>(null);
+  const [editGroupPicturePreview, setEditGroupPicturePreview] = useState('');
+  const [isSavingGroup, setIsSavingGroup] = useState(false);
+
+  const handleOpenEditGroup = (group: ResearchGroup) => {
+    setSelectedGroupForEdit(group);
+    setEditGroupName(group.name);
+    setEditGroupDesc(group.description ?? '');
+    setEditGroupPictureUrl(group.picture_url ?? '');
+    setEditGroupPictureFile(null);
+    setEditGroupPicturePreview(group.picture_url ?? '');
+    setEditGroupOpen(true);
+  };
+
+  const handleSaveGroup = async () => {
+    if (!selectedGroupForEdit || isSavingGroup) return;
+    if (!editGroupName.trim()) {
+      toast({ title: 'Group name is required', variant: 'destructive' });
+      return;
+    }
+    setIsSavingGroup(true);
+    try {
+      let updated = await apiRepository.updateGroup(selectedGroupForEdit.id, {
+        name: editGroupName.trim(),
+        description: editGroupDesc.trim(),
+      });
+
+      if (editGroupPictureFile) {
+        const formData = new FormData();
+        formData.append('file', editGroupPictureFile);
+        updated = await apiRepository.updateGroupPicture(selectedGroupForEdit.id, formData);
+      } else if (editGroupPictureUrl !== (selectedGroupForEdit.picture_url || '')) {
+        const formData = new FormData();
+        if (editGroupPictureUrl.trim()) {
+          formData.append('url', editGroupPictureUrl.trim());
+        }
+        updated = await apiRepository.updateGroupPicture(selectedGroupForEdit.id, formData);
+      }
+
+      setGroups(prev => prev.map(g => g.id === selectedGroupForEdit.id ? updated : g));
+      toast({ title: 'Group updated successfully' });
+      setEditGroupOpen(false);
+    } catch (err) {
+      console.error('Failed to update group:', err);
+      toast({ title: 'Failed to update group', variant: 'destructive' });
+    } finally {
+      setIsSavingGroup(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -200,7 +268,18 @@ const GroupLeadership = () => {
               transition={{ delay: index * 0.1 }}
             >
               <Card className="overflow-hidden border-border bg-card hover:shadow-xl transition-all duration-300">
-                <div className="h-1.5 w-full bg-gradient-to-r from-primary/40 via-primary to-blue-600/40" />
+                {group.picture_url ? (
+                  <div className="relative h-48 w-full overflow-hidden border-b border-border bg-slate-50 dark:bg-slate-900">
+                    <img
+                      src={group.picture_url.startsWith('/') ? `${BASE_URL}${group.picture_url}` : group.picture_url}
+                      alt="Group Cover"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                  </div>
+                ) : (
+                  <div className="h-16 w-full bg-gradient-to-r from-primary/30 via-primary/50 to-blue-600/30 border-b border-border/50" />
+                )}
 
                 <CardHeader className="p-8">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
@@ -209,6 +288,14 @@ const GroupLeadership = () => {
                         <Badge variant="secondary" className="rounded-md bg-primary/10 text-primary border-none text-[10px] uppercase font-bold tracking-widest">
                           Research Group Leader
                         </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full h-8 font-semibold text-xs border-border/50 hover:bg-secondary flex items-center gap-1.5 shrink-0"
+                          onClick={() => handleOpenEditGroup(group)}
+                        >
+                          <Edit className="h-3.5 w-3.5 text-primary" /> Edit Info
+                        </Button>
                       </div>
                       <CardTitle className="text-3xl font-bold text-foreground">
                         {group.name}
@@ -389,6 +476,105 @@ const GroupLeadership = () => {
           );
         })}
       </div>
+
+      <Dialog open={editGroupOpen} onOpenChange={setEditGroupOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Group Details</DialogTitle>
+            <DialogDescription>Modify group description and cover image.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Picture upload widget (file reader + URL preview, clear trigger) */}
+            <div className="flex flex-col items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="relative group h-24 w-40 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                {editGroupPicturePreview ? (
+                  <img
+                    src={editGroupPicturePreview.startsWith('/') && !editGroupPicturePreview.startsWith('data:')
+                      ? `${BASE_URL}${editGroupPicturePreview}`
+                      : editGroupPicturePreview}
+                    alt="Cover Preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-1 text-slate-400">
+                    <FlaskConical className="h-8 w-8" />
+                    <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400">No Cover</span>
+                  </div>
+                )}
+                {editGroupPicturePreview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditGroupPictureFile(null);
+                      setEditGroupPictureUrl('');
+                      setEditGroupPicturePreview('');
+                    }}
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-sm transition-colors"
+                    title="Remove Cover Image"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="w-full space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Upload Cover Picture</label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setEditGroupPictureFile(file);
+                        setEditGroupPictureUrl('');
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEditGroupPicturePreview(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="text-xs cursor-pointer"
+                  />
+                </div>
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+                  <span className="mx-2 text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Or</span>
+                  <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Image URL</label>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={editGroupPictureUrl}
+                    onChange={(e) => {
+                      setEditGroupPictureUrl(e.target.value);
+                      setEditGroupPictureFile(null);
+                      setEditGroupPicturePreview(e.target.value);
+                    }}
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Group Name</label>
+              <Input value={editGroupName} onChange={e => setEditGroupName(e.target.value)} placeholder="Group name..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input value={editGroupDesc} onChange={e => setEditGroupDesc(e.target.value)} placeholder="Description..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditGroupOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveGroup} disabled={isSavingGroup}>
+              {isSavingGroup && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
