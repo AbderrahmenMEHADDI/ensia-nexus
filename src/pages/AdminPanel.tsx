@@ -5,11 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { RoleBadge } from '@/components/Badges';
 import { cn } from '@/lib/utils';
-import type { GroupMember, ResearchLab, ResearchGroup, ResearchLabAdmin, User, Teacher, UserRole } from '@/types';
+import type { GroupMember, ResearchLab, ResearchGroup, ResearchLabAdmin, User, Teacher, UserRole, Project, CollaborationCall, ProjectApplication } from '@/types';
 import {
   Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus,
   Building2, UserCog, UserPlus, FlaskConical, Loader2, Info,
-  Trash2, ArrowRight, UserCheck, Mail
+  Trash2, ArrowRight, UserCheck, Mail, FolderGit2, Archive, FileText
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -88,6 +88,40 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   const [assignGroupSearch, setAssignGroupSearch] = useState('');
   const [assignTeacherSearch, setAssignTeacherSearch] = useState('');
 
+  // Edit Group states
+  const [editGroupOpen, setEditGroupOpen] = useState(false);
+  const [selectedGroupForEdit, setSelectedGroupForEdit] = useState<ResearchGroup | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
+  const [editGroupLeaderId, setEditGroupLeaderId] = useState('');
+  const [editGroupShowOnLanding, setEditGroupShowOnLanding] = useState(true);
+  const [isSavingGroup, setIsSavingGroup] = useState(false);
+
+  // Projects tab states
+  const [projects, setProjects] = useState<any[]>([]);
+  const [colabCalls, setColabCalls] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [archivedAppIds, setArchivedAppIds] = useState<number[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [projectStatusFilter, setProjectStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+
+  // Edit Project states
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [selectedProjectForEdit, setSelectedProjectForEdit] = useState<any | null>(null);
+  const [editProjectTitle, setEditProjectTitle] = useState('');
+  const [editProjectDesc, setEditProjectDesc] = useState('');
+  const [editProjectStatus, setEditProjectStatus] = useState<any>('PENDING');
+  const [editProjectVisibility, setEditProjectVisibility] = useState<any>('PUBLIC');
+  const [editProjectAccepting, setEditProjectAccepting] = useState(true);
+  const [editProjectDeadline, setEditProjectDeadline] = useState('');
+  const [isSavingProject, setIsSavingProject] = useState(false);
+
+  // Delete Project states
+  const [deleteProjectOpen, setDeleteProjectOpen] = useState(false);
+  const [selectedProjectForDelete, setSelectedProjectForDelete] = useState<any | null>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+
   const isPlatformAdmin = isAdmin;
   const adminRemovalKey = (labId: number, userId: number) => `${labId}-${userId}`;
   const sortLabsByNewest = (items: ResearchLab[]) => (
@@ -136,6 +170,40 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
         setTeachers(t);
         setGroupMembers(gm);
         mergeUsersIntoLookup(allUsers);
+
+        // Load archived application IDs from localStorage
+        const archivedString = localStorage.getItem('ensia_nexus_archived_applications');
+        if (archivedString) {
+          try {
+            setArchivedAppIds(JSON.parse(archivedString));
+          } catch (e) {
+            console.error('Failed to parse archived applications from localStorage:', e);
+          }
+        }
+
+        // Fetch Projects, Colab Calls, Applications
+        let pList: any[] = [];
+        let ccList: any[] = [];
+        let appList: any[] = [];
+        try {
+          pList = await apiRepository.getProjects();
+        } catch (err) {
+          console.error('Failed to fetch projects:', err);
+        }
+        try {
+          ccList = await apiRepository.getEligibleCollaborationCalls();
+        } catch (err) {
+          console.error('Failed to fetch colab calls:', err);
+        }
+        try {
+          appList = await apiRepository.getApplications();
+        } catch (err) {
+          console.error('Failed to fetch applications:', err);
+        }
+        setProjects(pList);
+        setColabCalls(ccList);
+        setApplications(appList);
+
       } catch (e) {
         console.error('AdminPanel load error:', e);
         toast({ title: 'Error loading data', variant: 'destructive' });
@@ -521,6 +589,149 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     }
   };
 
+  // Group Edit Handlers
+  const handleOpenEditGroup = (group: ResearchGroup) => {
+    setSelectedGroupForEdit(group);
+    setEditGroupName(group.name);
+    setEditGroupDesc(group.description ?? '');
+    setEditGroupLeaderId(group.leader_user_id ? String(group.leader_user_id) : '');
+    setEditGroupShowOnLanding(group.show_on_landing ?? true);
+    setEditGroupOpen(true);
+  };
+
+  const handleSaveGroup = async () => {
+    if (!selectedGroupForEdit || isSavingGroup) return;
+    if (!editGroupName.trim()) {
+      toast({ title: 'Group name is required', variant: 'destructive' });
+      return;
+    }
+    setIsSavingGroup(true);
+    try {
+      const updated = await apiRepository.updateGroup(selectedGroupForEdit.id, {
+        name: editGroupName.trim(),
+        description: editGroupDesc.trim(),
+        leader_user_id: editGroupLeaderId ? Number(editGroupLeaderId) : undefined,
+        show_on_landing: editGroupShowOnLanding,
+      });
+      setGroups(prev => prev.map(g => g.id === selectedGroupForEdit.id ? updated : g));
+      toast({ title: 'Group updated successfully' });
+      setEditGroupOpen(false);
+    } catch (err) {
+      console.error('Failed to update group:', err);
+      toast({ title: 'Failed to update group', variant: 'destructive' });
+    } finally {
+      setIsSavingGroup(false);
+    }
+  };
+
+  // Project Edit/Delete Handlers
+  const handleOpenEditProject = (project: any) => {
+    setSelectedProjectForEdit(project);
+    setEditProjectTitle(project.title);
+    setEditProjectDesc(project.description ?? '');
+    setEditProjectStatus(project.status || 'PENDING');
+    setEditProjectVisibility(project.visibility || 'PUBLIC');
+    setEditProjectAccepting(project.accepting_collaborators ?? true);
+    setEditProjectDeadline(project.deadline ? project.deadline.split('T')[0] : '');
+    setEditProjectOpen(true);
+  };
+
+  const handleSaveProject = async () => {
+    if (!selectedProjectForEdit || isSavingProject) return;
+    if (!editProjectTitle.trim()) {
+      toast({ title: 'Project title is required', variant: 'destructive' });
+      return;
+    }
+    setIsSavingProject(true);
+    try {
+      const updated = await apiRepository.updateProject(selectedProjectForEdit.id, {
+        title: editProjectTitle.trim(),
+        description: editProjectDesc.trim(),
+        status: editProjectStatus,
+        visibility: editProjectVisibility,
+        accepting_collaborators: editProjectAccepting,
+        deadline: editProjectDeadline ? new Date(editProjectDeadline).toISOString() : undefined,
+      });
+      setProjects(prev => prev.map(p => p.id === selectedProjectForEdit.id ? updated : p));
+      toast({ title: 'Project updated successfully' });
+      setEditProjectOpen(false);
+    } catch (err) {
+      console.error('Failed to update project:', err);
+      toast({ title: 'Failed to update project', variant: 'destructive' });
+    } finally {
+      setIsSavingProject(false);
+    }
+  };
+
+  const handleOpenDeleteProject = (project: any) => {
+    setSelectedProjectForDelete(project);
+    setDeleteProjectOpen(true);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!selectedProjectForDelete || isDeletingProject) return;
+    setIsDeletingProject(true);
+    try {
+      await apiRepository.deleteProject(selectedProjectForDelete.id);
+      setProjects(prev => prev.filter(p => p.id !== selectedProjectForDelete.id));
+      toast({ title: 'Project deleted successfully' });
+      setDeleteProjectOpen(false);
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      toast({ title: 'Failed to delete project', variant: 'destructive' });
+    } finally {
+      setIsDeletingProject(false);
+    }
+  };
+
+  // Collaboration Call Handlers
+  const handleArchiveColabCall = async (callId: number) => {
+    try {
+      await apiRepository.updateCollaborationCall(callId, {
+        status: 'CLOSED'
+      });
+      setColabCalls(prev => prev.map(c => c.id === callId ? { ...c, status: 'CLOSED' } : c));
+      toast({ title: 'Collaboration call closed/archived successfully' });
+    } catch (err) {
+      console.error('Failed to archive colab call:', err);
+      toast({ title: 'Failed to archive collaboration call', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteColabCall = async (callId: number) => {
+    try {
+      await apiRepository.deleteCollaborationCall(callId);
+      setColabCalls(prev => prev.filter(c => c.id !== callId));
+      toast({ title: 'Collaboration call deleted successfully' });
+    } catch (err) {
+      console.error('Failed to delete colab call:', err);
+      toast({ title: 'Failed to delete collaboration call', variant: 'destructive' });
+    }
+  };
+
+  // Project Application Handlers
+  const handleArchiveApplication = (appId: number) => {
+    setArchivedAppIds(prev => {
+      const next = prev.includes(appId) ? prev : [...prev, appId];
+      localStorage.setItem('ensia_nexus_archived_applications', JSON.stringify(next));
+      return next;
+    });
+    toast({ title: 'Application archived' });
+  };
+
+  const handleReviewApplication = async (appId: number, status: 'ACCEPTED' | 'REJECTED') => {
+    try {
+      await apiRepository.reviewApplication(appId, {
+        status
+      });
+      setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a));
+      toast({ title: `Application status updated to ${status}` });
+    } catch (err) {
+      console.error('Failed to review application:', err);
+      toast({ title: 'Failed to review application', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-10 flex justify-center">
@@ -577,6 +788,11 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                 <Users className="h-4 w-4 mr-2" />Users
               </TabsTrigger>
             )}
+            {!myLabsOnly && (
+              <TabsTrigger value="projects" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm px-6">
+                <FolderGit2 className="h-4 w-4 mr-2" />Projects
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <div className="flex items-center gap-3">
@@ -606,13 +822,14 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
+                  className="h-full"
                 >
-                  <Card className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:shadow-xl transition-all duration-300">
-                    <CardHeader className="p-6">
+                  <Card className="group h-full flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] hover:shadow-xl transition-all duration-300">
+                    <CardHeader className="p-6 flex-1 flex flex-col justify-between">
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">
                           <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">{lab.name}</CardTitle>
-                          <CardDescription className="line-clamp-2 text-xs leading-relaxed">
+                          <CardDescription className="line-clamp-2 text-xs leading-relaxed min-h-[2.5rem]">
                             {lab.description || "No description provided for this research laboratory."}
                           </CardDescription>
                         </div>
@@ -723,6 +940,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                   const leader = getUserById(group.leader_user_id);
                   const lab = labs.find(l => l.id === group.lab_id);
                   const requester = group.requested_by_user_id ? getUserById(group.requested_by_user_id) : undefined;
+                  const canManage = canManageLab(group.lab_id) || isPlatformAdmin;
 
                   return (
                     <motion.div
@@ -732,30 +950,32 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                       transition={{ delay: index * 0.05 }}
                     >
                       <Card className="rounded-2xl border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/[0.08] transition-colors relative group shadow-sm">
-                        <div className="absolute top-4 right-4 flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 rounded-full border-amber-500/20 hover:bg-amber-500/20 text-amber-700"
-                            onClick={() => handleValidate(group.id)}
-                            disabled={validatingGroupIds.includes(group.id)}
-                          >
-                            {validatingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
-                            Validate
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteGroup(group.id)}
-                            disabled={deletingGroupIds.includes(group.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        {canManage && (
+                          <div className="absolute top-4 right-4 flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 rounded-full border-amber-500/20 hover:bg-amber-500/20 text-amber-700"
+                              onClick={() => handleValidate(group.id)}
+                              disabled={validatingGroupIds.includes(group.id)}
+                            >
+                              {validatingGroupIds.includes(group.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />}
+                              Validate
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteGroup(group.id)}
+                              disabled={deletingGroupIds.includes(group.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
 
                         <CardHeader className="pb-4">
-                          <div className="space-y-1 pr-20">
+                          <div className={cn("space-y-1", canManage ? "pr-20" : "")}>
                             <CardTitle className="text-lg font-bold">{group.name}</CardTitle>
                             <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">{lab?.name}</p>
                           </div>
@@ -782,16 +1002,18 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                             </div>
                           </div>
                         </CardContent>
-                        <CardFooter className="pb-4 pt-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-[10px] font-bold uppercase tracking-widest gap-1.5 h-7 px-2 hover:bg-amber-500/10"
-                            onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
-                          >
-                            <UserCog className="h-3 w-3" /> Change Leader
-                          </Button>
-                        </CardFooter>
+                        {canManage && (
+                          <CardFooter className="pb-4 pt-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-[10px] font-bold uppercase tracking-widest gap-1.5 h-7 px-2 hover:bg-amber-500/10"
+                              onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
+                            >
+                              <UserCog className="h-3 w-3" /> Change Leader
+                            </Button>
+                          </CardFooter>
+                        )}
                       </Card>
                     </motion.div>
                   );
@@ -807,14 +1029,16 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                 <h3 className="text-lg font-bold">Active Research Groups</h3>
                 <Badge variant="secondary" className="rounded-full bg-secondary/50">{validatedGroups.length}</Badge>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full h-8 font-semibold text-xs border-border/50 hover:bg-secondary"
-                onClick={() => setAssignMembersOpen(true)}
-              >
-                <Users className="h-3.5 w-3.5 mr-1.5" /> Bulk Member Assignment
-              </Button>
+              {manageableGroups.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full h-8 font-semibold text-xs border-border/50 hover:bg-secondary"
+                  onClick={() => setAssignMembersOpen(true)}
+                >
+                  <Users className="h-3.5 w-3.5 mr-1.5" /> Bulk Member Assignment
+                </Button>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -822,6 +1046,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                 const leader = getUserById(group.leader_user_id);
                 const lab = labs.find(l => l.id === group.lab_id);
                 const activeCount = groupMembers.filter(m => m.group_id === group.id && m.is_active).length;
+                const canManage = canManageLab(group.lab_id) || isPlatformAdmin;
                 return (
                   <motion.div
                     key={group.id}
@@ -845,25 +1070,35 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:self-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
-                        className="h-8 text-xs font-bold gap-1.5 px-3 rounded-lg hover:bg-primary/5 hover:text-primary"
-                      >
-                        <UserCog className="h-3.5 w-3.5" /> Leader
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteGroup(group.id)}
-                        disabled={deletingGroupIds.includes(group.id)}
-                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {canManage && (
+                      <div className="flex items-center gap-2 sm:self-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenEditGroup(group)}
+                          className="h-8 text-xs font-bold gap-1.5 px-3 rounded-lg hover:bg-primary/5 hover:text-primary"
+                        >
+                          <UserCog className="h-3.5 w-3.5" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setSelectedGroupForLeader(group); setAssignLeaderOpen(true); }}
+                          className="h-8 text-xs font-bold gap-1.5 px-3 rounded-lg hover:bg-primary/5 hover:text-primary"
+                        >
+                          <UserCog className="h-3.5 w-3.5" /> Leader
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteGroup(group.id)}
+                          disabled={deletingGroupIds.includes(group.id)}
+                          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })}
@@ -989,6 +1224,321 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
                 </Button>
               </div>
             )}
+          </TabsContent>
+        )}
+
+        {/* PROJECTS TAB */}
+        {!myLabsOnly && (
+          <TabsContent value="projects" className="space-y-10 focus-visible:outline-none outline-none">
+            {/* Top filters / searches */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-border/50 pb-6">
+              <div className="relative flex-1 max-w-lg">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={projectSearch}
+                  onChange={e => setProjectSearch(e.target.value)}
+                  placeholder="Search projects, calls or applications..."
+                  className="pl-11 h-12 rounded-2xl bg-secondary/20 border-border/50 focus:bg-background transition-all"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Select value={projectStatusFilter} onValueChange={(v: any) => setProjectStatusFilter(v)}>
+                  <SelectTrigger className="w-[160px] h-10 rounded-xl bg-secondary/30 border-border/50">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border">
+                    <SelectItem value="ALL">All Projects</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="APPROVED">Approved</SelectItem>
+                    <SelectItem value="REJECTED">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Layout for 3 sections: Projects, Colab Calls, and Applications */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              
+              {/* SECTION 1: PROJECTS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FolderGit2 className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-bold">Projects List</h3>
+                  </div>
+                  <Badge variant="secondary" className="rounded-full bg-secondary/50">
+                    {projects.filter(p => 
+                      (projectStatusFilter === 'ALL' || p.status === projectStatusFilter) &&
+                      p.title.toLowerCase().includes(projectSearch.toLowerCase())
+                    ).length}
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                  {projects
+                    .filter(p => 
+                      (projectStatusFilter === 'ALL' || p.status === projectStatusFilter) &&
+                      (p.title.toLowerCase().includes(projectSearch.toLowerCase()) || 
+                       (p.description && p.description.toLowerCase().includes(projectSearch.toLowerCase())))
+                    )
+                    .map(project => {
+                      const group = groups.find(g => g.id === project.group_id);
+                      return (
+                        <Card key={project.id} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all duration-300 shadow-sm flex flex-col justify-between h-[190px]">
+                          <div className="space-y-1.5 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="font-bold text-sm text-foreground truncate block flex-1" title={project.title}>
+                                {project.title}
+                              </span>
+                              <Badge className={cn(
+                                "text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase",
+                                project.status === 'APPROVED' && "bg-green-500/10 text-green-600 border-green-500/20",
+                                project.status === 'PENDING' && "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                                project.status === 'REJECTED' && "bg-red-500/10 text-red-600 border-red-500/20"
+                              )}>
+                                {project.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-3">
+                              {project.description || "No description provided."}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[10px]">
+                            <span className="text-muted-foreground font-medium truncate max-w-[120px]">
+                              Group: {group?.name || `Group ${project.group_id}`}
+                            </span>
+                            <div className="flex gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-primary/5 hover:text-primary animate-fade-in"
+                                onClick={() => handleOpenEditProject(project)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleOpenDeleteProject(project)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+
+                  {projects.filter(p => 
+                    (projectStatusFilter === 'ALL' || p.status === projectStatusFilter) &&
+                    p.title.toLowerCase().includes(projectSearch.toLowerCase())
+                  ).length === 0 && (
+                    <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                      No projects found.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 2: COLLABORATION REQUESTS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-bold">Colab Requests</h3>
+                  </div>
+                  <Badge variant="secondary" className="rounded-full bg-secondary/50">
+                    {colabCalls.filter(c => 
+                      c.title.toLowerCase().includes(projectSearch.toLowerCase())
+                    ).length}
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                  {colabCalls
+                    .filter(c => 
+                      c.title.toLowerCase().includes(projectSearch.toLowerCase()) ||
+                      (c.description && c.description.toLowerCase().includes(projectSearch.toLowerCase()))
+                    )
+                    .map(call => (
+                      <Card key={call.id} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all duration-300 shadow-sm flex flex-col justify-between h-[190px]">
+                        <div className="space-y-1.5 min-w-0">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="font-bold text-sm text-foreground truncate block flex-1" title={call.title}>
+                              {call.title}
+                            </span>
+                            <Badge className={cn(
+                              "text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase",
+                              call.status === 'OPEN' && "bg-green-500/10 text-green-600 border-green-500/20",
+                              call.status === 'CLOSED' && "bg-gray-500/10 text-gray-600 border-gray-500/20",
+                              call.status === 'ARCHIVED' && "bg-gray-500/10 text-gray-600 border-gray-500/20"
+                            )}>
+                              {call.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-3">
+                            {call.description || "No details provided."}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[10px]">
+                          <span className="text-muted-foreground">
+                            Project ID: {call.project_id}
+                          </span>
+                          <div className="flex gap-1.5">
+                            {call.status !== 'CLOSED' && call.status !== 'ARCHIVED' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-amber-500/10 text-amber-600"
+                                onClick={() => handleArchiveColabCall(call.id)}
+                              >
+                                Archive
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteColabCall(call.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+
+                  {colabCalls.filter(c => 
+                    c.title.toLowerCase().includes(projectSearch.toLowerCase())
+                  ).length === 0 && (
+                    <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                      No collaboration requests found.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 3: PROJECT APPLICATIONS */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Archive className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-bold">Applications</h3>
+                  </div>
+                  <Badge variant="secondary" className="rounded-full bg-secondary/50">
+                    {applications.filter(a => 
+                      !archivedAppIds.includes(a.id) &&
+                      (a.motivation_letter || "").toLowerCase().includes(projectSearch.toLowerCase())
+                    ).length}
+                  </Badge>
+                </div>
+
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
+                  {/* Active Applications */}
+                  {applications
+                    .filter(a => !archivedAppIds.includes(a.id))
+                    .filter(a => 
+                      (a.motivation_letter || "").toLowerCase().includes(projectSearch.toLowerCase()) ||
+                      String(a.student_user_id).includes(projectSearch)
+                    )
+                    .map(app => {
+                      const studentUser = getUserById(app.student_user_id);
+                      return (
+                        <Card key={app.id} className="p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all duration-300 shadow-sm flex flex-col justify-between h-[190px]">
+                          <div className="space-y-1.5 min-w-0">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="font-bold text-sm text-foreground truncate block flex-1">
+                                {studentUser?.full_name || `Student ${app.student_user_id}`}
+                              </span>
+                              <Badge className={cn(
+                                "text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase",
+                                app.status === 'ACCEPTED' && "bg-green-500/10 text-green-600 border-green-500/20",
+                                app.status === 'PENDING' && "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                                app.status === 'REJECTED' && "bg-red-500/10 text-red-600 border-red-500/20"
+                              )}>
+                                {app.status}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-3 italic">
+                              "{app.motivation_letter || "No motivation letter provided."}"
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50 text-[10px]">
+                            <span className="text-muted-foreground">
+                              Project ID: {app.project_id}
+                            </span>
+                            <div className="flex gap-1.5">
+                              {app.status === 'PENDING' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-green-500/10 text-green-600"
+                                    onClick={() => handleReviewApplication(app.id, 'ACCEPTED')}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-red-500/10 text-red-600"
+                                    onClick={() => handleReviewApplication(app.id, 'REJECTED')}
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 text-xs font-semibold px-2 rounded-md hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600"
+                                onClick={() => handleArchiveApplication(app.id)}
+                              >
+                                Archive
+                              </Button>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+
+                  {/* Archived section header if any archived exist */}
+                  {applications.some(a => archivedAppIds.includes(a.id)) && (
+                    <div className="pt-4 border-t border-border/50">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold mb-2">
+                        <Archive className="h-3.5 w-3.5" />
+                        <span>Archived Applications</span>
+                      </div>
+                      <div className="space-y-3 opacity-60">
+                        {applications
+                          .filter(a => archivedAppIds.includes(a.id))
+                          .map(app => {
+                            const studentUser = getUserById(app.student_user_id);
+                            return (
+                              <div key={app.id} className="p-3 rounded-lg border border-border bg-muted flex items-center justify-between text-xs animate-fade-in">
+                                <span className="font-semibold">{studentUser?.full_name || `Student ${app.student_user_id}`}</span>
+                                <Badge className="text-[8px]">{app.status}</Badge>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+
+                  {applications.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                      No applications found.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </TabsContent>
         )}
       </Tabs>
@@ -1207,6 +1757,126 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignMembersOpen(false)}>Cancel</Button>
             <Button onClick={handleBulkAssignMembers}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Group Dialog */}
+      <Dialog open={editGroupOpen} onOpenChange={setEditGroupOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Group</DialogTitle>
+            <DialogDescription>Modify research group details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Group Name</label>
+              <Input value={editGroupName} onChange={e => setEditGroupName(e.target.value)} placeholder="Group name..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input value={editGroupDesc} onChange={e => setEditGroupDesc(e.target.value)} placeholder="Description..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Leader</label>
+              <Select value={editGroupLeaderId} onValueChange={setEditGroupLeaderId}>
+                <SelectTrigger><SelectValue placeholder="Select leader" /></SelectTrigger>
+                <SelectContent>
+                  {headTeacherUsers.map(({ teacher, user }) => (
+                    <SelectItem key={teacher.user_id} value={String(teacher.user_id)}>{user?.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox id="editGroupShowOnLanding" checked={editGroupShowOnLanding} onCheckedChange={(checked: any) => setEditGroupShowOnLanding(!!checked)} />
+              <label htmlFor="editGroupShowOnLanding" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Show on Landing Page
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditGroupOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveGroup} disabled={isSavingGroup}>
+              {isSavingGroup ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editProjectOpen} onOpenChange={setEditProjectOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>Update project details and settings.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Project Title</label>
+              <Input value={editProjectTitle} onChange={e => setEditProjectTitle(e.target.value)} placeholder="Project title..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <Input value={editProjectDesc} onChange={e => setEditProjectDesc(e.target.value)} placeholder="Description..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Status</label>
+                <Select value={editProjectStatus} onValueChange={(v: any) => setEditProjectStatus(v)}>
+                  <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="APPROVED">Approved</SelectItem>
+                    <SelectItem value="REJECTED">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Visibility</label>
+                <Select value={editProjectVisibility} onValueChange={(v: any) => setEditProjectVisibility(v)}>
+                  <SelectTrigger><SelectValue placeholder="Visibility" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PUBLIC">Public</SelectItem>
+                    <SelectItem value="PRIVATE">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Deadline</label>
+              <Input type="date" value={editProjectDeadline} onChange={e => setEditProjectDeadline(e.target.value)} />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox id="editProjectAccepting" checked={editProjectAccepting} onCheckedChange={(checked: any) => setEditProjectAccepting(!!checked)} />
+              <label htmlFor="editProjectAccepting" className="text-sm font-medium leading-none">
+                Accepting Collaborators
+              </label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditProjectOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveProject} disabled={isSavingProject}>
+              {isSavingProject ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Project Confirmation Dialog */}
+      <Dialog open={deleteProjectOpen} onOpenChange={setDeleteProjectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Project</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the project <span className="font-bold text-foreground">"{selectedProjectForDelete?.title}"</span>? This action is permanent and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProjectOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteProject} disabled={isDeletingProject}>
+              {isDeletingProject ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Project'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

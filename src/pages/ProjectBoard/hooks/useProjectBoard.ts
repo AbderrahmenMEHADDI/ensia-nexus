@@ -26,7 +26,7 @@ import type {
 export const useProjectBoard = () => {
   const { user } = useAuth();
   const isStudent = user?.role === 'STUDENT';
-  const canManageProjects = !!user && user.role !== 'STUDENT';
+  const canManageProjects = !!user && user.role !== 'STUDENT' && user.role !== 'ADMIN';
   const canCreateProjects = !!user && user.role !== 'ADMIN';
   const { toast } = useToast();
 
@@ -230,7 +230,7 @@ export const useProjectBoard = () => {
 
   const getApplyButtonLabel = (projectId: number) => {
     const application = getBlockingApplication(projectId);
-    if (!application) return 'Apply';
+    if (!application) return 'Request to Join';
     if (application.status === 'PENDING') return 'Pending Review';
     return 'Already Accepted';
   };

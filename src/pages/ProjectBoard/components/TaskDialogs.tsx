@@ -50,6 +50,7 @@ interface TaskDialogsProps {
   statusColumns: { status: TaskStatus; label: string; color: string }[];
   participants: ProjectParticipant[];
   getUserById: (id: number) => User | undefined;
+  isReadOnly?: boolean;
 }
 
 export const TaskDialogs = ({
@@ -88,6 +89,7 @@ export const TaskDialogs = ({
   statusColumns,
   participants,
   getUserById,
+  isReadOnly = false,
 }: TaskDialogsProps) => {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
@@ -227,16 +229,16 @@ export const TaskDialogs = ({
               <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Details</h3>
               <div className="space-y-2">
                 <Label htmlFor="edit-title">Title</Label>
-                <Input id="edit-title" value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+                <Input id="edit-title" value={editTitle} onChange={e => setEditTitle(e.target.value)} disabled={isReadOnly} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-desc">Description</Label>
-                <Textarea id="edit-desc" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={4} />
+                <Textarea id="edit-desc" value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={4} disabled={isReadOnly} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={editStatus} onValueChange={v => setEditStatus(v as TaskStatus)}>
+                  <Select value={editStatus} onValueChange={v => setEditStatus(v as TaskStatus)} disabled={isReadOnly}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {statusColumns.map(s => <SelectItem key={s.status} value={s.status}>{s.label}</SelectItem>)}
@@ -245,7 +247,7 @@ export const TaskDialogs = ({
                 </div>
                 <div className="space-y-2">
                   <Label>Priority</Label>
-                  <Select value={editPriority} onValueChange={v => setEditPriority(v as TaskPriority)}>
+                  <Select value={editPriority} onValueChange={v => setEditPriority(v as TaskPriority)} disabled={isReadOnly}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="LOW">Low</SelectItem>
@@ -258,7 +260,7 @@ export const TaskDialogs = ({
               </div>
               <div className="space-y-2">
                 <Label>Assignee</Label>
-                <Select value={editAssigneeUserId} onValueChange={setEditAssigneeUserId}>
+                <Select value={editAssigneeUserId} onValueChange={setEditAssigneeUserId} disabled={isReadOnly}>
                   <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
@@ -300,7 +302,7 @@ export const TaskDialogs = ({
                               <span className="font-semibold text-foreground">{comment.author.full_name}</span>
                               <div className="flex items-center gap-2 shrink-0">
                                 <span className="text-[10px] text-muted-foreground">{format(new Date(comment.created_at), "MMM d, h:mm a")}</span>
-                                {(currentUser?.id === comment.author.id || currentUser?.role === 'TEACHER') && (
+                                {(currentUser?.id === comment.author.id || currentUser?.role === 'TEACHER') && !isReadOnly && (
                                   <button 
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentToDelete(comment.id); }}
                                     className="opacity-0 group-hover:opacity-100 p-1 bg-destructive/10 text-destructive rounded transition-all hover:bg-destructive hover:text-destructive-foreground relative z-10 cursor-pointer"
@@ -321,50 +323,58 @@ export const TaskDialogs = ({
                 )}
               </div>
               
-              <div className="flex flex-col gap-2 pt-2">
-                <Textarea 
-                  placeholder="Add a comment..." 
-                  value={newComment} 
-                  onChange={e => setNewComment(e.target.value)} 
-                  rows={2}
-                  className="resize-none"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handlePostComment();
-                    }
-                  }}
-                />
-                <Button 
-                  size="sm" 
-                  className="self-end" 
-                  onClick={handlePostComment} 
-                  disabled={!newComment.trim() || isSubmittingComment}
-                >
-                  {isSubmittingComment ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-1" />}
-                  Post Comment
-                </Button>
-              </div>
+              {!isReadOnly && (
+                <div className="flex flex-col gap-2 pt-2">
+                  <Textarea 
+                    placeholder="Add a comment..." 
+                    value={newComment} 
+                    onChange={e => setNewComment(e.target.value)} 
+                    rows={2}
+                    className="resize-none"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handlePostComment();
+                      }
+                    }}
+                  />
+                  <Button 
+                    size="sm" 
+                    className="self-end" 
+                    onClick={handlePostComment} 
+                    disabled={!newComment.trim() || isSubmittingComment}
+                  >
+                    {isSubmittingComment ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-1" />}
+                    Post Comment
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter className="mt-4 pt-4 border-t w-full">
-            <div className="flex justify-between w-full">
-              <Button 
-                variant="destructive" 
-                onClick={() => setTaskToDelete(editTaskId!)}
-                disabled={editLoading || !editTaskId}
-                type="button"
-              >
-                Delete Task
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
-                <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
-                  {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Save Changes
-                </Button>
+            {isReadOnly ? (
+              <div className="flex justify-end w-full">
+                <Button variant="outline" className="rounded-lg font-semibold" onClick={() => setEditOpen(false)}>Close</Button>
               </div>
-            </div>
+            ) : (
+              <div className="flex justify-between w-full">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setTaskToDelete(editTaskId!)}
+                  disabled={editLoading || !editTaskId}
+                  type="button"
+                >
+                  Delete Task
+                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editLoading}>Cancel</Button>
+                  <Button onClick={handleUpdateTask} disabled={editLoading || !editTitle.trim()}>
+                    {editLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
