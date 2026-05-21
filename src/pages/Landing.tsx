@@ -503,11 +503,11 @@ const TeamCard = ({ team, index }: { team: TeamSummary; index: number }) => {
       <div
         className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-4 -translate-x-full group-hover/card:translate-x-0 px-6"
         style={{
-          background: team.picture_url
-            ? `linear-gradient(rgba(7, 74, 117, 0.85), rgba(7, 74, 117, 0.95))`
+          background: team.picture_url 
+            ? `linear-gradient(rgba(7, 74, 117, 0.2), rgba(7, 74, 117, 0.3))` 
             : '#074a75',
           backgroundImage: team.picture_url
-            ? `linear-gradient(rgba(7, 74, 117, 0.85), rgba(7, 74, 117, 0.95)), url(${team.picture_url.startsWith('/') ? `${BASE_URL}${team.picture_url}` : team.picture_url})`
+            ? `linear-gradient(rgba(7, 74, 117, 0.2), rgba(7, 74, 117, 0.3)), url(${team.picture_url.startsWith('/') ? `${BASE_URL}${team.picture_url}` : team.picture_url})`
             : undefined,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
