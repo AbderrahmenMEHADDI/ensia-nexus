@@ -1,4 +1,4 @@
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProjectStatusBadge } from '@/components/Badges';
@@ -22,6 +22,9 @@ interface ProjectBoardHeaderProps {
   getUserById: (id: number) => User | undefined;
   labName?: string;
   groupName?: string;
+  isIndividualProjectCreator?: boolean;
+  handleOpenEditProject?: () => void;
+  setDeleteProjectConfirmOpen?: (open: boolean) => void;
 }
 
 export const ProjectBoardHeader = ({
@@ -40,6 +43,9 @@ export const ProjectBoardHeader = ({
   getUserById,
   labName,
   groupName,
+  isIndividualProjectCreator,
+  handleOpenEditProject,
+  setDeleteProjectConfirmOpen,
 }: ProjectBoardHeaderProps) => {
   return (
     <div className="mb-8">
@@ -70,6 +76,26 @@ export const ProjectBoardHeader = ({
             <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white" onClick={() => setMemberFormOpen(true)}>
               <Plus className="h-4 w-4 mr-1" /> Member Details Form
             </Button>
+            {isIndividualProjectCreator && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg h-9 font-semibold text-blue-600 border-blue-600/20 hover:bg-blue-50 hover:border-blue-600/50 hover:text-blue-700"
+                  onClick={handleOpenEditProject}
+                >
+                  <Edit className="h-4 w-4 mr-1" /> Edit Project
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg h-9 font-semibold text-red-600 border-red-600/20 hover:bg-red-50 hover:border-red-600/50 hover:text-red-700"
+                  onClick={() => setDeleteProjectConfirmOpen?.(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" /> Delete Project
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>

@@ -114,8 +114,8 @@ const SignIn = () => {
       <div className="flex-1 flex flex-col md:flex-row items-center justify-center p-4 py-12 bg-[#F8FAFC] gap-12 md:gap-24">
         {/* Left Side: Logo & Text */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col items-center md:items-start text-center md:text-left max-w-sm">
-          <div className="h-16 w-16 rounded-2xl bg-[#F37F20] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
-            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10 brightness-0 invert" />
+          <div className="h-16 w-16 flex items-center justify-center mb-6">
+            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-[#074a75] mb-3">Welcome back</h1>
           <p className="text-base text-slate-500 leading-relaxed">Sign in to ENSIA Nexus to access your research projects, connect with your lab, and discover new opportunities.</p>

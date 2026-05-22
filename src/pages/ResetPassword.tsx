@@ -75,8 +75,8 @@ const ResetPassword = () => {
         className="w-full max-w-sm"
       >
         <div className="flex flex-col items-center mb-10">
-          <div className="h-14 w-14 rounded-xl bg-[#F37F20] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20">
-            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-8 w-8 brightness-0 invert" />
+          <div className="h-14 w-14 flex items-center justify-center mb-6">
+            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-8 w-8" />
           </div>
           <h1 className="text-2xl md:text-3xl font-display font-bold text-[#074a75]">Reset password</h1>
           <p className="text-sm md:text-base mt-2" style={{ color: '#64748B' }}>Choose a new password for your account</p>

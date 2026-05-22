@@ -28,14 +28,16 @@ export const canUserReviewProject = (
 
 export const canUserReviewProjectApplication = (
   userId: number | undefined,
-  project: Pick<Project, 'id' | 'group_id'>,
+  project: Pick<Project, 'id' | 'group_id' | 'created_by'>,
   groups: Array<Pick<ResearchGroup, 'id' | 'leader_user_id'>>,
   participants: Array<Pick<ProjectParticipant, 'project_id' | 'user_id' | 'participant_role'>>
 ): boolean => {
   if (!userId) return false;
+  if ((project.group_id === null || project.group_id === undefined) && project.created_by === userId) return true;
   if (canUserReviewProject(userId, project, groups)) return true;
 
   return participants.some(
     p => p.project_id === project.id && p.user_id === userId && hasReviewerRole(p.participant_role)
   );
 };
+

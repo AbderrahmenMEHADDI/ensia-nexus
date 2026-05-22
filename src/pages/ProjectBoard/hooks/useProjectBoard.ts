@@ -79,6 +79,17 @@ export const useProjectBoard = () => {
   const [formDeadline, setFormDeadline] = useState('');
   const [formCreateProjectLoading, setFormCreateProjectLoading] = useState(false);
 
+  const [editProjectOpen, setEditProjectOpen] = useState(false);
+  const [editProjectTitle, setEditProjectTitle] = useState('');
+  const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [editProjectVisibility, setEditProjectVisibility] = useState<Visibility>('PRIVATE');
+  const [editProjectAcceptingCollaborators, setEditProjectAcceptingCollaborators] = useState(false);
+  const [editProjectDeadline, setEditProjectDeadline] = useState('');
+  const [editProjectLoading, setEditProjectLoading] = useState(false);
+
+  const [deleteProjectConfirmOpen, setDeleteProjectConfirmOpen] = useState(false);
+  const [deleteProjectLoading, setDeleteProjectLoading] = useState(false);
+
   const [formMemberProjectId, setFormMemberProjectId] = useState('');
   const [formMemberUserId, setFormMemberUserId] = useState('');
   const [formMemberRole, setFormMemberRole] = useState<ParticipantRole>('MEMBER');
@@ -407,6 +418,79 @@ export const useProjectBoard = () => {
     }
   };
 
+  const handleOpenEditProject = () => {
+    if (!project) return;
+    setEditProjectTitle(project.title);
+    setEditProjectDescription(project.description || '');
+    setEditProjectVisibility(project.visibility);
+    setEditProjectAcceptingCollaborators(project.accepting_collaborators);
+    setEditProjectDeadline(project.deadline || '');
+    setEditProjectOpen(true);
+  };
+
+  const handleUpdateProject = async () => {
+    if (!project || !editProjectTitle.trim()) return;
+    setEditProjectLoading(true);
+    const data = {
+      title: editProjectTitle.trim(),
+      description: editProjectDescription.trim(),
+      visibility: editProjectVisibility,
+      accepting_collaborators: editProjectAcceptingCollaborators,
+      deadline: editProjectDeadline || null,
+    };
+    try {
+      const updated = await apiRepository.updateProject(project.id, data);
+      setProjects(prev => prev.map(p => p.id === project.id ? updated : p));
+      toast({ title: 'Project updated successfully' });
+      setEditProjectOpen(false);
+    } catch {
+      toast({ title: 'Failed to update project', variant: 'destructive' });
+    } finally {
+      setEditProjectLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    setDeleteProjectLoading(true);
+    try {
+      await apiRepository.deleteProject(project.id);
+      toast({ title: 'Project deleted successfully' });
+      setDeleteProjectConfirmOpen(false);
+      
+      const refreshedProjects = await apiRepository.getProjects();
+      setProjects(refreshedProjects);
+      
+      if (refreshedProjects.length > 0) {
+        let initialProjectId: number | null = null;
+        if (!isStudent) {
+          initialProjectId = refreshedProjects[0].id;
+        } else {
+          const acceptedApp = applications.find(app => app.status === 'ACCEPTED');
+          if (acceptedApp) initialProjectId = acceptedApp.project_id;
+        }
+        if (initialProjectId) {
+          setSelectedProjectId(initialProjectId);
+          await loadProjectData(initialProjectId);
+        } else {
+          setSelectedProjectId(null);
+          setLocalTasks([]);
+          setParticipants([]);
+          setResources([]);
+        }
+      } else {
+        setSelectedProjectId(null);
+        setLocalTasks([]);
+        setParticipants([]);
+        setResources([]);
+      }
+    } catch {
+      toast({ title: 'Failed to delete project', variant: 'destructive' });
+    } finally {
+      setDeleteProjectLoading(false);
+    }
+  };
+
   const handleAddMemberFromForm = async () => {
     if (!formMemberProjectId || !formMemberUserId) return;
     setFormAddMemberLoading(true);
@@ -584,6 +668,25 @@ export const useProjectBoard = () => {
     handleReviewSelectedProject,
     getApplyButtonLabel,
     getBlockingApplication,
+    editProjectOpen,
+    setEditProjectOpen,
+    editProjectTitle,
+    setEditProjectTitle,
+    editProjectDescription,
+    setEditProjectDescription,
+    editProjectVisibility,
+    setEditProjectVisibility,
+    editProjectAcceptingCollaborators,
+    setEditProjectAcceptingCollaborators,
+    editProjectDeadline,
+    setEditProjectDeadline,
+    editProjectLoading,
+    deleteProjectConfirmOpen,
+    setDeleteProjectConfirmOpen,
+    deleteProjectLoading,
+    handleOpenEditProject,
+    handleUpdateProject,
+    handleDeleteProject,
     resourceFormOpen,
     setResourceFormOpen,
     newResourceTitle,

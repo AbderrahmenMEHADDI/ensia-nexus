@@ -73,8 +73,8 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
         <div className="container flex items-center justify-between px-4 sm:px-6 h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="h-9 w-9 rounded-lg bg-[#F37F20] flex items-center justify-center group-hover:scale-105 transition-transform">
-              <img src="/logo_small.svg" alt="Logo" className="h-6 w-6 brightness-0 invert" />
+            <div className="h-9 w-9 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <img src="/logo_small.svg" alt="Logo" className="h-6 w-6" />
             </div>
             <span className="font-display font-bold text-[#0F172A] text-lg tracking-tight">ENSIA Nexus</span>
           </Link>
@@ -144,8 +144,8 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="space-y-6">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: '#F37F20' }}>
-                  <img src="/logo_small.svg" alt="Logo" className="h-5 w-5 brightness-0 invert" />
+                <div className="h-8 w-8 flex items-center justify-center">
+                  <img src="/logo_small.svg" alt="Logo" className="h-5 w-5" />
                 </div>
                 <span className="font-display font-bold text-white text-lg">ENSIA Nexus</span>
               </div>

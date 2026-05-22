@@ -185,7 +185,7 @@ const Applications = () => {
         status,
         decision_note: note.trim() || undefined
       });
-      
+
       setCollabSubmissions(prev =>
         prev.map(sub => (sub.id === submissionId ? updated : sub))
       );
@@ -194,7 +194,7 @@ const Applications = () => {
         title: `Submission ${status === 'ACCEPTED' ? 'Approved' : 'Rejected'}`,
         description: `Successfully processed collaboration response.`
       });
-      
+
       setCollabDecisionNote(prev => {
         const next = { ...prev };
         delete next[submissionId];
@@ -241,11 +241,16 @@ const Applications = () => {
       const p = getProjectById(app.project_id);
       if (!p) return false;
 
+      // Teachers who have review access (e.g. group leader, project lead/reviewer, or individual project creator)
+      // should see all applications (including PENDING) for their projects.
       const canReview = canUserReviewProjectApplication(user?.id, p, groups, participants);
       if (canReview) return true;
+
+      // Otherwise, they only see the student if the application was already accepted.
       return app.status === 'ACCEPTED';
     });
   }, [sortedApps, user?.id, projects, groups, participants, isTeacher]);
+
 
   const filteredExternalSubmissions = useMemo(() => {
     return externalSubmissions.filter(sub => {
@@ -367,7 +372,7 @@ const Applications = () => {
         status: decision,
         decision_note: submissionDecisionNote.trim() || undefined,
       });
-      
+
       if (decision === 'REJECTED') {
         setExternalSubmissions(prev => prev.filter(sub => sub.id !== submissionId));
         toast({ title: 'Submission rejected successfully' });
@@ -589,7 +594,7 @@ const Applications = () => {
                       )} />
 
                       {/* Compact Header Row */}
-                      <div 
+                      <div
                         onClick={() => toggleCard(app.id)}
                         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 cursor-pointer select-none"
                       >
@@ -612,7 +617,7 @@ const Applications = () => {
                                 </span>
                               )}
                             </div>
-                            
+
                             <div className="text-[11px] text-muted-foreground truncate max-w-[200px] flex items-center gap-2 mt-0.5">
                               <span className="flex items-center gap-0.5"><Calendar className="h-3 w-3" /> {new Date(app.created_at).toLocaleDateString()}</span>
                             </div>
@@ -888,7 +893,7 @@ const Applications = () => {
                 >
                   <Card className="overflow-hidden border-border hover:shadow-md transition-shadow group">
                     <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-[#F37F20]" />
-                    
+
                     <CardHeader className="pb-4">
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
@@ -975,8 +980,8 @@ const Applications = () => {
                                             <Badge className={cn(
                                               "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
                                               sub.status === 'ACCEPTED' ? 'bg-success/10 text-success border-success/20' :
-                                              sub.status === 'REJECTED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                                              'bg-amber-400/10 text-amber-600 border-amber-400/20'
+                                                sub.status === 'REJECTED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                                                  'bg-amber-400/10 text-amber-600 border-amber-400/20'
                                             )}>
                                               {sub.status}
                                             </Badge>
@@ -1128,7 +1133,7 @@ const Applications = () => {
                 >
                   <Card className="border border-border/60 hover:border-border transition-all duration-200 rounded-2xl overflow-hidden bg-card/40 hover:bg-card/75 shadow-sm group">
                     {/* Compact Header Row */}
-                    <div 
+                    <div
                       onClick={() => toggleCard(sub.id)}
                       className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 cursor-pointer select-none"
                     >
@@ -1145,7 +1150,7 @@ const Applications = () => {
                             </h4>
                             <ApplicationStatusBadge status={sub.status} />
                           </div>
-                          
+
                           <div className="text-[11px] text-muted-foreground truncate max-w-[200px]">
                             {sub.email}
                           </div>
@@ -1213,10 +1218,10 @@ const Applications = () => {
                                     </div>
                                   )}
                                 </div>
-                                
-                                <a 
-                                  href={sub.cv_url} 
-                                  target="_blank" 
+
+                                <a
+                                  href={sub.cv_url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold bg-background border border-border/80 hover:bg-secondary transition-all shadow-sm shrink-0 self-start sm:self-auto"
                                 >
@@ -1268,25 +1273,25 @@ const Applications = () => {
                                       className="w-full px-3 py-2 rounded-lg border border-border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary resize-none"
                                     />
                                     <div className="flex gap-2">
-                                      <Button 
-                                        className="flex-1 h-9 rounded-lg bg-success hover:bg-success/90 text-xs font-bold" 
+                                      <Button
+                                        className="flex-1 h-9 rounded-lg bg-success hover:bg-success/90 text-xs font-bold"
                                         onClick={() => handleSubmissionReview(sub.id, 'ACCEPTED')}
                                         disabled={reviewingSubmissionId === sub.id}
                                       >
                                         {reviewingSubmissionId === sub.id && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
                                         Approve
                                       </Button>
-                                      <Button 
-                                        className="flex-1 h-9 rounded-lg bg-destructive hover:bg-destructive/90 text-xs font-bold" 
+                                      <Button
+                                        className="flex-1 h-9 rounded-lg bg-destructive hover:bg-destructive/90 text-xs font-bold"
                                         onClick={() => handleSubmissionReview(sub.id, 'REJECTED')}
                                         disabled={reviewingSubmissionId === sub.id}
                                       >
                                         {reviewingSubmissionId === sub.id && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
                                         Reject
                                       </Button>
-                                      <Button 
-                                        variant="ghost" 
-                                        className="h-9 rounded-lg px-4 text-xs font-semibold" 
+                                      <Button
+                                        variant="ghost"
+                                        className="h-9 rounded-lg px-4 text-xs font-semibold"
                                         onClick={() => { setSelectedSubmissionId(null); setSubmissionDecisionNote(''); }}
                                         disabled={reviewingSubmissionId === sub.id}
                                       >
