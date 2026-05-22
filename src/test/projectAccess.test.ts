@@ -50,4 +50,12 @@ describe('projectAccess helpers', () => {
     expect(canUserReviewProjectApplication(8, project, groups, participants)).toBe(true);
     expect(canUserReviewProjectApplication(9, project, groups, participants)).toBe(false);
   });
+
+  it('allows application review for creator of individual projects', () => {
+    const project = { id: 101, group_id: null, created_by: 42 };
+    const participants: any[] = [];
+    expect(canUserReviewProjectApplication(42, project, [], participants)).toBe(true);
+    expect(canUserReviewProjectApplication(43, project, [], participants)).toBe(false);
+  });
 });
+

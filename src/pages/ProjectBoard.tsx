@@ -110,6 +110,24 @@ const ProjectBoard = () => {
           handleAddMemberFromForm={board.handleAddMemberFromForm}
           projects={board.projects}
           availableMemberOptions={board.availableMemberOptions}
+          editProjectOpen={board.editProjectOpen}
+          setEditProjectOpen={board.setEditProjectOpen}
+          editProjectTitle={board.editProjectTitle}
+          setEditProjectTitle={board.setEditProjectTitle}
+          editProjectDescription={board.editProjectDescription}
+          setEditProjectDescription={board.setEditProjectDescription}
+          editProjectVisibility={board.editProjectVisibility}
+          setEditProjectVisibility={board.setEditProjectVisibility}
+          editProjectAcceptingCollaborators={board.editProjectAcceptingCollaborators}
+          setEditProjectAcceptingCollaborators={board.setEditProjectAcceptingCollaborators}
+          editProjectDeadline={board.editProjectDeadline}
+          setEditProjectDeadline={board.setEditProjectDeadline}
+          editProjectLoading={board.editProjectLoading}
+          handleUpdateProject={board.handleUpdateProject}
+          deleteProjectConfirmOpen={board.deleteProjectConfirmOpen}
+          setDeleteProjectConfirmOpen={board.setDeleteProjectConfirmOpen}
+          deleteProjectLoading={board.deleteProjectLoading}
+          handleDeleteProject={board.handleDeleteProject}
         />
       </div>
     );
@@ -134,6 +152,9 @@ const ProjectBoard = () => {
           getUserById={board.getUserById}
           labName={board.lab?.name.split('—')[0]?.trim()}
           groupName={board.group?.name}
+          isIndividualProjectCreator={board.project?.group_id === null && board.project?.created_by === board.user?.id && board.user?.role === 'TEACHER'}
+          handleOpenEditProject={board.handleOpenEditProject}
+          setDeleteProjectConfirmOpen={board.setDeleteProjectConfirmOpen}
         />
 
         <KanbanBoard
@@ -273,6 +294,24 @@ const ProjectBoard = () => {
         handleAddMemberFromForm={board.handleAddMemberFromForm}
         projects={board.projects}
         availableMemberOptions={board.availableMemberOptions}
+        editProjectOpen={board.editProjectOpen}
+        setEditProjectOpen={board.setEditProjectOpen}
+        editProjectTitle={board.editProjectTitle}
+        setEditProjectTitle={board.setEditProjectTitle}
+        editProjectDescription={board.editProjectDescription}
+        setEditProjectDescription={board.setEditProjectDescription}
+        editProjectVisibility={board.editProjectVisibility}
+        setEditProjectVisibility={board.setEditProjectVisibility}
+        editProjectAcceptingCollaborators={board.editProjectAcceptingCollaborators}
+        setEditProjectAcceptingCollaborators={board.setEditProjectAcceptingCollaborators}
+        editProjectDeadline={board.editProjectDeadline}
+        setEditProjectDeadline={board.setEditProjectDeadline}
+        editProjectLoading={board.editProjectLoading}
+        handleUpdateProject={board.handleUpdateProject}
+        deleteProjectConfirmOpen={board.deleteProjectConfirmOpen}
+        setDeleteProjectConfirmOpen={board.setDeleteProjectConfirmOpen}
+        deleteProjectLoading={board.deleteProjectLoading}
+        handleDeleteProject={board.handleDeleteProject}
       />
 
       <ResourceDialogs

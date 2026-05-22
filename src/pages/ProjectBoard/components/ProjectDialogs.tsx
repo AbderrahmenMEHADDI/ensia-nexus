@@ -39,6 +39,26 @@ interface ProjectDialogsProps {
   handleAddMemberFromForm: () => void;
   projects: Project[];
   availableMemberOptions: User[];
+
+  editProjectOpen?: boolean;
+  setEditProjectOpen?: (open: boolean) => void;
+  editProjectTitle?: string;
+  setEditProjectTitle?: (val: string) => void;
+  editProjectDescription?: string;
+  setEditProjectDescription?: (val: string) => void;
+  editProjectVisibility?: Visibility;
+  setEditProjectVisibility?: (val: Visibility) => void;
+  editProjectAcceptingCollaborators?: boolean;
+  setEditProjectAcceptingCollaborators?: (val: boolean) => void;
+  editProjectDeadline?: string;
+  setEditProjectDeadline?: (val: string) => void;
+  editProjectLoading?: boolean;
+  handleUpdateProject?: () => void;
+
+  deleteProjectConfirmOpen?: boolean;
+  setDeleteProjectConfirmOpen?: (open: boolean) => void;
+  deleteProjectLoading?: boolean;
+  handleDeleteProject?: () => void;
 }
 
 export const ProjectDialogs = ({
@@ -72,6 +92,26 @@ export const ProjectDialogs = ({
   handleAddMemberFromForm,
   projects,
   availableMemberOptions,
+
+  editProjectOpen,
+  setEditProjectOpen,
+  editProjectTitle,
+  setEditProjectTitle,
+  editProjectDescription,
+  setEditProjectDescription,
+  editProjectVisibility,
+  setEditProjectVisibility,
+  editProjectAcceptingCollaborators,
+  setEditProjectAcceptingCollaborators,
+  editProjectDeadline,
+  setEditProjectDeadline,
+  editProjectLoading,
+  handleUpdateProject,
+
+  deleteProjectConfirmOpen,
+  setDeleteProjectConfirmOpen,
+  deleteProjectLoading,
+  handleDeleteProject,
 }: ProjectDialogsProps) => {
   return (
     <>
@@ -202,6 +242,91 @@ export const ProjectDialogs = ({
             <Button onClick={handleAddMemberFromForm} disabled={formAddMemberLoading || !formMemberProjectId || !formMemberUserId}>
               {formAddMemberLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editProjectOpen} onOpenChange={setEditProjectOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Project Details</DialogTitle>
+            <DialogDescription>Make changes to your independent project details.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Project Title</Label>
+              <Input value={editProjectTitle} onChange={e => setEditProjectTitle?.(e.target.value)} placeholder="Project title" />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea value={editProjectDescription} onChange={e => setEditProjectDescription?.(e.target.value)} rows={4} placeholder="Project description" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Research Group</Label>
+                <Input value="None (Independent Project)" disabled className="bg-muted text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select value={editProjectVisibility} onValueChange={v => setEditProjectVisibility?.(v as Visibility)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PRIVATE">Private</SelectItem>
+                    <SelectItem value="PUBLIC">Public</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 items-center pt-2">
+              <div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Accepting Collaborators</Label>
+                  <p className="text-[10px] text-muted-foreground">Allow students to apply.</p>
+                </div>
+                <Switch
+                  checked={editProjectAcceptingCollaborators}
+                  onCheckedChange={setEditProjectAcceptingCollaborators}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Deadline</Label>
+                <Input
+                  type="date"
+                  value={editProjectDeadline}
+                  onChange={e => setEditProjectDeadline?.(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditProjectOpen?.(false)}>Cancel</Button>
+            <Button onClick={handleUpdateProject} disabled={editProjectLoading || !editProjectTitle?.trim()}>
+              {editProjectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Project Confirmation Dialog */}
+      <Dialog open={deleteProjectConfirmOpen} onOpenChange={setDeleteProjectConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">Delete Project</DialogTitle>
+            <DialogDescription>
+              Are you absolutely sure you want to delete this project? This action is permanent and cannot be undone. All tasks, resources, and applications related to this project will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteProjectConfirmOpen?.(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteProject} disabled={deleteProjectLoading}>
+              {deleteProjectLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete Project
             </Button>
           </DialogFooter>
         </DialogContent>

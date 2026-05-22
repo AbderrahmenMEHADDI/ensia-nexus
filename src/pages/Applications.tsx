@@ -214,13 +214,17 @@ const Applications = () => {
 
       const p = getProjectById(app.project_id);
       if (!p) return false;
-      const g = getGroupById(p.group_id);
-      const isLeader = g?.leader_user_id === user?.id;
 
-      if (isLeader) return true;
+      // Teachers who have review access (e.g. group leader, project lead/reviewer, or individual project creator)
+      // should see all applications (including PENDING) for their projects.
+      const canReview = canUserReviewProjectApplication(user?.id, p, groups, participants);
+      if (canReview) return true;
+
+      // Otherwise, they only see the student if the application was already accepted.
       return app.status === 'ACCEPTED';
     });
-  }, [sortedApps, user?.id, projects, groups, isTeacher]);
+  }, [sortedApps, user?.id, projects, groups, participants, isTeacher]);
+
 
   const uniqueProjectIdsInApps = useMemo(() => Array.from(new Set(apps.map(a => a.project_id))), [apps]);
 
