@@ -138,6 +138,7 @@ export interface Project {
   decision_note?: string;
   created_by: number;
   created_at: string;
+  participants?: ProjectParticipant[];
 }
 
 export interface ProjectParticipant {

@@ -599,15 +599,29 @@ const Applications = () => {
                         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 cursor-pointer select-none"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <ProfileAvatar
-                            userId={student?.id}
-                            name={student?.full_name}
-                            className="h-10 w-10 rounded-xl ring-1 ring-border shadow-sm shrink-0"
-                            textClassName="text-sm font-bold"
-                          />
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (student) setViewingProfileUser(student);
+                            }}
+                            className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                          >
+                            <ProfileAvatar
+                              userId={student?.id}
+                              name={student?.full_name}
+                              className="h-10 w-10 rounded-xl ring-1 ring-border shadow-sm shrink-0"
+                              textClassName="text-sm font-bold"
+                            />
+                          </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className="text-sm font-extrabold text-foreground tracking-tight truncate max-w-[180px]">
+                              <h4
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (student) setViewingProfileUser(student);
+                                }}
+                                className="text-sm font-extrabold text-foreground tracking-tight truncate max-w-[180px] cursor-pointer hover:text-primary transition-colors"
+                              >
                                 {student?.full_name || 'Candidate'}
                               </h4>
                               <ApplicationStatusBadge status={app.status} />

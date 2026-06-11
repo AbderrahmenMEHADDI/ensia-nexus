@@ -214,9 +214,14 @@ export const apiRepository = {
     api.put<CollaborationSubmission>(`/collaboration-submissions/${id}`, data),
 
   // ── Notifications ────────────────────────────────────────────────────────
-  getNotifications: () => api.get<NotificationListResponse>('/notifications/'),
-  markNotificationAsRead: (id: number) => api.patch<Notification>(`/notifications/${id}/read`),
-  markAllNotificationsAsRead: () => api.post<{ message: string }>('/notifications/read-all'),
+  getNotifications: (params?: { skip?: number; limit?: number }) => {
+    const qs = params ? `?skip=${params.skip ?? 0}&limit=${params.limit ?? 50}` : '';
+    return api.get<NotificationListResponse>(`/notifications/${qs}`);
+  },
+  markNotificationAsRead: (id: number) => api.put<void>(`/notifications/${id}/read`),
+  markAllNotificationsAsRead: () => api.put<void>('/notifications/read-all'),
+  deleteNotification: (id: number) => api.delete<void>(`/notifications/${id}`),
+  clearReadNotifications: () => api.delete<void>('/notifications/clear-read'),
 
   // ── Analytics ────────────────────────────────────────────────────────────
   getSystemAnalytics: () => api.get<AnalyticsResponse>('/analytics/system-stats'),

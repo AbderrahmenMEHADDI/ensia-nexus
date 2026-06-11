@@ -151,8 +151,8 @@ export const useProjectBoard = () => {
           if (!isStudent) {
             initialProjectId = p[0].id;
           } else {
-            const acceptedApp = a.find(app => app.status === 'ACCEPTED');
-            if (acceptedApp) initialProjectId = acceptedApp.project_id;
+            const joinedProj = p.find(proj => proj.participants?.some(part => part.user_id === user?.id));
+            if (joinedProj) initialProjectId = joinedProj.id;
           }
         }
 
@@ -211,13 +211,13 @@ export const useProjectBoard = () => {
         } as User))
     : [];
 
-  const acceptedProjectIds = applications
-    .filter(a => a.status === 'ACCEPTED')
-    .map(a => a.project_id);
-  const hasAccepted = acceptedProjectIds.length > 0;
+  const joinedProjectIds = projects
+    .filter(p => p.participants?.some(part => part.user_id === user?.id))
+    .map(p => p.id);
+  const hasJoined = joinedProjectIds.length > 0;
 
   const publicProjects = projects.filter(p => 
-    isProjectOpenForStudentApplications(p) && !acceptedProjectIds.includes(Number(p.id))
+    isProjectOpenForStudentApplications(p) && !joinedProjectIds.includes(Number(p.id))
   );
   const validatedGroups = groups.filter(g => 
     g.is_validated && (
@@ -563,8 +563,8 @@ export const useProjectBoard = () => {
     }
   };
 
-  const displayProjects = isStudent && hasAccepted
-    ? projects.filter(p => acceptedProjectIds.includes(Number(p.id)))
+  const displayProjects = isStudent && hasJoined
+    ? projects.filter(p => joinedProjectIds.includes(Number(p.id)))
     : projects;
 
   return {
@@ -573,6 +573,9 @@ export const useProjectBoard = () => {
     canManageProjects,
     canCreateProjects,
     projects: displayProjects,
+    allProjects: projects,
+    joinedProjectIds,
+    hasJoined,
     applications,
     localTasks,
     participants,
