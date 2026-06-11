@@ -35,16 +35,13 @@ const ProjectBoard = () => {
     );
   }
 
-  const acceptedProjectIds = board.applications
-    .filter(a => a.status === 'ACCEPTED')
-    .map(a => a.project_id);
-  const isMemberOfSelected = board.selectedProjectId ? acceptedProjectIds.includes(board.selectedProjectId) : false;
+  const isMemberOfSelected = board.selectedProjectId ? board.joinedProjectIds.includes(board.selectedProjectId) : false;
 
   if (board.isStudent && !isMemberOfSelected) {
     return (
       <StudentDiscoveryView
         publicProjects={board.publicProjects}
-        projects={board.projects}
+        projects={board.allProjects}
         applications={board.applications}
         getGroupById={board.getGroupById}
         getBlockingApplication={board.getBlockingApplication}
@@ -331,7 +328,7 @@ const ProjectBoard = () => {
         <div className="mt-16 pt-10 border-t border-border/50">
           <StudentDiscoveryView
             publicProjects={board.publicProjects}
-            projects={board.projects}
+            projects={board.allProjects}
             applications={board.applications}
             getGroupById={board.getGroupById}
             getBlockingApplication={board.getBlockingApplication}
