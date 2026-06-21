@@ -18,7 +18,7 @@ const statusColumns: { status: TaskStatus; label: string; color: string }[] = [
 ];
 
 const resourceIcons: Record<string, React.ElementType> = {
-  PAPER_DOC: FileText,
+  INTERNAL_DOC: FileText,
   GIT_REPO: GitBranch,
   DATASET: Database,
   OTHER: ExternalLink,
@@ -95,6 +95,11 @@ const ProjectBoard = () => {
           formCreateProjectLoading={board.formCreateProjectLoading}
           handleCreateProjectFromForm={board.handleCreateProjectFromForm}
           validatedGroups={board.validatedGroups}
+          isIndependent={board.project?.group_id === null || board.project?.group_id === undefined}
+          leaderGroups={board.leaderGroups}
+          editProjectGroupId={board.editProjectGroupId}
+          setEditProjectGroupId={board.setEditProjectGroupId}
+          currentGroupName={board.group?.name}
           memberFormOpen={board.memberFormOpen}
           setMemberFormOpen={board.setMemberFormOpen}
           formMemberProjectId={board.formMemberProjectId}
@@ -149,7 +154,10 @@ const ProjectBoard = () => {
           getUserById={board.getUserById}
           labName={board.lab?.name.split('—')[0]?.trim()}
           groupName={board.group?.name}
-          isIndividualProjectCreator={board.project?.group_id === null && board.project?.created_by === board.user?.id && board.user?.role === 'TEACHER'}
+          isIndividualProjectCreator={
+            (board.project?.group_id === null && board.project?.created_by === board.user?.id && board.user?.role === 'TEACHER') ||
+            (board.project?.group_id !== null && board.project?.group_id !== undefined && board.group?.leader_user_id === board.user?.id)
+          }
           handleOpenEditProject={board.handleOpenEditProject}
           setDeleteProjectConfirmOpen={board.setDeleteProjectConfirmOpen}
         />
@@ -279,6 +287,11 @@ const ProjectBoard = () => {
         formCreateProjectLoading={board.formCreateProjectLoading}
         handleCreateProjectFromForm={board.handleCreateProjectFromForm}
         validatedGroups={board.validatedGroups}
+        isIndependent={board.project?.group_id === null || board.project?.group_id === undefined}
+        leaderGroups={board.leaderGroups}
+        editProjectGroupId={board.editProjectGroupId}
+        setEditProjectGroupId={board.setEditProjectGroupId}
+        currentGroupName={board.group?.name}
         memberFormOpen={board.memberFormOpen}
         setMemberFormOpen={board.setMemberFormOpen}
         formMemberProjectId={board.formMemberProjectId}

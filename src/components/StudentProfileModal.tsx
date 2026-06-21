@@ -43,6 +43,30 @@ export const StudentProfileModal = ({ user, onClose }: StudentProfileModalProps)
     fetchProfileData();
   }, [user]);
 
+  const displayProfile = profile || (cvs.length > 0 ? {
+    user_id: user?.id,
+    university: cvs[0].university || '',
+    level: cvs[0].level || '',
+    major: cvs[0].major || '',
+    bio: cvs[0].bio,
+    experience: cvs[0].experience,
+    research_interests: cvs[0].research_interests,
+    skills: cvs[0].skills,
+    cv_url: cvs[0].cv_url,
+    created_at: cvs[0].created_at,
+  } as unknown as Student : user ? {
+    user_id: user.id,
+    university: user.institution || '',
+    level: '',
+    major: user.department || '',
+    bio: '',
+    experience: '',
+    research_interests: '',
+    skills: '',
+    cv_url: '',
+    created_at: '',
+  } as unknown as Student : null);
+
   return (
     <Dialog open={!!user} onOpenChange={(val) => { if (!val) onClose(); }}>
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
@@ -60,39 +84,39 @@ export const StudentProfileModal = ({ user, onClose }: StudentProfileModalProps)
           <div className="py-12 flex justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : profile ? (
+        ) : displayProfile ? (
           <div className="space-y-6 mt-4">
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Academic Background</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground block text-xs mb-1">University</span>
-                  <p className="font-medium">{profile.university || 'Not specified'}</p>
+                  <p className="font-medium">{displayProfile.university || 'Not specified'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-xs mb-1">Level</span>
-                  <p className="font-medium">{profile.level || 'Not specified'}</p>
+                  <p className="font-medium">{displayProfile.level || 'Not specified'}</p>
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground block text-xs mb-1">Major</span>
-                  <p className="font-medium">{profile.major || 'Not specified'}</p>
+                  <p className="font-medium">{displayProfile.major || 'Not specified'}</p>
                 </div>
                 <div className="col-span-2">
                   <span className="text-muted-foreground block text-xs mb-1">Bio</span>
-                  <p className="text-foreground/80 leading-relaxed">{profile.bio || 'No bio provided.'}</p>
+                  <p className="text-foreground/80 leading-relaxed">{displayProfile.bio || 'No bio provided.'}</p>
                 </div>
               </div>
             </section>
 
-            {(profile.skills || profile.research_interests) && (
+            {(displayProfile.skills || displayProfile.research_interests) && (
               <section className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Skills & Interests</h3>
                 <div className="grid sm:grid-cols-2 gap-4 text-sm">
-                  {profile.skills && (
+                  {displayProfile.skills && (
                     <div>
                       <span className="text-muted-foreground block text-xs mb-2">Skills</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {profile.skills.split(',').filter(Boolean).map((skill, i) => (
+                        {displayProfile.skills.split(',').filter(Boolean).map((skill, i) => (
                           <span key={i} className="px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground text-[11px] font-medium border border-border shadow-sm">
                             {skill.trim()}
                           </span>
@@ -100,11 +124,11 @@ export const StudentProfileModal = ({ user, onClose }: StudentProfileModalProps)
                       </div>
                     </div>
                   )}
-                  {profile.research_interests && (
+                  {displayProfile.research_interests && (
                     <div>
                       <span className="text-muted-foreground block text-xs mb-2">Research Interests</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {profile.research_interests.split(',').filter(Boolean).map((interest, i) => (
+                        {displayProfile.research_interests.split(',').filter(Boolean).map((interest, i) => (
                           <span key={i} className="px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 text-[11px] font-medium shadow-sm">
                             {interest.trim()}
                           </span>
@@ -116,20 +140,20 @@ export const StudentProfileModal = ({ user, onClose }: StudentProfileModalProps)
               </section>
             )}
 
-            {profile.experience && (
+            {displayProfile.experience && (
               <section className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Experience</h3>
-                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{profile.experience}</p>
+                <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{displayProfile.experience}</p>
               </section>
             )}
 
-            {(profile.cv_url || cvs.length > 0) && (
+            {(displayProfile.cv_url || cvs.length > 0) && (
               <section className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground border-b border-border pb-1">Curriculum Vitae</h3>
                 <div className="grid gap-2">
-                  {profile.cv_url && (
+                  {displayProfile.cv_url && (
                     <a
-                      href={profile.cv_url}
+                      href={displayProfile.cv_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"

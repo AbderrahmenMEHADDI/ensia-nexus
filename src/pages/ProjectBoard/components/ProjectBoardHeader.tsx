@@ -125,22 +125,13 @@ export const ProjectBoardHeader = ({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="mt-2 flex items-center gap-2">
         <span className="text-xs font-mono text-muted-foreground">Team:</span>
-        {participants.map(p => {
-          const u = getUserById(p.user_id);
-          if (!u) return null;
-          return (
-            <ProfileAvatar
-              key={p.user_id}
-              userId={u.id}
-              name={u.full_name}
-              className="h-7 w-7 rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
-              textClassName="text-xs font-medium text-secondary-foreground"
-            />
-          );
-        })}
+        <span className="text-xs font-semibold text-slate-700">
+          {project.group_id ? (groupName || 'Loading...') : 'Independent Project'}
+        </span>
       </div>
+
     </div>
   );
 };

@@ -85,6 +85,7 @@ export const useProjectBoard = () => {
   const [editProjectVisibility, setEditProjectVisibility] = useState<Visibility>('PRIVATE');
   const [editProjectAcceptingCollaborators, setEditProjectAcceptingCollaborators] = useState(false);
   const [editProjectDeadline, setEditProjectDeadline] = useState('');
+  const [editProjectGroupId, setEditProjectGroupId] = useState<string>('none');
   const [editProjectLoading, setEditProjectLoading] = useState(false);
 
   const [deleteProjectConfirmOpen, setDeleteProjectConfirmOpen] = useState(false);
@@ -99,7 +100,7 @@ export const useProjectBoard = () => {
 
   const [resourceFormOpen, setResourceFormOpen] = useState(false);
   const [newResourceTitle, setNewResourceTitle] = useState('');
-  const [newResourceType, setNewResourceType] = useState('PAPER_DOC');
+  const [newResourceType, setNewResourceType] = useState('INTERNAL_DOC');
   const [newResourceUrl, setNewResourceUrl] = useState('');
   const [createResourceLoading, setCreateResourceLoading] = useState(false);
 
@@ -128,6 +129,17 @@ export const useProjectBoard = () => {
     setResources(res);
   };
 
+  const filterProjectsForTeacher = (allProjs: Project[], groupsList = groups, membersList = groupMembers) => {
+    if (user?.role === 'ADMIN') return allProjs;
+    return allProjs.filter(p => {
+      const isCreator = p.created_by === user?.id;
+      const isGroupLeader = groupsList.some(g => g.leader_user_id === user?.id && g.id === p.group_id);
+      const isGroupMember = membersList.some(gm => gm.group_id === p.group_id && gm.user_id === user?.id && gm.is_active);
+      const isParticipant = p.participants?.some(part => part.user_id === user?.id) || false;
+      return isCreator || isGroupLeader || isGroupMember || isParticipant;
+    });
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -149,7 +161,10 @@ export const useProjectBoard = () => {
         let initialProjectId: number | null = null;
         if (p.length > 0) {
           if (!isStudent) {
-            initialProjectId = p[0].id;
+            const visibleToTeacher = filterProjectsForTeacher(p, g, gm);
+            if (visibleToTeacher.length > 0) {
+              initialProjectId = visibleToTeacher[0].id;
+            }
           } else {
             const joinedProj = p.find(proj => proj.participants?.some(part => part.user_id === user?.id));
             if (joinedProj) initialProjectId = joinedProj.id;
@@ -225,6 +240,7 @@ export const useProjectBoard = () => {
       groupMembers.some(gm => gm.group_id === g.id && gm.user_id === user?.id && gm.is_active)
     )
   );
+  const leaderGroups = groups.filter(g => g.is_validated && g.leader_user_id === user?.id);
   const canReviewSelectedProject = Boolean(
     project &&
     getProjectStatus(project) === 'PENDING' &&
@@ -425,6 +441,7 @@ export const useProjectBoard = () => {
     setEditProjectVisibility(project.visibility);
     setEditProjectAcceptingCollaborators(project.accepting_collaborators);
     setEditProjectDeadline(project.deadline || '');
+    setEditProjectGroupId(project.group_id ? String(project.group_id) : 'none');
     setEditProjectOpen(true);
   };
 
@@ -437,6 +454,7 @@ export const useProjectBoard = () => {
       visibility: editProjectVisibility,
       accepting_collaborators: editProjectAcceptingCollaborators,
       deadline: editProjectDeadline || null,
+      group_id: editProjectGroupId === 'none' ? null : parseInt(editProjectGroupId),
     };
     try {
       const updated = await apiRepository.updateProject(project.id, data);
@@ -464,7 +482,10 @@ export const useProjectBoard = () => {
       if (refreshedProjects.length > 0) {
         let initialProjectId: number | null = null;
         if (!isStudent) {
-          initialProjectId = refreshedProjects[0].id;
+          const visibleToTeacher = filterProjectsForTeacher(refreshedProjects);
+          if (visibleToTeacher.length > 0) {
+            initialProjectId = visibleToTeacher[0].id;
+          }
         } else {
           const acceptedApp = applications.find(app => app.status === 'ACCEPTED');
           if (acceptedApp) initialProjectId = acceptedApp.project_id;
@@ -543,7 +564,7 @@ export const useProjectBoard = () => {
       setResources(prev => [...prev, created]);
       setResourceFormOpen(false);
       setNewResourceTitle('');
-      setNewResourceType('PAPER_DOC');
+      setNewResourceType('INTERNAL_DOC');
       setNewResourceUrl('');
       toast({ title: 'Resource added' });
     } catch {
@@ -563,9 +584,10 @@ export const useProjectBoard = () => {
     }
   };
 
+  const teacherProjects = filterProjectsForTeacher(projects);
   const displayProjects = isStudent && hasJoined
     ? projects.filter(p => joinedProjectIds.includes(Number(p.id)))
-    : projects;
+    : (isStudent ? projects : teacherProjects);
 
   return {
     user,
@@ -683,6 +705,9 @@ export const useProjectBoard = () => {
     setEditProjectAcceptingCollaborators,
     editProjectDeadline,
     setEditProjectDeadline,
+    editProjectGroupId,
+    setEditProjectGroupId,
+    leaderGroups,
     editProjectLoading,
     deleteProjectConfirmOpen,
     setDeleteProjectConfirmOpen,

@@ -31,11 +31,17 @@ const GroupDetails = () => {
     if (!groupId) return;
     const load = async () => {
       try {
-        const [g, m, p, u, labs] = await Promise.all([
+        let u: User[] = [];
+        try {
+          u = await apiRepository.getUsers();
+        } catch (err) {
+          console.warn('Failed to fetch users list (unauthorized or network error):', err);
+        }
+
+        const [g, m, p, labs] = await Promise.all([
           apiRepository.getGroup(parseInt(groupId)),
           apiRepository.getGroupMembers(parseInt(groupId)),
           apiRepository.getProjects(parseInt(groupId)),
-          apiRepository.getUsers(),
           apiRepository.getLabs(),
         ]);
 
@@ -73,6 +79,7 @@ const GroupDetails = () => {
 
   const getUserById = (id: number) => users.find(u => u.id === id);
   const leader = getUserById(group?.leader_user_id || 0);
+  const leaderName = leader?.full_name || members.find(m => m.user_id === group?.leader_user_id)?.user_name || 'Group Leader';
 
   if (loading) {
     return (
@@ -107,9 +114,9 @@ const GroupDetails = () => {
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 pt-2">
               <div className="flex items-center gap-2">
                 <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#074a75] shadow-sm ring-1 ring-slate-200">
-                  {leader?.full_name?.[0] || 'L'}
+                  {leaderName?.[0] || 'L'}
                 </div>
-                <span className="font-medium">Led by <span className="text-[#0F172A]">{leader?.full_name || 'Group Leader'}</span></span>
+                <span className="font-medium">Led by <span className="text-[#0F172A]">{leaderName}</span></span>
               </div>
               <div className="h-4 w-[1px] bg-slate-200" />
               <div className="flex items-center gap-1.5">
@@ -204,8 +211,9 @@ const GroupDetails = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {members.map(m => {
                 const u = getUserById(m.user_id);
-                if (!u) return null;
-                const isLeader = u.id === group.leader_user_id;
+                const isLeader = m.user_id === group.leader_user_id;
+                const memberName = u?.full_name || m.user_name || 'Unknown Member';
+                const memberRole = u?.role || m.user_role || (isLeader ? 'TEACHER' : 'STUDENT');
                 
                 // Assign a consistent pastel color based on user ID
                 const colors = [
@@ -213,23 +221,23 @@ const GroupDetails = () => {
                   'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700',
                   'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700'
                 ];
-                const colorClass = colors[u.id % colors.length];
+                const colorClass = colors[m.user_id % colors.length];
 
                 return (
-                  <div key={u.id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#074a75]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
+                  <div key={m.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#074a75]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
                     <div className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${colorClass}`}>
-                      {u.full_name?.[0] || '?'}
+                      {memberName?.[0] || '?'}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-[#0F172A] truncate block">{u.full_name || 'Unknown'}</span>
+                        <span className="text-sm font-bold text-[#0F172A] truncate block">{memberName}</span>
                         {isLeader ? (
                           <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#074a75] px-1.5 py-0.5 rounded w-fit mt-0.5">
                             Lead
                           </span>
                         ) : (
                           <span className="text-[11px] font-medium text-slate-500 truncate block capitalize">
-                            {u.role?.toLowerCase() || 'Member'}
+                            {memberRole?.toLowerCase() || 'Member'}
                           </span>
                         )}
                       </div>
