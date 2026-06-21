@@ -24,11 +24,17 @@ const MyLabGroupDetails = () => {
     if (!groupId) return;
     const load = async () => {
       try {
-        const [g, m, p, u, labs] = await Promise.all([
+        let u: User[] = [];
+        try {
+          u = await apiRepository.getUsers();
+        } catch (err) {
+          console.warn('Failed to fetch users list:', err);
+        }
+
+        const [g, m, p, labs] = await Promise.all([
           apiRepository.getGroup(parseInt(groupId)),
           apiRepository.getGroupMembers(parseInt(groupId)),
           apiRepository.getProjects(parseInt(groupId)),
-          apiRepository.getUsers(),
           apiRepository.getLabs(),
         ]);
 
@@ -54,6 +60,7 @@ const MyLabGroupDetails = () => {
   const getUserById = (id: number) => users.find(u => u.id === id);
   const isMember = members.some(m => m.user_id === user?.id);
   const leader = getUserById(group?.leader_user_id || 0);
+  const leaderName = leader?.full_name || members.find(m => m.user_id === group?.leader_user_id)?.user_name || 'Group Leader';
 
   const handleJoinRequest = () => {
     toast({
@@ -99,9 +106,9 @@ const MyLabGroupDetails = () => {
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1">Group Leader</span>
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-primary">{leader?.full_name[0]}</span>
+                    <span className="text-[10px] font-bold text-primary">{leaderName[0]}</span>
                   </div>
-                  <span className="text-sm font-medium">{leader?.full_name}</span>
+                  <span className="text-sm font-medium">{leaderName}</span>
                 </div>
               </div>
               <div className="h-8 w-px bg-border" />
@@ -169,19 +176,21 @@ const MyLabGroupDetails = () => {
               <div className="space-y-3">
                 {members.map(m => {
                   const u = getUserById(m.user_id);
-                  if (!u) return null;
+                  const isLeader = m.user_id === group.leader_user_id;
+                  const memberName = u?.full_name || m.user_name || 'Unknown Member';
+                  const memberRole = u?.role || m.user_role || (isLeader ? 'TEACHER' : 'STUDENT');
                   return (
-                    <div key={u.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background">
+                    <div key={m.user_id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-background">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-xs">
-                          {u.full_name[0]}
+                          {memberName[0]}
                         </div>
                         <div>
-                          <span className="text-sm font-medium block">{u.full_name}</span>
-                          <RoleBadge role={u.role} />
+                          <span className="text-sm font-medium block">{memberName}</span>
+                          <RoleBadge role={memberRole} />
                         </div>
                       </div>
-                      {u.id === group.leader_user_id && (
+                      {isLeader && (
                         <span className="text-[10px] font-bold text-primary uppercase bg-primary/10 px-2 py-0.5 rounded">Lead</span>
                       )}
                     </div>

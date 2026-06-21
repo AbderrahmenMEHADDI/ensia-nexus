@@ -63,7 +63,7 @@ export const ResourceDialogs = ({
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PAPER_DOC">Paper / Document</SelectItem>
+                <SelectItem value="INTERNAL_DOC">Paper / Document</SelectItem>
                 <SelectItem value="GIT_REPO">Git Repository</SelectItem>
                 <SelectItem value="DATASET">Dataset</SelectItem>
                 <SelectItem value="OTHER">Other Link</SelectItem>

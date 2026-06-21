@@ -13,7 +13,8 @@ import {
   Sparkles,
   Link as LinkIcon,
   Search,
-  FileText
+  FileText,
+  Pencil
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
@@ -36,6 +37,7 @@ const StudentCV = () => {
   const [saving, setSaving] = useState(false);
   const [cvs, setCvs] = useState<StudentCVEntry[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingCVId, setEditingCVId] = useState<number | null>(null);
 
   const [title, setTitle] = useState('');
   const [university, setUniversity] = useState('');
@@ -64,6 +66,20 @@ const StudentCV = () => {
     load();
   }, [user]);
 
+  const handleEdit = (cv: StudentCVEntry) => {
+    setEditingCVId(cv.id);
+    setTitle(cv.title);
+    setUniversity(cv.university || '');
+    setLevel(cv.level || 'UNDERGRADUATE');
+    setMajor(cv.major || '');
+    setBio(cv.bio || '');
+    setExperience(cv.experience || '');
+    setResearchInterests(cv.research_interests || '');
+    setSkills(cv.skills || '');
+    setCvUrl(cv.cv_url || '');
+    setShowForm(true);
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -81,14 +97,20 @@ const StudentCV = () => {
     };
 
     try {
-      const created = await apiRepository.createStudentCV({
-        student_user_id: user.id,
-        ...payload,
-      });
-      setCvs(prev => [created, ...prev]);
+      if (editingCVId !== null) {
+        const updated = await apiRepository.updateStudentCV(editingCVId, payload);
+        setCvs(prev => prev.map(cv => cv.id === editingCVId ? updated : cv));
+        toast({ title: 'CV record updated successfully' });
+      } else {
+        const created = await apiRepository.createStudentCV({
+          student_user_id: user.id,
+          ...payload,
+        });
+        setCvs(prev => [created, ...prev]);
+        toast({ title: 'CV record created successfully' });
+      }
       setShowForm(false);
       resetForm();
-      toast({ title: 'CV record created successfully' });
     } catch {
       toast({ title: 'Failed to save CV', variant: 'destructive' });
     } finally {
@@ -97,6 +119,7 @@ const StudentCV = () => {
   };
 
   const resetForm = () => {
+    setEditingCVId(null);
     setTitle('');
     setUniversity('');
     setLevel('UNDERGRADUATE');
@@ -145,13 +168,18 @@ const StudentCV = () => {
             </h1>
           </div>
           <Button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                resetForm();
+              }
+              setShowForm(!showForm);
+            }}
             className={cn(
               "rounded-xl h-12 px-6 shadow-lg shadow-primary/20 transition-all",
               showForm ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "bg-primary hover:bg-primary/90"
             )}
           >
-            {showForm ? 'Cancel Creation' : (
+            {showForm ? 'Cancel' : (
               <>
                 <Plus className="h-5 w-5 mr-2" />
                 Build New CV
@@ -172,8 +200,8 @@ const StudentCV = () => {
           >
             <Card className="border-primary/20 shadow-xl bg-card/50 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold">CV Architect</CardTitle>
-                <CardDescription>Construct a professional profile tailored to your next research opportunity.</CardDescription>
+                <CardTitle className="text-2xl font-bold">{editingCVId !== null ? 'Edit CV Version' : 'CV Architect'}</CardTitle>
+                <CardDescription>{editingCVId !== null ? 'Refine your professional profile CV details.' : 'Construct a professional profile tailored to your next research opportunity.'}</CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2 md:col-span-2">
@@ -231,10 +259,10 @@ const StudentCV = () => {
                 </div>
               </CardContent>
               <CardFooter className="bg-secondary/20 py-4 flex justify-end gap-3 rounded-b-xl border-t">
-                <Button variant="ghost" onClick={() => setShowForm(false)}>Discard</Button>
+                <Button variant="ghost" onClick={() => { setShowForm(false); resetForm(); }}>Discard</Button>
                 <Button onClick={handleSave} disabled={saving || !title.trim()} className="rounded-lg px-8">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                  Deploy CV Version
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (editingCVId !== null ? <Pencil className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />)}
+                  {editingCVId !== null ? 'Save Changes' : 'Deploy CV Version'}
                 </Button>
               </CardFooter>
             </Card>
@@ -266,7 +294,10 @@ const StudentCV = () => {
               transition={{ delay: idx * 0.1 }}
             >
               <Card className="group relative overflow-hidden border-border hover:shadow-2xl transition-all duration-500 rounded-[2rem]">
-                <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                  <Button variant="outline" size="icon" className="rounded-full shadow-lg bg-background hover:bg-muted" onClick={() => handleEdit(cv)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <Button variant="destructive" size="icon" className="rounded-full shadow-lg" onClick={() => handleDelete(cv.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

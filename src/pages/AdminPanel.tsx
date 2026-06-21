@@ -599,7 +599,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
     setEditGroupName(group.name);
     setEditGroupDesc(group.description ?? '');
     setEditGroupLeaderId(group.leader_user_id ? String(group.leader_user_id) : '');
-    setEditGroupShowOnLanding(group.show_on_landing_page ?? group.show_on_landing ?? true);
+    setEditGroupShowOnLanding(group.show_on_landing_page ?? group.show_on_landing_page ?? true);
     setEditGroupPictureUrl(group.picture_url ?? '');
     setEditGroupPictureFile(null);
     setEditGroupPicturePreview(group.picture_url ?? '');
@@ -618,7 +618,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
         name: editGroupName.trim(),
         description: editGroupDesc.trim(),
         leader_user_id: editGroupLeaderId ? Number(editGroupLeaderId) : undefined,
-        show_on_landing: editGroupShowOnLanding,
+        show_on_landing_page: editGroupShowOnLanding,
       });
 
       if (editGroupPictureFile) {
@@ -1929,7 +1929,15 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Visibility</label>
-                <Select value={editProjectVisibility} onValueChange={(v: any) => setEditProjectVisibility(v)}>
+                <Select 
+                  value={editProjectVisibility} 
+                  onValueChange={(v: any) => {
+                    setEditProjectVisibility(v);
+                    if (v === 'PRIVATE') {
+                      setEditProjectAccepting(false);
+                    }
+                  }}
+                >
                   <SelectTrigger><SelectValue placeholder="Visibility" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PUBLIC">Public</SelectItem>
@@ -1943,7 +1951,12 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
               <Input type="date" value={editProjectDeadline} onChange={e => setEditProjectDeadline(e.target.value)} />
             </div>
             <div className="flex items-center space-x-2 pt-2">
-              <Checkbox id="editProjectAccepting" checked={editProjectAccepting} onCheckedChange={(checked: any) => setEditProjectAccepting(!!checked)} />
+              <Checkbox 
+                id="editProjectAccepting" 
+                checked={editProjectAccepting} 
+                onCheckedChange={(checked: any) => setEditProjectAccepting(!!checked)} 
+                disabled={editProjectVisibility === 'PRIVATE'}
+              />
               <label htmlFor="editProjectAccepting" className="text-sm font-medium leading-none">
                 Accepting Collaborators
               </label>

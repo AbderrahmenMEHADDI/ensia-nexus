@@ -4,13 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { ApplicationStatusBadge, ProjectStatusBadge, RoleBadge } from '@/components/Badges';
 import {
-  canUserReviewProject,
   canUserReviewProjectApplication,
   getProjectStatus,
 } from '@/lib/projectAccess';
 import type {
   ProjectApplication,
-  ProjectApplicationReviewerRatingInput,
   User,
   Project,
   ResearchGroup,
@@ -33,10 +31,6 @@ import {
   Calendar,
   ChevronDown,
   BarChart3,
-  Cpu,
-  Microscope,
-  MessagesSquare,
-  Activity,
   ArrowRight,
   Building,
   Building2,
@@ -80,11 +74,7 @@ const Applications = () => {
   const [reviewingAppId, setReviewingAppId] = useState<number | null>(null);
   const [decisionNote, setDecisionNote] = useState('');
   const [filterProjectId, setFilterProjectId] = useState<number | 'all'>('all');
-  const [ratingDrafts, setRatingDrafts] = useState<Record<number, ProjectApplicationReviewerRatingInput>>({});
-  const [savingRatingAppId, setSavingRatingAppId] = useState<number | null>(null);
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [projectDecisionNote, setProjectDecisionNote] = useState('');
-  const [reviewingProjectId, setReviewingProjectId] = useState<number | null>(null);
+
   const [viewingProfileUser, setViewingProfileUser] = useState<User | null>(null);
   const [expandedAnalysis, setExpandedAnalysis] = useState<number[]>([]);
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
@@ -104,13 +94,7 @@ const Applications = () => {
   const [submissionDecisionNote, setSubmissionDecisionNote] = useState('');
   const [reviewingSubmissionId, setReviewingSubmissionId] = useState<number | null>(null);
 
-  // Collaboration reviews state
-  const [collabCalls, setCollabCalls] = useState<CollaborationCall[]>([]);
-  const [selectedCallId, setSelectedCallId] = useState<number | null>(null);
-  const [collabSubmissions, setCollabSubmissions] = useState<CollaborationSubmission[]>([]);
-  const [collabLoading, setCollabLoading] = useState(false);
-  const [collabDecisionNote, setCollabDecisionNote] = useState<Record<number, string>>({});
-  const [submittingReviewId, setSubmittingReviewId] = useState<number | null>(null);
+
 
   const getUserById = (id: number) => users.find(u => u.id === id);
   const getProjectById = (id: number) => projects.find(p => p.id === id);
@@ -119,7 +103,7 @@ const Applications = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [a, u, p, g, pp, gm] = await Promise.all([
+        const [a, initialUsers, p, g, pp, gm] = await Promise.all([
           apiRepository.getApplications(),
           apiRepository.getUsers(),
           apiRepository.getProjects(),
@@ -127,6 +111,24 @@ const Applications = () => {
           apiRepository.getProjectParticipants(),
           apiRepository.getGroupMembers(),
         ]);
+
+        let u = [...initialUsers];
+        const missingUserIds = Array.from(new Set(
+          a.map(app => app.student_user_id).filter(id => id && !u.some(usr => usr.id === id))
+        )) as number[];
+
+        if (missingUserIds.length > 0) {
+          try {
+            const fetchedMissing = await Promise.all(
+              missingUserIds.map(id => apiRepository.getUser(id).catch(() => null))
+            );
+            const validFetched = fetchedMissing.filter((x): x is User => x !== null);
+            u = [...u, ...validFetched];
+          } catch (fetchErr) {
+            console.error('Error fetching missing users:', fetchErr);
+          }
+        }
+
         setApps(a);
         setUsers(u);
         setProjects(p);
@@ -143,14 +145,7 @@ const Applications = () => {
           }
         }
 
-        if (user && user.role !== 'STUDENT') {
-          try {
-            const calls = await apiRepository.getEligibleCollaborationCalls();
-            setCollabCalls(calls);
-          } catch (e) {
-            console.error('Error fetching eligible collaboration calls:', e);
-          }
-        }
+
       } catch (e) {
         console.error('Applications load error:', e);
         toast({ title: 'Error loading applications', variant: 'destructive' });
@@ -161,62 +156,9 @@ const Applications = () => {
     load();
   }, [toast, isTeacher, user]);
 
-  const fetchSubmissionsForCall = async (callId: number) => {
-    setSelectedCallId(callId);
-    setCollabSubmissions([]);
-    setCollabLoading(true);
-    try {
-      const subs = await apiRepository.getCollaborationSubmissions(callId);
-      setCollabSubmissions(subs);
-    } catch (e) {
-      console.error('Error fetching submissions:', e);
-      toast({ title: 'Failed to load submissions', variant: 'destructive' });
-      setSelectedCallId(null);
-    } finally {
-      setCollabLoading(false);
-    }
-  };
 
-  const handleReviewCollaboration = async (submissionId: number, status: 'ACCEPTED' | 'REJECTED') => {
-    setSubmittingReviewId(submissionId);
-    try {
-      const note = collabDecisionNote[submissionId] || '';
-      const updated = await apiRepository.updateCollaborationSubmission(submissionId, {
-        status,
-        decision_note: note.trim() || undefined
-      });
 
-      setCollabSubmissions(prev =>
-        prev.map(sub => (sub.id === submissionId ? updated : sub))
-      );
 
-      toast({
-        title: `Submission ${status === 'ACCEPTED' ? 'Approved' : 'Rejected'}`,
-        description: `Successfully processed collaboration response.`
-      });
-
-      setCollabDecisionNote(prev => {
-        const next = { ...prev };
-        delete next[submissionId];
-        return next;
-      });
-    } catch (e) {
-      console.error('Error reviewing collaboration:', e);
-      toast({ title: 'Failed to save review', variant: 'destructive' });
-    } finally {
-      setSubmittingReviewId(null);
-    }
-  };
-
-  const pendingProjectsForReview = useMemo(
-    () =>
-      projects.filter(
-        project =>
-          getProjectStatus(project) === 'PENDING' &&
-          canUserReviewProject(user?.id, project, groups)
-      ),
-    [groups, projects, user?.id]
-  );
 
   const sortedApps = useMemo(
     () => {
@@ -272,57 +214,13 @@ const Applications = () => {
     return groups.some(g => g.leader_user_id === user?.id);
   }, [groups, user?.id]);
 
-  const getDefaultRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
-    const myRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
-    if (myRating) {
-      return {
-        technical_fit: myRating.technical_fit,
-        research_fit: myRating.research_fit,
-        communication: myRating.communication,
-        reliability_potential: myRating.reliability_potential,
-        note: myRating.note || '',
-      };
-    }
-    return { technical_fit: 3, research_fit: 3, communication: 3, reliability_potential: 3, note: '' };
-  };
 
-  const getRatingDraft = (app: ProjectApplication): ProjectApplicationReviewerRatingInput => {
-    return ratingDrafts[app.id] || getDefaultRatingDraft(app);
-  };
-
-  const updateRatingDraft = (appId: number, key: keyof ProjectApplicationReviewerRatingInput, value: number | string) => {
-    setRatingDrafts(prev => {
-      const current = prev[appId] || { technical_fit: 3, research_fit: 3, communication: 3, reliability_potential: 3, note: '' };
-      return { ...prev, [appId]: { ...current, [key]: value } };
-    });
-  };
 
   const toggleAnalysis = (appId: number) => {
     setExpandedAnalysis(prev => prev.includes(appId) ? prev.filter(id => id !== appId) : [...prev, appId]);
   };
 
-  const handleSaveMyRating = async (app: ProjectApplication) => {
-    setSavingRatingAppId(app.id);
-    try {
-      const draft = getRatingDraft(app);
-      const saved = await apiRepository.upsertMyApplicationRating(app.id, draft);
-      const refreshedRanking = await apiRepository.getApplicationRanking(app.id);
 
-      setApps(prev =>
-        prev.map(item => {
-          if (item.id !== app.id) return item;
-          const others = (item.reviewer_ratings || []).filter(r => r.reviewer_user_id !== saved.reviewer_user_id);
-          return { ...item, reviewer_ratings: [saved, ...others], ranking: refreshedRanking };
-        })
-      );
-
-      toast({ title: 'Evaluation saved', description: 'Student metrics have been updated.' });
-    } catch (e) {
-      toast({ title: 'Failed to save evaluation', variant: 'destructive' });
-    } finally {
-      setSavingRatingAppId(null);
-    }
-  };
 
   const handleReview = async (appId: number, decision: 'ACCEPTED' | 'REJECTED') => {
     setReviewingAppId(appId);
@@ -347,23 +245,7 @@ const Applications = () => {
     }
   };
 
-  const handleProjectReview = async (projectId: number, decision: ProjectReviewStatus) => {
-    setReviewingProjectId(projectId);
-    try {
-      const updated = await apiRepository.reviewProject(projectId, {
-        status: decision,
-        decision_note: projectDecisionNote.trim() || undefined,
-      });
-      setProjects(prev => prev.map(p => (p.id === projectId ? updated : p)));
-      toast({ title: `Project ${decision === 'APPROVED' ? 'approved' : 'rejected'}` });
-    } catch (e) {
-      toast({ title: 'Project review failed', variant: 'destructive' });
-    } finally {
-      setReviewingProjectId(null);
-      setSelectedProject(null);
-      setProjectDecisionNote('');
-    }
-  };
+
 
   const handleSubmissionReview = async (submissionId: number, decision: 'ACCEPTED' | 'REJECTED') => {
     setReviewingSubmissionId(submissionId);
@@ -389,6 +271,23 @@ const Applications = () => {
       setReviewingSubmissionId(null);
       setSelectedSubmissionId(null);
       setSubmissionDecisionNote('');
+    }
+  };
+
+  const handleViewStudentProfile = async (studentUserId?: number) => {
+    if (!studentUserId) return;
+    const existing = users.find(u => u.id === studentUserId);
+    if (existing) {
+      setViewingProfileUser(existing);
+      return;
+    }
+    try {
+      const fetched = await apiRepository.getUser(studentUserId);
+      setUsers(prev => [...prev, fetched]);
+      setViewingProfileUser(fetched);
+    } catch (err) {
+      console.error("Failed to fetch user profile", err);
+      toast({ title: "Failed to load student profile", variant: "destructive" });
     }
   };
 
@@ -455,22 +354,7 @@ const Applications = () => {
             </Badge>
           </button>
 
-          {collabCalls.length > 0 && (
-            <button
-              onClick={() => setActiveTab('collaborations')}
-              className={cn(
-                "pb-4 text-sm font-semibold tracking-wide border-b-2 transition-all px-2 flex items-center gap-2",
-                activeTab === 'collaborations'
-                  ? "border-primary text-primary font-bold"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Collaboration Reviews
-              <Badge variant="secondary" className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#F37F20]/10 text-[#F37F20] border-[#F37F20]/20">
-                {collabCalls.length}
-              </Badge>
-            </button>
-          )}
+
 
           {isTeacher && (
             <button
@@ -494,74 +378,8 @@ const Applications = () => {
       {/* Main Content Area */}
       <div className="space-y-6">
         {activeTab === 'students' && (
-          <>
-            {/* Pending Projects Alert Section */}
-            <AnimatePresence>
-              {pendingProjectsForReview.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mb-10"
-                >
-                  <div className="p-6 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm">
-                    <div className="flex items-center gap-2 mb-4">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
-                      <h2 className="text-lg font-bold">Action Required: Projects Awaiting Approval</h2>
-                    </div>
-                    <div className="grid gap-3">
-                      {pendingProjectsForReview.map(project => (
-                        <Card key={project.id} className="border-border/50 shadow-sm overflow-hidden group">
-                          <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center font-bold text-primary">
-                                {project.title.charAt(0)}
-                              </div>
-                              <div>
-                                <CardTitle className="text-sm">{project.title}</CardTitle>
-                                <CardDescription className="text-[10px]">
-                                  Research Group: {getGroupById(project.group_id)?.name}
-                                </CardDescription>
-                              </div>
-                            </div>
-                            <Button
-                              variant={selectedProject === project.id ? "secondary" : "ghost"}
-                              size="sm"
-                              className="text-xs h-8"
-                              onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
-                            >
-                              {selectedProject === project.id ? 'Cancel' : 'Review Project'}
-                              <ArrowRight className="h-3 w-3 ml-1.5" />
-                            </Button>
-                          </CardHeader>
-                          {selectedProject === project.id && (
-                            <CardContent className="px-4 pb-4 pt-2 border-t bg-secondary/10">
-                              <textarea
-                                value={projectDecisionNote}
-                                onChange={e => setProjectDecisionNote(e.target.value)}
-                                rows={2}
-                                placeholder="Add a decision note (optional)..."
-                                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none mb-3"
-                              />
-                              <div className="flex gap-2">
-                                <Button size="sm" className="bg-success hover:bg-success/90" onClick={() => handleProjectReview(project.id, 'APPROVED')}>
-                                  Approve Project
-                                </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleProjectReview(project.id, 'REJECTED')}>
-                                  Reject
-                                </Button>
-                              </div>
-                            </CardContent>
-                          )}
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Student Applications List */}
-            <div className="space-y-6">
+          /* Student Applications List */
+          <div className="space-y-6">
               {displayApps.map((app, i) => {
                 const student = getUserById(app.student_user_id);
                 const project = getProjectById(app.project_id);
@@ -571,14 +389,7 @@ const Applications = () => {
                 const isCardExpanded = expandedCards.includes(app.id);
 
                 const canReviewThisApp = project ? canUserReviewProjectApplication(user?.id, project, groups, participants) : false;
-                const canRateAcceptedApp = project ? (
-                  participants.some(p => p.project_id === project.id && p.user_id === user?.id) ||
-                  groups.some(g => g.id === project.group_id && g.leader_user_id === user?.id) ||
-                  groupMembers.some(m => m.group_id === project.group_id && m.user_id === user?.id && m.is_active)
-                ) : false;
 
-                const draft = getRatingDraft(app);
-                const myExistingRating = app.reviewer_ratings?.find(r => r.reviewer_user_id === user?.id);
 
                 return (
                   <motion.div
@@ -602,7 +413,7 @@ const Applications = () => {
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (student) setViewingProfileUser(student);
+                              handleViewStudentProfile(app.student_user_id);
                             }}
                             className="cursor-pointer hover:opacity-80 transition-opacity shrink-0"
                           >
@@ -618,7 +429,7 @@ const Applications = () => {
                               <h4
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (student) setViewingProfileUser(student);
+                                  handleViewStudentProfile(app.student_user_id);
                                 }}
                                 className="text-sm font-extrabold text-foreground tracking-tight truncate max-w-[180px] cursor-pointer hover:text-primary transition-colors"
                               >
@@ -761,72 +572,7 @@ const Applications = () => {
                                 </div>
                               )}
 
-                              {/* Member Evaluation Form */}
-                              {canRateAcceptedApp && app.status === 'ACCEPTED' && (
-                                <div className="pt-3 border-t border-border/30">
-                                  <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-1.5">
-                                      <Star className="h-3.5 w-3.5 text-primary" />
-                                      <h5 className="text-xs font-bold uppercase tracking-wider">Mentor Evaluation</h5>
-                                    </div>
-                                    {myExistingRating && (
-                                      <span className="text-[9px] font-bold text-success flex items-center gap-1 bg-success/10 px-2 py-0.5 rounded-full border border-success/15">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        Already Rated
-                                      </span>
-                                    )}
-                                  </div>
 
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                                    {[
-                                      { key: 'technical_fit', label: 'Technical Fit', icon: Cpu },
-                                      { key: 'research_fit', label: 'Research Fit', icon: Microscope },
-                                      { key: 'communication', label: 'Communication', icon: MessagesSquare },
-                                      { key: 'reliability_potential', label: 'Reliability', icon: Activity },
-                                    ].map(({ key, label, icon: Icon }) => (
-                                      <div key={key} className="space-y-1">
-                                        <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                                          <Icon className="h-2.5 w-2.5" />
-                                          {label}
-                                        </label>
-                                        <Select
-                                          value={draft[key as keyof ProjectApplicationReviewerRatingInput]?.toString()}
-                                          onValueChange={(v) => updateRatingDraft(app.id, key as any, Number(v))}
-                                        >
-                                          <SelectTrigger className="h-8 rounded-lg bg-background shadow-sm text-xs">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {[1, 2, 3, 4, 5].map(v => (
-                                              <SelectItem key={v} value={v.toString()}>{v} — {['Poor', 'Fair', 'Good', 'Very Good', 'Expert'][v - 1]}</SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  <div className="flex gap-2">
-                                    <textarea
-                                      value={draft.note || ''}
-                                      onChange={e => updateRatingDraft(app.id, 'note', e.target.value)}
-                                      rows={1}
-                                      placeholder="Confidential reviewer notes for this student..."
-                                      className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary resize-none transition-all h-8"
-                                    />
-                                    <Button
-                                      className="h-8 rounded-lg px-4 shadow-sm text-xs"
-                                      onClick={() => handleSaveMyRating(app)}
-                                      disabled={savingRatingAppId === app.id}
-                                    >
-                                      {savingRatingAppId === app.id && (
-                                        <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
-                                      )}
-                                      Save Scores
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
 
                               {/* Decision Buttons for Pending */}
                               {canReviewThisApp && app.status === 'PENDING' && (
@@ -887,248 +633,6 @@ const Applications = () => {
                 </div>
               )}
             </div>
-          </>
-        )}
-
-        {activeTab === 'collaborations' && (
-          /* Render Collaboration Reviews Tab Content! */
-          <div className="space-y-6">
-            {collabCalls.map((call, i) => {
-              const project = getProjectById(call.project_id);
-              const group = project ? getGroupById(project.group_id) : null;
-              const isCallExpanded = selectedCallId === call.id;
-
-              return (
-                <motion.div
-                  key={call.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Card className="overflow-hidden border-border hover:shadow-md transition-shadow group">
-                    <div className="h-1 w-full bg-gradient-to-r from-orange-400 to-[#F37F20]" />
-
-                    <CardHeader className="pb-4">
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="flex items-start gap-4">
-                          <div className="h-14 w-14 rounded-2xl bg-orange-50 flex items-center justify-center border border-orange-100 shadow-sm shrink-0">
-                            <MessagesSquare className="h-7 w-7 text-[#F37F20]" />
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <CardTitle className="text-xl">{call.title}</CardTitle>
-                              <Badge className={cn(
-                                "text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full",
-                                call.status === 'OPEN' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-slate-400/10 text-slate-500 border-slate-400/20'
-                              )}>
-                                {call.status}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <UserCircle2 className="h-3.5 w-3.5" /> Project: {project?.title || 'Unknown Project'}
-                              </span>
-                              {group && (
-                                <span className="flex items-center gap-1">
-                                  <Microscope className="h-3.5 w-3.5" /> Group: {group.name}
-                                </span>
-                              )}
-                              {call.deadline && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3.5 w-3.5" /> Deadline: {new Date(call.deadline).toLocaleDateString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <Button
-                          variant={isCallExpanded ? "secondary" : "default"}
-                          className={cn(
-                            "rounded-xl h-10 px-5 text-sm font-semibold gap-1.5 shrink-0 transition-all",
-                            isCallExpanded ? "" : "bg-[#F37F20] hover:bg-[#F37F20]/90 text-white shadow-sm"
-                          )}
-                          onClick={() => {
-                            if (isCallExpanded) {
-                              setSelectedCallId(null);
-                            } else {
-                              fetchSubmissionsForCall(call.id);
-                            }
-                          }}
-                        >
-                          {isCallExpanded ? 'Close Submissions' : 'Review Submissions'}
-                          <ChevronDown className={cn("h-4 w-4 transition-transform", isCallExpanded && "rotate-180")} />
-                        </Button>
-                      </div>
-                    </CardHeader>
-
-                    {/* Submission Collapsible Details */}
-                    {isCallExpanded && (
-                      <CardContent className="border-t bg-slate-50/50 p-6 space-y-6">
-                        {collabLoading ? (
-                          <div className="flex flex-col items-center justify-center py-10 gap-3">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                            <span className="text-xs text-muted-foreground animate-pulse">Fetching submissions dossier...</span>
-                          </div>
-                        ) : (
-                          <div className="space-y-6">
-                            <div className="flex items-center justify-between border-b pb-3 border-slate-100">
-                              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-[#F37F20]" />
-                                Submission Dossiers ({collabSubmissions.length})
-                              </h3>
-                            </div>
-
-                            <div className="grid gap-4">
-                              {collabSubmissions.map((sub) => {
-                                const isSubReviewing = submittingReviewId === sub.id;
-                                const reviewerName = sub.reviewed_by ? getUserById(sub.reviewed_by)?.full_name : null;
-
-                                return (
-                                  <Card key={sub.id} className="border-border/60 shadow-sm overflow-hidden bg-white hover:border-[#F37F20]/20 transition-all">
-                                    <div className="p-5 flex flex-col gap-4">
-                                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                                        <div className="space-y-1">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-bold text-base text-slate-800">{sub.full_name}</span>
-                                            <Badge className={cn(
-                                              "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded",
-                                              sub.status === 'ACCEPTED' ? 'bg-success/10 text-success border-success/20' :
-                                                sub.status === 'REJECTED' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                                                  'bg-amber-400/10 text-amber-600 border-amber-400/20'
-                                            )}>
-                                              {sub.status}
-                                            </Badge>
-                                          </div>
-                                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-0.5">
-                                            {sub.institution && (
-                                              <span className="flex items-center gap-1">
-                                                <Building2 className="h-3.5 w-3.5" /> {sub.institution}
-                                              </span>
-                                            )}
-                                            <span className="flex items-center gap-1">
-                                              <Mail className="h-3.5 w-3.5" />
-                                              <a href={`mailto:${sub.email}`} className="hover:text-primary hover:underline">{sub.email}</a>
-                                            </span>
-                                            {sub.submitted_at && (
-                                              <span className="flex items-center gap-1">
-                                                <Calendar className="h-3.5 w-3.5" /> Submitted {new Date(sub.submitted_at).toLocaleDateString()}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-
-                                        {sub.cv_url && (
-                                          <a
-                                            href={sub.cv_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#F37F20] hover:text-[#F37F20]/80 bg-orange-50/50 hover:bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-100/50 transition-all shrink-0"
-                                          >
-                                            <FileText className="h-3.5 w-3.5" />
-                                            View CV/Portfolio
-                                            <ExternalLink className="h-3 w-3" />
-                                          </a>
-                                        )}
-                                      </div>
-
-                                      {/* Motivation text */}
-                                      {sub.motivation && (
-                                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                          <div className="text-[10px] uppercase font-bold tracking-widest text-[#94A3B8] mb-1">Collaboration Motivation</div>
-                                          <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{sub.motivation}</p>
-                                        </div>
-                                      )}
-
-                                      {/* Review Actions or Decision Display */}
-                                      {sub.status === 'PENDING' ? (
-                                        <div className="pt-4 border-t border-slate-100 flex flex-col gap-3">
-                                          <textarea
-                                            value={collabDecisionNote[sub.id] || ''}
-                                            onChange={e => setCollabDecisionNote(prev => ({ ...prev, [sub.id]: e.target.value }))}
-                                            rows={2}
-                                            placeholder="Enter review decision notes (optional)..."
-                                            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-background text-sm focus:outline-none focus:ring-1 focus:ring-[#F37F20] resize-none"
-                                          />
-                                          <div className="flex gap-2">
-                                            <Button
-                                              size="sm"
-                                              className="h-10 rounded-xl bg-success hover:bg-success/90 font-bold px-6 shadow-sm flex items-center gap-1.5"
-                                              onClick={() => handleReviewCollaboration(sub.id, 'ACCEPTED')}
-                                              disabled={isSubReviewing}
-                                            >
-                                              {isSubReviewing ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                              ) : (
-                                                <CheckCircle2 className="h-4 w-4" />
-                                              )}
-                                              Approve Collaboration
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="destructive"
-                                              className="h-10 rounded-xl font-bold px-6 shadow-sm flex items-center gap-1.5"
-                                              onClick={() => handleReviewCollaboration(sub.id, 'REJECTED')}
-                                              disabled={isSubReviewing}
-                                            >
-                                              {isSubReviewing ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                              ) : (
-                                                <XCircle className="h-4 w-4" />
-                                              )}
-                                              Reject
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="pt-3 border-t border-slate-100/60 flex flex-col gap-2">
-                                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                                            <CheckCircle2 className={cn("h-4 w-4", sub.status === 'ACCEPTED' ? 'text-success' : 'text-slate-400')} />
-                                            <span>
-                                              Decision: <span className={cn("font-bold", sub.status === 'ACCEPTED' ? 'text-success' : 'text-slate-500')}>{sub.status}</span>
-                                              {reviewerName && ` by ${reviewerName}`}
-                                              {sub.reviewed_at && ` on ${new Date(sub.reviewed_at).toLocaleDateString()}`}
-                                            </span>
-                                          </div>
-                                          {sub.decision_note && (
-                                            <div className="text-xs italic bg-slate-50/50 p-2.5 rounded-lg border border-slate-100 text-slate-500 whitespace-pre-wrap">
-                                              &ldquo;{sub.decision_note}&rdquo;
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </Card>
-                                );
-                              })}
-
-                              {collabSubmissions.length === 0 && (
-                                <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-                                  <p className="text-sm text-slate-400 italic">No collaboration dossiers submitted yet for this call.</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    )}
-                  </Card>
-                </motion.div>
-              );
-            })}
-
-            {collabCalls.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border rounded-3xl bg-secondary/20">
-                <div className="h-16 w-16 rounded-full bg-background flex items-center justify-center mb-4 shadow-sm">
-                  <MessagesSquare className="h-8 w-8 text-muted-foreground/30" />
-                </div>
-                <h3 className="text-lg font-bold">No recruitment calls found</h3>
-                <p className="text-sm text-muted-foreground max-w-xs text-center">
-                  There are no open collaboration recruitment calls belonging to your research groups.
-                </p>
-              </div>
-            )}
-          </div>
         )}
 
         {activeTab === 'external' && isTeacher && (

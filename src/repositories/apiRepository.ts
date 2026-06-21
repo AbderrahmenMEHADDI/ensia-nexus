@@ -64,6 +64,8 @@ export const apiRepository = {
     ),
   createStudentCV: (data: Partial<StudentCVEntry> & { student_user_id: number; title: string }) =>
     api.post<StudentCVEntry>('/student-cvs/', data),
+  updateStudentCV: (id: number, data: Partial<StudentCVEntry>) =>
+    api.put<StudentCVEntry>(`/student-cvs/${id}`, data),
   deleteStudentCV: (id: number) => api.delete<void>(`/student-cvs/${id}`),
   getStudentPreviousProjects: (studentUserId?: number) =>
     api.get<StudentPreviousProject[]>(

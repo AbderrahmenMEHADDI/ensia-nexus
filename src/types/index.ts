@@ -7,7 +7,7 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLE
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
 export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'RESEARCHER';
-export type ResourceType = 'PAPER_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
+export type ResourceType = 'INTERNAL_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
 
 export interface User {
   id: number;
@@ -104,7 +104,6 @@ export interface ResearchGroup {
   created_at: string;
   requested_by_user_id?: number;
 }
-
 export interface GroupMember {
   group_id: number;
   user_id: number;
@@ -112,6 +111,7 @@ export interface GroupMember {
   joined_at: string;
   user_name?: string;
   user_email?: string;
+  user_role?: UserRole;
 }
 
 export interface GroupInvitation {

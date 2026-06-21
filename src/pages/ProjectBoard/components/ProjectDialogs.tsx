@@ -54,6 +54,11 @@ interface ProjectDialogsProps {
   setEditProjectDeadline?: (val: string) => void;
   editProjectLoading?: boolean;
   handleUpdateProject?: () => void;
+  isIndependent?: boolean;
+  leaderGroups?: ResearchGroup[];
+  editProjectGroupId?: string;
+  setEditProjectGroupId?: (val: string) => void;
+  currentGroupName?: string;
 
   deleteProjectConfirmOpen?: boolean;
   setDeleteProjectConfirmOpen?: (open: boolean) => void;
@@ -107,6 +112,11 @@ export const ProjectDialogs = ({
   setEditProjectDeadline,
   editProjectLoading,
   handleUpdateProject,
+  isIndependent,
+  leaderGroups = [],
+  editProjectGroupId,
+  setEditProjectGroupId,
+  currentGroupName,
 
   deleteProjectConfirmOpen,
   setDeleteProjectConfirmOpen,
@@ -145,7 +155,15 @@ export const ProjectDialogs = ({
               </div>
               <div className="space-y-2">
                 <Label>Visibility</Label>
-                <Select value={formVisibility} onValueChange={v => setFormVisibility(v as Visibility)}>
+                <Select 
+                  value={formVisibility} 
+                  onValueChange={v => {
+                    setFormVisibility(v as Visibility);
+                    if (v === 'PRIVATE') {
+                      setFormAcceptingCollaborators(false);
+                    }
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -165,6 +183,7 @@ export const ProjectDialogs = ({
                 <Switch
                   checked={formAcceptingCollaborators}
                   onCheckedChange={setFormAcceptingCollaborators}
+                  disabled={formVisibility === 'PRIVATE'}
                 />
               </div>
               <div className="space-y-2">
@@ -266,11 +285,33 @@ export const ProjectDialogs = ({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Research Group</Label>
-                <Input value="None (Independent Project)" disabled className="bg-muted text-muted-foreground" />
+                {isIndependent ? (
+                  <Select value={editProjectGroupId} onValueChange={setEditProjectGroupId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None (Independent Project)</SelectItem>
+                      {leaderGroups.map(g => (
+                        <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input value={currentGroupName || "Research Group Project"} disabled className="bg-muted text-muted-foreground" />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Visibility</Label>
-                <Select value={editProjectVisibility} onValueChange={v => setEditProjectVisibility?.(v as Visibility)}>
+                <Select 
+                  value={editProjectVisibility} 
+                  onValueChange={v => {
+                    setEditProjectVisibility?.(v as Visibility);
+                    if (v === 'PRIVATE') {
+                      setEditProjectAcceptingCollaborators?.(false);
+                    }
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -290,6 +331,7 @@ export const ProjectDialogs = ({
                 <Switch
                   checked={editProjectAcceptingCollaborators}
                   onCheckedChange={setEditProjectAcceptingCollaborators}
+                  disabled={editProjectVisibility === 'PRIVATE'}
                 />
               </div>
               <div className="space-y-2">
