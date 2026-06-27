@@ -16,6 +16,7 @@ import SignUp from "./pages/SignUp";
 import CompleteRegistration from "./pages/CompleteRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
 import ProjectBoard from "./pages/ProjectBoard";
 import Applications from "./pages/Applications";
 import Profile from "./pages/Profile";
@@ -99,6 +100,7 @@ const AppRoutes = () => (
       <Route path="/complete-registration" element={<ProtectedRoute><CompleteRegistration /></ProtectedRoute>} />
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/dashboard" element={<Navigate to="/projects" replace />} />
       <Route path="/projects" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
