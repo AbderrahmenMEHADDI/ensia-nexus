@@ -67,7 +67,7 @@ const NotFound = () => {
         >
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-muted-foreground">
-            ENSIA NEXUS SYSTEM STATUS: OPERATIONAL
+            AISI SYSTEM STATUS: OPERATIONAL
           </span>
         </motion.div>
       </div>
