@@ -30,14 +30,16 @@ import MyLabDetails from "./pages/MyLabDetails";
 import MyLabGroupDetails from "./pages/MyLabGroupDetails";
 import PublicProjects from "./pages/PublicProjects";
 import PublicProjectDetails from "./pages/PublicProjectDetails";
+import Unverified from "./pages/Unverified";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isInitialLoading } = useAuth();
+  const { isAuthenticated, isInitialLoading, user } = useAuth();
   if (isInitialLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>; // TODO: Better loader
   if (!isAuthenticated) return <Navigate to="/signin" replace />;
+  if (user && user.is_email_verified === false) return <Navigate to="/unverified" replace />;
   return <>{children}</>;
 };
 
@@ -49,10 +51,11 @@ const PublicOnlyRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const RoleProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: UserRole[] }) => {
-  const { isAuthenticated, isInitialLoading, hasRole } = useAuth();
+  const { isAuthenticated, isInitialLoading, hasRole, user } = useAuth();
   const location = useLocation();
   if (isInitialLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/signin" replace state={{ from: location }} />;
+  if (user && user.is_email_verified === false) return <Navigate to="/unverified" replace />;
   if (!hasRole(allowedRoles)) return <Navigate to="/projects" replace />;
   return <>{children}</>;
 };
@@ -84,6 +87,7 @@ const LabAdminProtectedRoute = ({ children }: { children: React.ReactNode }) => 
 
   if (isInitialLoading || checking) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/signin" replace state={{ from: location }} />;
+  if (user && user.is_email_verified === false) return <Navigate to="/unverified" replace />;
   if (!isLabAdmin) return <Navigate to="/projects" replace />;
   return <>{children}</>;
 };
@@ -101,6 +105,7 @@ const AppRoutes = () => (
       <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPassword /></PublicOnlyRoute>} />
       <Route path="/reset-password" element={<PublicOnlyRoute><ResetPassword /></PublicOnlyRoute>} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/unverified" element={<Unverified />} />
       <Route path="/dashboard" element={<Navigate to="/projects" replace />} />
       <Route path="/projects" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />
       <Route path="/projects/:projectId" element={<ProtectedRoute><ProjectBoard /></ProtectedRoute>} />

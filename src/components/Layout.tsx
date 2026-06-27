@@ -12,7 +12,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import React from 'react';
-import { api } from '@/lib/apiClient';
 import { useToast } from '@/hooks/use-toast';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -68,24 +67,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <div className="h-screen flex w-full overflow-hidden bg-[#F8FAFC]">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]">
-          {user && user.is_email_verified === false && (
-            <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 text-sm text-yellow-800 flex justify-between items-center z-50 shrink-0">
-              <p>Your email address is not verified. Please check your inbox or spam folder.</p>
-              <button 
-                className="text-yellow-900 font-medium hover:underline text-xs px-3 py-1 bg-yellow-100 rounded-md transition-colors"
-                onClick={async () => {
-                  try {
-                    await api.post('/auth/resend-verification', { email: user.email });
-                    toast({ title: 'Email sent', description: 'Verification email has been resent.' });
-                  } catch (e) {
-                    toast({ title: 'Error', description: 'Failed to resend verification email.', variant: 'destructive' });
-                  }
-                }}
-              >
-                Resend Email
-              </button>
-            </div>
-          )}
           <header className="h-14 shrink-0 flex items-center justify-between border-b border-slate-200/60 bg-white sticky top-0 z-40 px-4">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
