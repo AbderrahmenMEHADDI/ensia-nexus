@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,70 +6,70 @@
 
 @layer base {
   :root {
-    /* ENSIA 2.0 — Light Mode */
-    --background: 210 40% 98%;       /* #F8FAFC */
-    --foreground: 222 47% 11%;       /* #0F172A */
+    /* ENSIA 2.0 — Light Mode (AISI Brand Identity) */
+    --background: 220 17% 97%;       /* Paper: #F6F7F9 */
+    --foreground: 216 53% 12%;       /* Ink: #0E1B2E */
 
-    --card: 0 0% 100%;               /* #FFFFFF */
-    --card-foreground: 222 47% 11%;  /* #0F172A */
+    --card: 0 0% 100%;               /* White: #FFFFFF */
+    --card-foreground: 216 53% 12%;  /* Ink: #0E1B2E */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 216 53% 12%;
 
-    --primary: 27 90% 54%;           /* #F37F20 */
+    --primary: 218 69% 29%;           /* Deep Blue: #173C7E */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 215 25% 27%;
+    --secondary: 201 69% 52%;         /* Sky Blue: #2E9FDA */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%; /* #475569 */
+    --muted: 213 27% 95%;             /* Mist: #EDF1F6 */
+    --muted-foreground: 214 14% 43%;  /* Slate: #5E6B7C */
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 26 91% 54%;             /* Impact Orange: #F47A1E */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 27 90% 54%;
+    --border: 219 23% 91%;            /* Hair: #E3E7EE */
+    --input: 219 23% 91%;
+    --ring: 218 69% 29%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 203 88% 24%;       /* Deep Navy: #074a75 */
-    --sidebar-foreground: 210 40% 96%;       /* Light Text */
-    --sidebar-primary: 27 90% 54%;           /* Orange: #F37F20 */
+    --sidebar-background: 218 69% 29%;       /* Deep Blue: #173C7E */
+    --sidebar-foreground: 220 17% 97%;       /* Paper: #F6F7F9 */
+    --sidebar-primary: 26 91% 54%;           /* Impact Orange: #F47A1E */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 203 88% 20%;           /* Darker Navy for hover */
+    --sidebar-accent: 218 69% 24%;           /* Darker Deep Blue for hover */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 203 88% 20%;
-    --sidebar-ring: 27 90% 54%;
+    --sidebar-border: 218 69% 24%;
+    --sidebar-ring: 26 91% 54%;
 
     /* Custom tokens */
     --success: 152 55% 38%;
     --success-foreground: 152 60% 95%;
     --warning: 35 90% 55%;
     --warning-foreground: 35 90% 10%;
-    --info: 210 60% 50%;
-    --info-foreground: 210 70% 95%;
+    --info: 201 69% 52%;                     /* Sky Blue */
+    --info-foreground: 0 0% 100%;
 
     /* Priority colors */
     --priority-low: 152 55% 38%;
     --priority-medium: 35 80% 50%;
-    --priority-high: 20 85% 50%;
+    --priority-high: 26 91% 54%;             /* Impact Orange */
     --priority-urgent: 0 72% 51%;
 
     /* Role colors */
-    --role-student: 210 60% 50%;
+    --role-student: 201 69% 52%;             /* Sky Blue */
     --role-mca: 270 50% 50%;
-    --role-professor: 27 90% 54%;
+    --role-professor: 218 69% 29%;           /* Deep Blue */
     --role-doctor: 152 55% 40%;
     --role-admin: 0 65% 50%;
 
     /* Status colors */
-    --status-todo: 215 16% 47%;
-    --status-in-progress: 210 60% 50%;
+    --status-todo: 214 14% 43%;              /* Slate */
+    --status-in-progress: 201 69% 52%;       /* Sky Blue */
     --status-blocked: 0 65% 50%;
     --status-done: 152 55% 40%;
     --status-cancelled: 215 8% 40%;
@@ -78,63 +78,64 @@
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 96%;
+    /* ENSIA 2.0 — Dark Mode (AISI Brand Identity) */
+    --background: 216 53% 10%;       /* Ink (darkened): #0b1525 */
+    --foreground: 220 17% 97%;       /* Paper: #F6F7F9 */
 
-    --card: 222 40% 10%;
-    --card-foreground: 210 40% 96%;
+    --card: 216 53% 7%;              /* Darker Ink: #070e19 */
+    --card-foreground: 220 17% 97%;  /* Paper: #F6F7F9 */
 
-    --popover: 222 40% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 216 53% 7%;
+    --popover-foreground: 220 17% 97%;
 
-    --primary: 27 90% 54%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 218 64% 60%;           /* Lighter Deep Blue: #5B8AD9 */
+    --primary-foreground: 216 53% 10%; /* Ink */
 
-    --secondary: 222 30% 14%;
-    --secondary-foreground: 210 20% 75%;
+    --secondary: 201 77% 59%;         /* Lighter Sky Blue: #46AEE6 */
+    --secondary-foreground: 216 53% 10%;
 
-    --muted: 222 25% 13%;
-    --muted-foreground: 215 12% 55%;
+    --muted: 216 40% 16%;             /* Darker background */
+    --muted-foreground: 214 14% 65%;  /* Lighter Slate */
 
-    --accent: 222 30% 14%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 27 91% 58%;             /* Lighter Impact Orange: #F68A33 */
+    --accent-foreground: 216 53% 10%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 222 20% 18%;
-    --input: 222 20% 18%;
-    --ring: 27 90% 54%;
+    --border: 216 40% 18%;
+    --input: 216 40% 18%;
+    --ring: 218 64% 60%;
 
-    --sidebar-background: 203 88% 18%;       /* Even Darker Navy */
-    --sidebar-foreground: 215 12% 75%;
-    --sidebar-primary: 27 90% 54%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 203 88% 14%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 203 88% 14%;
-    --sidebar-ring: 27 90% 54%;
+    --sidebar-background: 216 53% 8%;       /* Even Darker Ink */
+    --sidebar-foreground: 214 14% 65%;
+    --sidebar-primary: 27 91% 58%;           /* Lighter Impact Orange */
+    --sidebar-primary-foreground: 216 53% 10%;
+    --sidebar-accent: 216 53% 5%;
+    --sidebar-accent-foreground: 220 17% 97%;
+    --sidebar-border: 216 53% 5%;
+    --sidebar-ring: 27 91% 58%;
 
     --success: 152 50% 45%;
     --success-foreground: 152 60% 95%;
     --warning: 35 85% 55%;
     --warning-foreground: 35 90% 10%;
-    --info: 210 55% 55%;
-    --info-foreground: 210 70% 95%;
+    --info: 201 77% 59%;                     /* Lighter Sky Blue */
+    --info-foreground: 216 53% 10%;
 
     --priority-low: 152 50% 45%;
     --priority-medium: 35 75% 55%;
-    --priority-high: 20 80% 55%;
+    --priority-high: 27 91% 58%;             /* Lighter Impact Orange */
     --priority-urgent: 0 65% 55%;
 
-    --role-student: 210 55% 55%;
+    --role-student: 201 77% 59%;             /* Lighter Sky Blue */
     --role-mca: 270 45% 55%;
-    --role-professor: 27 70% 55%;
+    --role-professor: 218 64% 60%;           /* Lighter Deep Blue */
     --role-doctor: 152 50% 45%;
     --role-admin: 0 60% 55%;
 
-    --status-todo: 215 12% 55%;
-    --status-in-progress: 210 55% 55%;
+    --status-todo: 214 14% 65%;              /* Lighter Slate */
+    --status-in-progress: 201 77% 59%;       /* Lighter Sky Blue */
     --status-blocked: 0 60% 55%;
     --status-done: 152 50% 45%;
     --status-cancelled: 215 5% 45%;
@@ -154,14 +155,14 @@
   }
 
   code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
   }
 }
 
 @layer utilities {
   .text-gradient-primary {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #F37F20, #FF9A44);
+    background-image: linear-gradient(135deg, #173C7E, #2E9FDA);
   }
 
   /* Glassmorphism navbar */
@@ -192,20 +193,20 @@
   /* Geometric grid pattern for hero backgrounds */
   .geo-grid {
     background-image:
-      linear-gradient(rgba(243, 127, 32, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(243, 127, 32, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(244,122,30, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(244,122,30, 0.03) 1px, transparent 1px);
     background-size: 60px 60px;
   }
   .dark .geo-grid {
     background-image:
-      linear-gradient(rgba(243, 127, 32, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(243, 127, 32, 0.06) 1px, transparent 1px);
+      linear-gradient(rgba(244,122,30, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(244,122,30, 0.06) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 
   /* Dot pattern */
   .dot-pattern {
-    background-image: radial-gradient(circle, rgba(243, 127, 32, 0.08) 1px, transparent 1px);
+    background-image: radial-gradient(circle, rgba(244,122,30, 0.08) 1px, transparent 1px);
     background-size: 24px 24px;
   }
 

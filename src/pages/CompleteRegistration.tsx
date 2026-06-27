@@ -116,7 +116,7 @@ const CompleteRegistration = () => {
       >
         <div className="flex flex-col items-center mb-8">
           <div className="h-20 w-auto mb-4">
-            <img src="/logo.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
+            <img src="/aisi-logo-color.svg" alt="ENSIA Research Hub Logo" className="h-full w-auto" />
           </div>
           <h1 className="text-xl font-display font-semibold text-foreground">Complete Registration</h1>
           <p className="text-sm text-muted-foreground mt-1">Finish setting up your ENSIA profile</p>

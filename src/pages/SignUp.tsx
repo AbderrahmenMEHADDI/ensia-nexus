@@ -131,9 +131,9 @@ const SignUp = () => {
         {/* Left Side: Logo & Text */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col items-center md:items-start text-center md:text-left max-w-sm">
           <div className="h-16 w-16 flex items-center justify-center mb-6">
-            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10" />
+            <img src="/aisi-logo-color.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-[#074a75] mb-3">Create your account</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-[#173C7E] mb-3">Create your account</h1>
           <p className="text-base text-slate-500 leading-relaxed">Join ENSIA Nexus to start collaborating on high-impact research projects with the brightest minds.</p>
         </motion.div>
 
@@ -209,7 +209,7 @@ const SignUp = () => {
             <Button
               type="submit"
               className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
-              style={{ background: '#F37F20', color: '#fff' }}
+              style={{ background: '#F47A1E', color: '#fff' }}
               disabled={submitting || isLoading}
             >
               {submitting ? (
@@ -272,7 +272,7 @@ const SignUp = () => {
 
           <p className="text-sm text-center mt-6" style={{ color: '#64748B' }}>
             Already have an account?{' '}
-            <a href="/signin" style={{ color: '#F37F20' }} className="font-semibold hover:underline">Sign in</a>
+            <a href="/signin" style={{ color: '#F47A1E' }} className="font-semibold hover:underline">Sign in</a>
           </p>
         </div>
       </motion.div>

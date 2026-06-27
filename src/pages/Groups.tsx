@@ -230,11 +230,11 @@ const Groups = () => {
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                   >
-                    <Card className="rounded-2xl border-[#F37F20]/20 bg-[#F37F20]/5 hover:bg-[#F37F20]/10 transition-colors shadow-sm">
+                    <Card className="rounded-2xl border-[#F47A1E]/20 bg-[#F47A1E]/5 hover:bg-[#F47A1E]/10 transition-colors shadow-sm">
                       <CardHeader className="pb-3">
                         <div className="flex justify-between items-start">
                           <CardTitle className="text-lg text-[#0F172A]">{group.name}</CardTitle>
-                          <Mail className="h-5 w-5 text-[#F37F20] opacity-80" />
+                          <Mail className="h-5 w-5 text-[#F47A1E] opacity-80" />
                         </div>
                         <CardDescription className="line-clamp-2 text-slate-500">
                           {group.description || "No description provided for this research group."}
@@ -267,7 +267,7 @@ const Groups = () => {
                       <CardFooter className="pt-0 flex gap-2">
                         <Button
                           className="flex-1 rounded-lg h-9 font-semibold"
-                          style={{ background: '#F37F20', color: '#fff' }}
+                          style={{ background: '#F47A1E', color: '#fff' }}
                           size="sm"
                           onClick={() => respond(inv, 'ACCEPTED')}
                           disabled={actingId === inv.id}
@@ -305,8 +305,8 @@ const Groups = () => {
       <div>
         {myGroups.length === 0 ? (
           <div className="p-16 rounded-2xl border border-slate-100 bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.1)] flex flex-col items-center text-center">
-            <div className="h-24 w-24 rounded-full bg-[#074a75]/5 flex items-center justify-center mb-6 shadow-inner">
-              <Users className="h-10 w-10 text-[#074a75]/40" />
+            <div className="h-24 w-24 rounded-full bg-[#173C7E]/5 flex items-center justify-center mb-6 shadow-inner">
+              <Users className="h-10 w-10 text-[#173C7E]/40" />
             </div>
             <h3 className="text-2xl font-bold text-[#0F172A] mb-3">No active groups</h3>
             <p className="text-slate-500 max-w-sm mb-2 text-base leading-relaxed">
@@ -330,24 +330,24 @@ const Groups = () => {
                 >
                   <Card className={cn(
                     "group relative overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.1)]",
-                    isLeader ? "border-[#F37F20]/30 bg-white" : "border-slate-100 bg-white"
+                    isLeader ? "border-[#F47A1E]/30 bg-white" : "border-slate-100 bg-white"
                   )}>
-                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#074a75] to-[#F37F20] opacity-80" />
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#173C7E] to-[#F47A1E] opacity-80" />
                     <CardHeader className="pb-4">
                       <div className="flex justify-between items-start gap-4">
                         <div className="space-y-1">
-                          <CardTitle className="text-xl font-bold text-[#0F172A] group-hover:text-[#074a75] transition-colors">
+                          <CardTitle className="text-xl font-bold text-[#0F172A] group-hover:text-[#173C7E] transition-colors">
                             {group.name}
                           </CardTitle>
                           <div className="flex items-center gap-2 mt-2">
                             {isLeader && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#F37F20]/10 text-[#F37F20] uppercase tracking-widest border border-[#F37F20]/20">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#F47A1E]/10 text-[#F47A1E] uppercase tracking-widest border border-[#F47A1E]/20">
                                 <UserCheck className="h-3 w-3 mr-1" />
                                 Group Leader
                               </span>
                             )}
                             {!isLeader && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#074a75]/10 text-[#074a75] uppercase tracking-widest border border-[#074a75]/20">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#173C7E]/10 text-[#173C7E] uppercase tracking-widest border border-[#173C7E]/20">
                                 <Users className="h-3 w-3 mr-1" />
                                 Member
                               </span>
@@ -356,7 +356,7 @@ const Groups = () => {
                         </div>
                         <Link
                           to={`/groups/${group.id}`}
-                          className="flex items-center justify-center shrink-0 h-10 w-10 rounded-full bg-slate-50 border border-slate-100 text-[#074a75] hover:bg-[#F37F20] hover:text-white hover:border-[#F37F20] shadow-sm transition-all group/btn"
+                          className="flex items-center justify-center shrink-0 h-10 w-10 rounded-full bg-slate-50 border border-slate-100 text-[#173C7E] hover:bg-[#F47A1E] hover:text-white hover:border-[#F47A1E] shadow-sm transition-all group/btn"
                         >
                           <ArrowRight className="h-5 w-5 group-hover/btn:translate-x-0.5 transition-transform" />
                         </Link>

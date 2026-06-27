@@ -94,10 +94,10 @@ const PublicProjects = () => {
           {/* Title row */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
             <div>
-              <h1 className="text-2xl md:text-3xl font-display font-bold" style={{ color: '#074a75' }}>
+              <h1 className="text-2xl md:text-3xl font-display font-bold" style={{ color: '#173C7E' }}>
                 Project Board
               </h1>
-              <div className="w-10 h-1 rounded-full mt-2 mb-1" style={{ background: '#F37F20' }} />
+              <div className="w-10 h-1 rounded-full mt-2 mb-1" style={{ background: '#F47A1E' }} />
               <p className="text-sm" style={{ color: '#64748B' }}>
                 Explore {projects.length} research projects across ENSIA.
               </p>
@@ -115,7 +115,7 @@ const PublicProjects = () => {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#94A3B8' }} />
               <Input
                 placeholder="Search by title, topic, or tech..."
-                className="pl-10 h-10 rounded-lg border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#074a75]/30"
+                className="pl-10 h-10 rounded-lg border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#173C7E]/30"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -123,7 +123,7 @@ const PublicProjects = () => {
 
             {/* Filter selects */}
             <select
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#074a75]/30 outline-none"
+              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none"
               value={selectedLabId}
               onChange={(e) => { setSelectedLabId(e.target.value); setSelectedGroupId('all'); }}
             >
@@ -134,7 +134,7 @@ const PublicProjects = () => {
             </select>
 
             <select
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#074a75]/30 outline-none"
+              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none"
               value={selectedGroupId}
               onChange={(e) => setSelectedGroupId(e.target.value)}
             >
@@ -150,9 +150,9 @@ const PublicProjects = () => {
                 "h-10 px-4 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shrink-0",
                 showCollabOnly
                   ? "text-white border-transparent"
-                  : "border-slate-200 text-[#475569] hover:border-[#074a75]/30"
+                  : "border-slate-200 text-[#475569] hover:border-[#173C7E]/30"
               )}
-              style={showCollabOnly ? { background: '#074a75' } : {}}
+              style={showCollabOnly ? { background: '#173C7E' } : {}}
               onClick={() => setShowCollabOnly(!showCollabOnly)}
             >
               <span className={cn("h-2 w-2 rounded-full", showCollabOnly ? "bg-emerald-400" : "bg-slate-300")} />
@@ -182,14 +182,14 @@ const PublicProjects = () => {
             </div>
           ) : filteredProjects.length === 0 ? (
             <div className="py-24 text-center">
-              <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(7,74,117,0.06)' }}>
+              <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(23,60,126,0.06)' }}>
                 <Search className="h-7 w-7" style={{ color: '#94A3B8' }} />
               </div>
               <h3 className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>No matching projects</h3>
               <p className="text-sm mb-4" style={{ color: '#64748B' }}>Try adjusting your filters or search terms.</p>
               <button
                 className="text-sm font-semibold"
-                style={{ color: '#F37F20' }}
+                style={{ color: '#F47A1E' }}
                 onClick={() => { setSearchQuery(''); setSelectedLabId('all'); setSelectedGroupId('all'); setShowCollabOnly(false); }}
               >
                 Clear all filters
@@ -260,7 +260,7 @@ const ProjectCard = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.04 }}
       className="group/card relative rounded-2xl bg-white flex flex-col cursor-default overflow-hidden shadow-[0_2px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300"
-      style={{ borderTop: isOpen ? '3px solid #F37F20' : '3px solid #074a75' }}
+      style={{ borderTop: isOpen ? '3px solid #F47A1E' : '3px solid #173C7E' }}
     >
       {/* Card front */}
       <div className="p-6 flex flex-col flex-1">
@@ -310,7 +310,7 @@ const ProjectCard = ({
       <div
         className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-4 -translate-x-full group-hover/card:translate-x-0 px-6"
         style={{
-          background: '#074a75',
+          background: '#173C7E',
           transition: 'transform 420ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
@@ -322,7 +322,7 @@ const ProjectCard = ({
           <Link
             to={`/discovery/projects/${project.id}`}
             className="inline-flex items-center gap-2 text-sm font-semibold group/link"
-            style={{ color: '#F37F20' }}
+            style={{ color: '#F47A1E' }}
           >
             View Project Details
             <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1" />
@@ -338,7 +338,7 @@ const ProjectCard = ({
             ) : (
               <button
                 className="inline-flex items-center gap-1.5 mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110 group/btn"
-                style={{ background: '#F37F20' }}
+                style={{ background: '#F47A1E' }}
                 onClick={(e) => { e.stopPropagation(); onApply(callId); }}
               >
                 <Send className="h-3.5 w-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Join
@@ -438,7 +438,7 @@ const ApplyDialog = ({ open, onOpenChange, callId, onApplied }: {
                 <Label htmlFor="apply-motivation">Motivation</Label>
                 <Textarea id="apply-motivation" placeholder="Briefly describe your interest and relevant experience..." rows={3} value={form.motivation} onChange={e => setForm(f => ({ ...f, motivation: e.target.value }))} />
               </div>
-              <Button type="submit" className="w-full rounded-lg h-11 text-sm font-semibold gap-2" style={{ background: '#F37F20', color: '#fff' }} disabled={submitting}>
+              <Button type="submit" className="w-full rounded-lg h-11 text-sm font-semibold gap-2" style={{ background: '#F47A1E', color: '#fff' }} disabled={submitting}>
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {submitting ? 'Submitting...' : 'Submit Application'}
               </Button>

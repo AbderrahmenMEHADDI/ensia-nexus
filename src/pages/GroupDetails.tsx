@@ -94,7 +94,7 @@ const GroupDetails = () => {
   return (
     <div className="flex flex-col min-h-screen pb-16">
       {/* Top Header Banner */}
-      <div className="w-full bg-white border-b border-slate-200 border-t-[3px] border-t-[#F37F20] pt-12 pb-10 px-6 sm:px-12 relative">
+      <div className="w-full bg-white border-b border-slate-200 border-t-[3px] border-t-[#F47A1E] pt-12 pb-10 px-6 sm:px-12 relative">
         <div className="container max-w-5xl mx-auto relative z-10 flex flex-col">
           <div className="flex-1 space-y-5">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 text-slate-500 text-xs font-bold tracking-widest uppercase">
@@ -103,7 +103,7 @@ const GroupDetails = () => {
             </div>
             
             <div className="space-y-3">
-              <h1 className="text-4xl sm:text-5xl font-display font-bold text-[#074a75] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl font-display font-bold text-[#173C7E] tracking-tight">
                 {group.name}
               </h1>
               <p className="text-lg text-slate-600 max-w-2xl leading-relaxed">
@@ -113,7 +113,7 @@ const GroupDetails = () => {
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 pt-2">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#074a75] shadow-sm ring-1 ring-slate-200">
+                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#173C7E] shadow-sm ring-1 ring-slate-200">
                   {leaderName?.[0] || 'L'}
                 </div>
                 <span className="font-medium">Led by <span className="text-[#0F172A]">{leaderName}</span></span>
@@ -153,7 +153,7 @@ const GroupDetails = () => {
           <div className="md:col-span-3 space-y-6 pt-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-[#074a75]" /> Active Projects
+                <FolderOpen className="h-5 w-5 text-[#173C7E]" /> Active Projects
               </h2>
             </div>
             
@@ -165,18 +165,18 @@ const GroupDetails = () => {
                     key={proj.id}
                     to={`/projects/${proj.id}`}
                     className={`block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${
-                      isFeatured ? 'border-l-4 border-l-[#F37F20]' : ''
+                      isFeatured ? 'border-l-4 border-l-[#F47A1E]' : ''
                     }`}
                   >
                     {isFeatured && (
-                      <div className="absolute -top-3 left-4 bg-[#F37F20] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+                      <div className="absolute -top-3 left-4 bg-[#F47A1E] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
                         Featured
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#074a75] transition-colors truncate">
+                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#173C7E] transition-colors truncate">
                             {proj.title}
                           </h3>
                           <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
@@ -187,7 +187,7 @@ const GroupDetails = () => {
                           {proj.description || "A collaborative research initiative focusing on advanced methodologies."}
                         </p>
                       </div>
-                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#074a75] group-hover:bg-[#F37F20] group-hover:text-white transition-all">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#173C7E] group-hover:bg-[#F47A1E] group-hover:text-white transition-all">
                         <ChevronRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
@@ -205,7 +205,7 @@ const GroupDetails = () => {
           {/* Right Column: Members */}
           <aside className="md:col-span-2 space-y-6 pt-6">
             <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2">
-              <Users className="h-5 w-5 text-[#074a75]" /> Research Team
+              <Users className="h-5 w-5 text-[#173C7E]" /> Research Team
             </h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -224,7 +224,7 @@ const GroupDetails = () => {
                 const colorClass = colors[m.user_id % colors.length];
 
                 return (
-                  <div key={m.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#074a75]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
+                  <div key={m.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#173C7E]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
                     <div className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${colorClass}`}>
                       {memberName?.[0] || '?'}
                     </div>
@@ -232,7 +232,7 @@ const GroupDetails = () => {
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-[#0F172A] truncate block">{memberName}</span>
                         {isLeader ? (
-                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#074a75] px-1.5 py-0.5 rounded w-fit mt-0.5">
+                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#173C7E] px-1.5 py-0.5 rounded w-fit mt-0.5">
                             Lead
                           </span>
                         ) : (

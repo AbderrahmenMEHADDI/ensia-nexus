@@ -48,7 +48,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
   return (
     <div className="min-h-screen flex flex-col bg-background selection:bg-primary/20">
       {/* ── Slim Top Utility Bar ── */}
-      <div className="w-full" style={{ background: '#053557' }}>
+      <div className="w-full" style={{ background: '#0E1B2E' }}>
         <div className="container flex items-center justify-between px-4 sm:px-6 h-8 text-[11px] tracking-wide" style={{ color: 'rgba(255,255,255,0.45)' }}>
           <div className="flex items-center gap-3">
             <span className="cursor-pointer hover:text-white/70 transition-colors">EN</span>
@@ -74,7 +74,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="h-9 w-9 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <img src="/logo_small.svg" alt="Logo" className="h-6 w-6" />
+              <img src="/aisi-logo-color.svg" alt="Logo" className="h-6 w-6" />
             </div>
             <span className="font-display font-bold text-[#0F172A] text-lg tracking-tight">ENSIA Nexus</span>
           </Link>
@@ -97,7 +97,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               >
                 {link.label}
                 {link.isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F37F20]" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
                 )}
               </a>
             ) : (
@@ -113,7 +113,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               >
                 {link.label}
                 {link.isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F37F20]" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
                 )}
               </Link>
             ))}
@@ -125,7 +125,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               <Search className="h-[18px] w-[18px]" />
             </button>
             <Link to="/signup" className="hidden sm:block">
-              <Button className="rounded-lg px-5 h-9 text-sm font-semibold shadow-none" style={{ background: '#F37F20', color: '#fff' }}>
+              <Button className="rounded-lg px-5 h-9 text-sm font-semibold shadow-none" style={{ background: '#F47A1E', color: '#fff' }}>
                 Join Hub
               </Button>
             </Link>
@@ -139,13 +139,13 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="py-12 md:py-20 mt-auto" style={{ background: '#074a75' }}>
+      <footer className="py-12 md:py-20 mt-auto" style={{ background: '#173C7E' }}>
         <div className="container px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="space-y-6">
               <div className="flex items-center gap-2.5">
                 <div className="h-8 w-8 flex items-center justify-center">
-                  <img src="/logo_small.svg" alt="Logo" className="h-5 w-5" />
+                  <img src="/aisi-logo-on-dark.svg" alt="Logo" className="h-5 w-5" />
                 </div>
                 <span className="font-display font-bold text-white text-lg">ENSIA Nexus</span>
               </div>
@@ -188,7 +188,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
           <div className="p-5 rounded-2xl bg-white/95 border border-slate-200/80 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.1)] backdrop-blur-md flex flex-col gap-4">
             <div className="flex gap-3">
               <div className="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-                <Cookie className="h-5 w-5 text-[#F37F20]" />
+                <Cookie className="h-5 w-5 text-[#F47A1E]" />
               </div>
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-[#0F172A]">We value your privacy</h4>
@@ -207,7 +207,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               <button
                 onClick={handleAccept}
                 className="text-xs font-semibold px-4 py-2 rounded-lg text-white transition-all hover:brightness-110"
-                style={{ background: '#F37F20' }}
+                style={{ background: '#F47A1E' }}
               >
                 Accept All
               </button>
@@ -226,7 +226,7 @@ const FooterCol = ({ title, links }: { title: string; links: { label: string; hr
     <ul className="space-y-4">
       {links.map(link => (
         <li key={link.label}>
-          <Link to={link.href} className="text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.45)' }} onMouseEnter={e => (e.currentTarget.style.color = '#F37F20')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}>{link.label}</Link>
+          <Link to={link.href} className="text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.45)' }} onMouseEnter={e => (e.currentTarget.style.color = '#F47A1E')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}>{link.label}</Link>
         </li>
       ))}
     </ul>

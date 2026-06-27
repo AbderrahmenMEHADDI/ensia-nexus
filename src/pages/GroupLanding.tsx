@@ -95,11 +95,11 @@ const GroupLanding = () => {
   return (
     <PublicLayout>
       {/* Top Header Banner */}
-      <div className="w-full bg-white border-b border-slate-200 border-t-[3px] border-t-[#F37F20] pt-8 pb-10 px-4 sm:px-12 relative">
+      <div className="w-full bg-white border-b border-slate-200 border-t-[3px] border-t-[#F47A1E] pt-8 pb-10 px-4 sm:px-12 relative">
         <div className="container max-w-5xl mx-auto relative z-10 flex flex-col">
           {/* Top Navigation */}
           <div className="flex items-center justify-between mb-10">
-            <Link to="/" className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#F37F20' }}>
+            <Link to="/" className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#F47A1E' }}>
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Discovery Hub</span>
             </Link>
@@ -107,7 +107,7 @@ const GroupLanding = () => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="rounded-full text-[#074a75] hover:bg-slate-100"
+                className="rounded-full text-[#173C7E] hover:bg-slate-100"
                 onClick={() => {
                   navigator.clipboard.writeText(window.location.href);
                   toast({ title: "Link Copied", description: "The group profile link is now in your clipboard." });
@@ -116,7 +116,7 @@ const GroupLanding = () => {
                 <Share2 className="h-4 w-4" />
               </Button>
               <Link to="/signup">
-                <Button size="sm" className="rounded-full px-5 h-9 font-semibold" style={{ background: '#F37F20', color: '#fff' }}>
+                <Button size="sm" className="rounded-full px-5 h-9 font-semibold" style={{ background: '#F47A1E', color: '#fff' }}>
                   Join Network
                 </Button>
               </Link>
@@ -130,7 +130,7 @@ const GroupLanding = () => {
             </div>
             
             <div className="space-y-3">
-              <h1 className="text-4xl sm:text-5xl font-display font-bold text-[#074a75] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl font-display font-bold text-[#173C7E] tracking-tight">
                 {team.name}
               </h1>
               <p className="text-lg text-slate-600 max-w-2xl leading-relaxed">
@@ -140,7 +140,7 @@ const GroupLanding = () => {
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 pt-2">
               <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#074a75] shadow-sm ring-1 ring-slate-200">
+                <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-[#173C7E] shadow-sm ring-1 ring-slate-200">
                   {members.find(m => m.user_id === team.leader_user_id)?.user_name?.[0] || 'L'}
                 </div>
                 <span className="font-medium">Led by <span className="text-[#0F172A]">{members.find(m => m.user_id === team.leader_user_id)?.user_name || 'Group Leader'}</span></span>
@@ -148,7 +148,7 @@ const GroupLanding = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-7 rounded-full text-xs font-semibold px-3 border-slate-200 text-[#074a75] hover:bg-slate-50"
+                className="h-7 rounded-full text-xs font-semibold px-3 border-slate-200 text-[#173C7E] hover:bg-slate-50"
                 onClick={() => {
                   const leader = members.find(m => m.user_id === team.leader_user_id);
                   if (leader?.user_email) {
@@ -193,10 +193,10 @@ const GroupLanding = () => {
           <div className="md:col-span-3 space-y-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-[#074a75]" /> Public Projects
+                <FolderOpen className="h-5 w-5 text-[#173C7E]" /> Public Projects
               </h2>
               <Link to="/discovery/projects">
-                <Button variant="ghost" size="sm" className="text-[#F37F20] hover:text-[#F37F20] hover:bg-[#F37F20]/10">View Board <ChevronRight className="h-4 w-4 ml-1" /></Button>
+                <Button variant="ghost" size="sm" className="text-[#F47A1E] hover:text-[#F47A1E] hover:bg-[#F47A1E]/10">View Board <ChevronRight className="h-4 w-4 ml-1" /></Button>
               </Link>
             </div>
             
@@ -208,18 +208,18 @@ const GroupLanding = () => {
                     key={proj.id}
                     to={`/discovery/projects/${proj.id}`}
                     className={`block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${
-                      isFeatured ? 'border-l-4 border-l-[#F37F20]' : ''
+                      isFeatured ? 'border-l-4 border-l-[#F47A1E]' : ''
                     }`}
                   >
                     {isFeatured && (
-                      <div className="absolute -top-3 left-4 bg-[#F37F20] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+                      <div className="absolute -top-3 left-4 bg-[#F47A1E] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
                         Featured
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#074a75] transition-colors truncate">
+                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#173C7E] transition-colors truncate">
                             {proj.title}
                           </h3>
                           {proj.accepting_collaborators ? (
@@ -236,7 +236,7 @@ const GroupLanding = () => {
                           {proj.description || "A collaborative research initiative focusing on advanced methodologies."}
                         </p>
                       </div>
-                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#074a75] group-hover:bg-[#F37F20] group-hover:text-white transition-all">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#173C7E] group-hover:bg-[#F47A1E] group-hover:text-white transition-all">
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
@@ -254,7 +254,7 @@ const GroupLanding = () => {
           {/* Right Column: Members */}
           <aside className="md:col-span-2 space-y-6">
             <h2 className="text-xl font-display font-bold text-[#0F172A] flex items-center gap-2 mb-6">
-              <Users className="h-5 w-5 text-[#074a75]" /> Research Team
+              <Users className="h-5 w-5 text-[#173C7E]" /> Research Team
             </h2>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -270,7 +270,7 @@ const GroupLanding = () => {
                 const colorClass = colors[member.user_id % colors.length];
 
                 return (
-                  <div key={member.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#074a75]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
+                  <div key={member.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#173C7E]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
                     <div className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${colorClass}`}>
                       {member.user_name?.[0] || '?'}
                     </div>
@@ -278,7 +278,7 @@ const GroupLanding = () => {
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-[#0F172A] truncate block">{member.user_name || 'Unknown'}</span>
                         {isLeader ? (
-                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#074a75] px-1.5 py-0.5 rounded w-fit mt-0.5">
+                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#173C7E] px-1.5 py-0.5 rounded w-fit mt-0.5">
                             Lead
                           </span>
                         ) : (
@@ -297,7 +297,7 @@ const GroupLanding = () => {
       </div>
 
       {/* Achievements Section */}
-      <section className="py-24 text-white" style={{ background: '#074a75' }}>
+      <section className="py-24 text-white" style={{ background: '#173C7E' }}>
         <div className="container px-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
             <div className="space-y-4">
@@ -335,18 +335,18 @@ const GroupLanding = () => {
       {/* Footer CTA */}
       <section className="py-24 border-t border-border">
         <div className="container px-4 text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl font-display font-bold mb-6" style={{ color: '#074a75' }}>Interested in our work?</h2>
+          <h2 className="text-3xl font-display font-bold mb-6" style={{ color: '#173C7E' }}>Interested in our work?</h2>
           <p className="text-muted-foreground mb-10 leading-relaxed">
             We are always looking for passionate students and collaborators to join our research efforts. Explore our open projects or contact the group leader for more information.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/discovery/projects">
-              <Button size="lg" className="rounded-lg px-8 h-12 font-semibold" style={{ background: '#F37F20', color: '#fff' }}>Explore Projects</Button>
+              <Button size="lg" className="rounded-lg px-8 h-12 font-semibold" style={{ background: '#F47A1E', color: '#fff' }}>Explore Projects</Button>
             </Link>
             <Button 
               variant="outline" 
               size="lg" 
-              className="rounded-lg px-8 h-12 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white"
+              className="rounded-lg px-8 h-12 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E] hover:text-white"
               onClick={() => toast({
                 title: "Research Followed",
                 description: `You will now receive updates from ${team.name}.`
