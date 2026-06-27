@@ -118,7 +118,7 @@ const SignIn = () => {
             <img src="/aisi-logo-color.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-[#173C7E] mb-3">Welcome back</h1>
-          <p className="text-base text-slate-500 leading-relaxed">Sign in to ENSIA Nexus to access your research projects, connect with your lab, and discover new opportunities.</p>
+          <p className="text-base text-slate-500 leading-relaxed">Sign in to AISI to access your research projects, connect with your lab, and discover new opportunities.</p>
         </motion.div>
 
         {/* Right Side: Form */}
