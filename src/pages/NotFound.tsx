@@ -17,7 +17,7 @@ const NotFound = () => {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <img src="/logo.svg" alt="ENSIA Logo" className="h-20 w-auto mx-auto mb-12 opacity-50 grayscale" />
+          <img src="/aisi-logo-color.svg" alt="ENSIA Logo" className="h-20 w-auto mx-auto mb-12 opacity-50 grayscale" />
           
           <div className="relative inline-block">
             <h1 className="text-9xl md:text-[12rem] font-display font-black text-foreground/5 tracking-tighter leading-none select-none">

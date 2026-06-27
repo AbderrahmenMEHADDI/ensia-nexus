@@ -48,8 +48,8 @@ export const StudentDiscoveryView = ({
         transition={{ duration: 0.4 }}
       >
         <div className="mb-8 border-b pb-6" style={{ borderColor: '#F1F5F9' }}>
-          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#F37F20' }}>Student Portal</span>
-          <h1 className="text-3xl md:text-4xl font-display font-extrabold mt-1" style={{ color: '#074a75' }}>Project Hub</h1>
+          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#F47A1E' }}>Student Portal</span>
+          <h1 className="text-3xl md:text-4xl font-display font-extrabold mt-1" style={{ color: '#173C7E' }}>Project Hub</h1>
           <p className="text-sm text-slate-500 mt-2">
             Explore approved public research projects and track your application progress in real-time.
           </p>
@@ -60,7 +60,7 @@ export const StudentDiscoveryView = ({
           <div className="lg:col-span-7 space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-display font-bold flex items-center gap-2" style={{ color: '#0F172A' }}>
-                <FolderKanban className="h-5 w-5" style={{ color: '#F37F20' }} />
+                <FolderKanban className="h-5 w-5" style={{ color: '#F47A1E' }} />
                 Available Projects
               </h2>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
@@ -116,7 +116,7 @@ export const StudentDiscoveryView = ({
                         size="sm"
                         className="rounded-lg font-semibold shadow-sm transition-all duration-200 hover:brightness-105"
                         style={{
-                          background: blockingApplication ? '#E2E8F0' : '#F37F20',
+                          background: blockingApplication ? '#E2E8F0' : '#F47A1E',
                           color: blockingApplication ? '#94A3B8' : '#FFFFFF'
                         }}
                         onClick={() => handleOpenApply(pubProject.id)}
@@ -141,8 +141,8 @@ export const StudentDiscoveryView = ({
           {/* Right Column: My Applications & Statuses */}
           <div className="lg:col-span-5 space-y-6 lg:border-l lg:pl-8" style={{ borderColor: '#F1F5F9' }}>
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-display font-bold flex items-center gap-2" style={{ color: '#074a75' }}>
-                <FileText className="h-5 w-5" style={{ color: '#074a75' }} />
+              <h2 className="text-xl font-display font-bold flex items-center gap-2" style={{ color: '#173C7E' }}>
+                <FileText className="h-5 w-5" style={{ color: '#173C7E' }} />
                 My Applications
               </h2>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
@@ -162,7 +162,7 @@ export const StudentDiscoveryView = ({
                     style={{
                       borderLeft: app.status === 'ACCEPTED' ? '4px solid #10B981' : 
                                   app.status === 'REJECTED' ? '4px solid #EF4444' : 
-                                  '4px solid #F37F20'
+                                  '4px solid #F47A1E'
                     }}
                   >
                     <div className="flex justify-between items-start gap-3 mb-2">

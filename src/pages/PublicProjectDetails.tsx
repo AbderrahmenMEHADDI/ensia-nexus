@@ -112,12 +112,12 @@ const PublicProjectDetails = () => {
       <header className="relative pt-12 pb-24 overflow-hidden border-b border-border bg-[#F8FAFC]">
         <div className="container px-4 mb-8">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <Link to="/discovery/projects" className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#F37F20' }}>
+            <Link to="/discovery/projects" className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#F47A1E' }}>
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Discovery Hub</span>
             </Link>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full text-[#074a75] hover:bg-[#074a75]/10" onClick={() => {
+              <Button variant="ghost" size="icon" className="rounded-full text-[#173C7E] hover:bg-[#173C7E]/10" onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
                 toast({ title: "Link copied to clipboard" });
               }}>
@@ -144,14 +144,14 @@ const PublicProjectDetails = () => {
               )}
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight mb-8 leading-tight" style={{ color: '#074a75' }}>
+            <h1 className="text-4xl md:text-5xl font-display font-extrabold tracking-tight mb-8 leading-tight" style={{ color: '#173C7E' }}>
               {project.title}
             </h1>
 
             <div className="flex flex-wrap gap-6 items-center">
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
-                  <FlaskConical className="h-6 w-6" style={{ color: '#F37F20' }} />
+                  <FlaskConical className="h-6 w-6" style={{ color: '#F47A1E' }} />
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#94A3B8' }}>Laboratory</div>
@@ -163,7 +163,7 @@ const PublicProjectDetails = () => {
 
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
-                  <Users className="h-6 w-6" style={{ color: '#F37F20' }} />
+                  <Users className="h-6 w-6" style={{ color: '#F47A1E' }} />
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#94A3B8' }}>Research Group</div>
@@ -175,7 +175,7 @@ const PublicProjectDetails = () => {
 
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
-                  <Calendar className="h-6 w-6" style={{ color: '#F37F20' }} />
+                  <Calendar className="h-6 w-6" style={{ color: '#F47A1E' }} />
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#94A3B8' }}>Deadline</div>
@@ -221,18 +221,18 @@ const PublicProjectDetails = () => {
             {/* Application Info for non-logged in */}
             <section className="p-8 rounded-2xl bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100 relative overflow-hidden">
               <div className="relative z-10">
-                <h3 className="text-xl font-bold mb-4" style={{ color: '#074a75' }}>Want to join this project?</h3>
+                <h3 className="text-xl font-bold mb-4" style={{ color: '#173C7E' }}>Want to join this project?</h3>
                 <p className="text-muted-foreground mb-6">
                   Collaboration on this project is managed through the Nexus portal. You need to be a registered student or researcher at ENSIA to apply.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link to={`/signin?redirect=/discovery/projects/${project.id}`}>
-                    <Button className="rounded-lg px-8 h-11 font-semibold gap-2 transition-all hover:brightness-110" style={{ background: '#F37F20', color: '#fff' }}>
+                    <Button className="rounded-lg px-8 h-11 font-semibold gap-2 transition-all hover:brightness-110" style={{ background: '#F47A1E', color: '#fff' }}>
                       Sign In to Apply <ExternalLink className="h-4 w-4" />
                     </Button>
                   </Link>
                   <Link to="/signup">
-                    <Button variant="outline" className="rounded-lg px-8 h-11 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white transition-colors">
+                    <Button variant="outline" className="rounded-lg px-8 h-11 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E] hover:text-white transition-colors">
                       Create Account
                     </Button>
                   </Link>
@@ -244,7 +244,7 @@ const PublicProjectDetails = () => {
           {/* Sidebar Info */}
           <div className="space-y-8">
             <Card className="rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] overflow-hidden">
-              <div className="p-6" style={{ background: '#074a75' }}>
+              <div className="p-6" style={{ background: '#173C7E' }}>
                 <h3 className="font-display font-bold text-lg text-white">Project Lead</h3>
               </div>
               <CardContent className="p-6">
@@ -263,16 +263,16 @@ const PublicProjectDetails = () => {
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Mail className="h-4 w-4 text-[#F37F20]" />
+                    <Mail className="h-4 w-4 text-[#F47A1E]" />
                     <span className="truncate">{leader?.email || "Email restricted"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Shield className="h-4 w-4 text-[#F37F20]" />
+                    <Shield className="h-4 w-4 text-[#F47A1E]" />
                     <span>Validated Researcher</span>
                   </div>
                 </div>
                 <Separator className="my-6" />
-                <Button className="w-full rounded-lg h-11 font-semibold gap-2 bg-slate-100 text-[#074a75] hover:bg-slate-200" onClick={() => {
+                <Button className="w-full rounded-lg h-11 font-semibold gap-2 bg-slate-100 text-[#173C7E] hover:bg-slate-200" onClick={() => {
                   if (leader?.email) window.location.href = `mailto:${leader.email}?subject=Inquiry: ${project.title}`;
                   else toast({ title: "Contact info restricted" });
                 }}>

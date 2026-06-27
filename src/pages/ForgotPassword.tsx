@@ -58,9 +58,9 @@ const ForgotPassword = () => {
       >
         <div className="flex flex-col items-center mb-10">
           <div className="h-14 w-14 flex items-center justify-center mb-6">
-            <img src="/logo_small.svg" alt="ENSIA Research Hub Logo" className="h-8 w-8" />
+            <img src="/aisi-logo-color.svg" alt="ENSIA Research Hub Logo" className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-[#074a75]">Forgot password</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-[#173C7E]">Forgot password</h1>
           <p className="text-sm md:text-base mt-2" style={{ color: '#64748B' }}>Enter your ENSIA email to get a reset link</p>
         </div>
 
@@ -81,7 +81,7 @@ const ForgotPassword = () => {
           <Button
             type="submit"
             className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
-            style={{ background: '#F37F20', color: '#fff' }}
+            style={{ background: '#F47A1E', color: '#fff' }}
             disabled={submitting}
           >
             {submitting ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : null}
@@ -90,7 +90,7 @@ const ForgotPassword = () => {
 
           <p className="text-sm text-center mt-2" style={{ color: '#64748B' }}>
             Remembered your password?{' '}
-            <a href="/signin" style={{ color: '#F37F20' }} className="font-semibold hover:underline">Sign in</a>
+            <a href="/signin" style={{ color: '#F47A1E' }} className="font-semibold hover:underline">Sign in</a>
           </p>
         </form>
       </motion.div>

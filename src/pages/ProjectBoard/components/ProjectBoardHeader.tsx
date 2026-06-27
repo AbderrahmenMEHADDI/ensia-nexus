@@ -69,11 +69,11 @@ export const ProjectBoardHeader = ({
         {canManageProjects && (
           <div className="flex flex-wrap items-center gap-2 mb-4">
             {canCreateProjects && (
-              <Button size="sm" className="rounded-lg h-9 font-semibold" style={{ background: '#F37F20', color: '#fff' }} onClick={() => setProjectFormOpen(true)}>
+              <Button size="sm" className="rounded-lg h-9 font-semibold" style={{ background: '#F47A1E', color: '#fff' }} onClick={() => setProjectFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Project Details Form
               </Button>
             )}
-            <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white" onClick={() => setMemberFormOpen(true)}>
+            <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E] hover:text-white" onClick={() => setMemberFormOpen(true)}>
               <Plus className="h-4 w-4 mr-1" /> Member Details Form
             </Button>
             {isIndividualProjectCreator && (

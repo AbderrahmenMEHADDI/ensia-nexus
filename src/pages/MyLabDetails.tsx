@@ -63,12 +63,12 @@ const MyLabDetails = () => {
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-primary/10 via-background to-background rounded-3xl border border-border p-8 md:p-12 mb-10 overflow-hidden relative">
           <div className="absolute top-0 right-0 p-8 opacity-5">
-            <img src="/logo_small.svg" alt="" className="w-[200px] h-[200px] object-contain" />
+            <img src="/aisi-logo-color.svg" alt="" className="w-[200px] h-[200px] object-contain" />
           </div>
 
           <div className="relative z-10 max-w-2xl">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-lg shadow-primary/5">
-              <img src="/logo_small.svg" alt="Lab" className="h-8 w-8 object-contain" />
+              <img src="/aisi-logo-color.svg" alt="Lab" className="h-8 w-8 object-contain" />
             </div>
             <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4 leading-tight">
               {lab.name}

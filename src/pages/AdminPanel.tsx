@@ -817,12 +817,12 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
 
           <div className="flex items-center gap-3">
             {isPlatformAdmin && (
-              <Button onClick={() => setAddLabOpen(true)} size="sm" className="rounded-lg h-9 font-semibold" style={{ background: '#F37F20', color: '#fff' }}>
+              <Button onClick={() => setAddLabOpen(true)} size="sm" className="rounded-lg h-9 font-semibold" style={{ background: '#F47A1E', color: '#fff' }}>
                 <Plus className="h-4 w-4 mr-1.5" />New Lab
               </Button>
             )}
             {manageableLabs.length > 0 && (
-              <Button onClick={() => setAddGroupOpen(true)} size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#074a75] border-[#074a75]/20 hover:bg-[#074a75] hover:text-white">
+              <Button onClick={() => setAddGroupOpen(true)} size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E] hover:text-white">
                 <Plus className="h-4 w-4 mr-1.5" />New Group
               </Button>
             )}
@@ -938,7 +938,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
             {visibleLabs.length === 0 && (
               <div className="col-span-full rounded-2xl border border-slate-100 bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] p-16 text-center">
                 <FlaskConical className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold mb-1 text-[#074a75]">No labs found</h3>
+                <h3 className="text-lg font-bold mb-1 text-[#173C7E]">No labs found</h3>
                 <p className="text-sm text-slate-500 max-w-sm mx-auto">You don't have administrative access to any labs at the moment.</p>
               </div>
             )}
