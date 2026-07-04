@@ -55,13 +55,13 @@ const SignUp = () => {
         password: data.password,
       });
       if (data.role === 'TEACHER') {
-        toast({ title: 'Account created', description: 'Please complete teacher profile details.' });
+        toast({ title: 'Account created', description: 'Please complete teacher profile details. A verification email has also been sent.' });
         navigate('/complete-registration', {
           replace: true,
           state: { role: 'TEACHER' },
         });
       } else {
-        toast({ title: 'Account created', description: 'Welcome to ENSIA Research Hub!' });
+        toast({ title: 'Account created', description: 'Welcome! Please check your email to verify your account.' });
         navigate('/projects', { replace: true });
       }
     } catch (err: any) {

@@ -21,6 +21,7 @@ export interface User {
   phone_number?: string;
   address?: string;
   website?: string;
+  is_email_verified?: boolean;
   created_at: string;
 }
 

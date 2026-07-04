@@ -12,9 +12,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import React from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { toast } = useToast();
 
   const location = useLocation();
   const pathnames = location.pathname.split('/').filter((x) => x);
@@ -65,7 +67,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       <div className="h-screen flex w-full overflow-hidden bg-[#F8FAFC]">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC]">
-          <header className="h-14 flex items-center justify-between border-b border-slate-200/60 bg-white sticky top-0 z-50 px-4">
+          <header className="h-14 shrink-0 flex items-center justify-between border-b border-slate-200/60 bg-white sticky top-0 z-40 px-4">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="h-4 w-[1px] bg-border mx-1" />
