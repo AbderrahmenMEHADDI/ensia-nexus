@@ -56,7 +56,7 @@ export default function Unverified() {
         </div>
         <h2 className="text-3xl font-display font-bold text-slate-900 mb-3">Verify your email</h2>
         <p className="text-slate-500 mb-6 leading-relaxed">
-          We've sent a verification link to <span className="font-semibold text-slate-800">{user.email}</span>. Please verify your email to access ENSIA Nexus.
+          We've sent a verification link to <span className="font-semibold text-slate-800">{user.email}</span>. Please verify your email to access AISI .
         </p>
 
         <div className="space-y-3">
