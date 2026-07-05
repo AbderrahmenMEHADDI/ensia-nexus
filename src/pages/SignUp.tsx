@@ -134,7 +134,7 @@ const SignUp = () => {
             <img src="/aisi-logo-color.svg" alt="ENSIA Research Hub Logo" className="h-10 w-10" />
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-[#173C7E] mb-3">Create your account</h1>
-          <p className="text-base text-slate-500 leading-relaxed">Join AISI to start collaborating on high-impact research projects with the brightest minds.</p>
+          <p className="text-base text-slate-500 leading-relaxed">Join AISI Team to start collaborating on high-impact research projects with the brightest minds.</p>
         </motion.div>
 
         {/* Right Side: Form */}
