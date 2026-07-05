@@ -17,7 +17,7 @@ interface AuthContextType extends AuthState {
   signUp: (data: any) => Promise<void>;
   completeRegistration: (data: any) => Promise<void>;
   signOut: () => Promise<void>;
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<User | null>;
   role: UserRole | null;
   hasRole: (role: UserRole | UserRole[]) => boolean;
   isTeacher: boolean;
@@ -49,9 +49,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading: false,
         isInitialLoading: false,
       });
+      return user;
     } catch (error) {
       console.error('Auth check failed:', error);
       setState({ user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false });
+      return null;
     }
   }, []);
 

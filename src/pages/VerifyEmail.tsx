@@ -34,8 +34,12 @@ export default function VerifyEmail() {
     setNavigating(true);
     // Refresh the auth context so the updated is_email_verified=true
     // is reflected before the ProtectedRoute guard checks it.
-    await checkAuth();
-    navigate('/projects', { replace: true });
+    const loggedInUser = await checkAuth();
+    if (loggedInUser?.role === 'TEACHER') {
+      navigate('/complete-registration', { replace: true });
+    } else {
+      navigate('/projects', { replace: true });
+    }
   };
 
   return (

@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { cn } from '@/lib/utils';
-import type { Student, Teacher, Project, Task, ProjectParticipant, User, StudentPreviousProject, ParticipantRole } from '@/types';
+import type { Student, Teacher, TeacherGrade, Project, Task, ProjectParticipant, User, StudentPreviousProject, ParticipantRole } from '@/types';
 
 const Profile = () => {
   const { user, isTeacher } = useAuth();
@@ -29,6 +30,9 @@ const Profile = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [website, setWebsite] = useState('');
+  const [experienceYears, setExperienceYears] = useState<number | ''>('');
+  const [grade, setGrade] = useState<TeacherGrade | ''>('');
+  const [researchInterests, setResearchInterests] = useState('');
   const [previousProjects, setPreviousProjects] = useState<StudentPreviousProject[]>([]);
   const [showPreviousProjectForm, setShowPreviousProjectForm] = useState(false);
   const [savingPreviousProject, setSavingPreviousProject] = useState(false);
@@ -58,7 +62,11 @@ const Profile = () => {
         // Fetch role-specific profile
         if (isTeacher) {
           try {
-            setTeacher(await apiRepository.getTeacherProfile(user.id));
+            const tData = await apiRepository.getTeacherProfile(user.id);
+            setTeacher(tData);
+            setExperienceYears(tData.experience_years ?? '');
+            setGrade(tData.grade ?? '');
+            setResearchInterests(tData.research_interests ?? '');
           } catch { /* not a teacher */ }
         } else if (user.role === 'STUDENT') {
           try {
@@ -111,6 +119,17 @@ const Profile = () => {
         website: website.trim() || null,
       } as Partial<User>);
       setProfileUser(updated);
+
+      if (isTeacher) {
+        const updatedTeacher = await apiRepository.updateTeacherProfile(user.id, {
+          experience_years: experienceYears === '' ? 0 : Number(experienceYears),
+          grade: grade || 'RESEARCHER',
+          department: department.trim() || null,
+          research_interests: researchInterests.trim() || null,
+        });
+        setTeacher(updatedTeacher);
+      }
+
       setIsEditingProfileDetails(false);
       toast({ title: 'Profile details updated' });
     } catch (e: unknown) {
@@ -411,6 +430,22 @@ const Profile = () => {
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">Phone</span>
                         <p className="text-sm font-medium text-foreground">{profileUser?.phone_number || '-'}</p>
                       </div>
+                      {isTeacher && (
+                        <>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Grade</span>
+                            <p className="text-sm font-medium text-foreground">{teacher?.grade || '-'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Experience Years</span>
+                            <p className="text-sm font-medium text-foreground">{teacher?.experience_years !== undefined ? `${teacher.experience_years} years` : '-'}</p>
+                          </div>
+                          <div className="space-y-1 sm:col-span-2">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Research Interests</span>
+                            <p className="text-sm font-medium text-foreground">{teacher?.research_interests || '-'}</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -431,6 +466,44 @@ const Profile = () => {
                           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Phone Number</Label>
                           <Input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="e.g., +213..." />
                         </div>
+                        {isTeacher && (
+                          <>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Grade</Label>
+                              <Select
+                                value={grade}
+                                onValueChange={(v: string) => setGrade(v as TeacherGrade)}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select grade" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="MCA">MCA</SelectItem>
+                                  <SelectItem value="PROFESSOR">Professor</SelectItem>
+                                  <SelectItem value="DOCTOR">Doctor</SelectItem>
+                                  <SelectItem value="RESEARCHER">Researcher</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Experience Years</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={experienceYears}
+                                onChange={e => setExperienceYears(e.target.value === '' ? '' : Number(e.target.value))}
+                              />
+                            </div>
+                            <div className="space-y-2 sm:col-span-2">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Research Interests (comma-separated)</Label>
+                              <Input
+                                value={researchInterests}
+                                onChange={e => setResearchInterests(e.target.value)}
+                                placeholder="AI, NLP, CV"
+                              />
+                            </div>
+                          </>
+                        )}
                       </div>
                       <div className="flex justify-end gap-2 pt-2">
                         <Button variant="ghost" size="sm" onClick={() => setIsEditingProfileDetails(false)}>Cancel</Button>

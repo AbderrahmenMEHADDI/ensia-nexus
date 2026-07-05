@@ -58,6 +58,8 @@ export const apiRepository = {
   updateStudentProfile: (userId: number, data: Partial<Student>) =>
     api.put<Student>(`/students/${userId}`, data),
   getTeacherProfile: (userId: number) => api.get<Teacher>(`/teachers/${userId}`),
+  updateTeacherProfile: (userId: number, data: Partial<Teacher>) =>
+    api.put<Teacher>(`/teachers/${userId}`, data),
   getStudentCVs: (studentUserId?: number) =>
     api.get<StudentCVEntry[]>(
       studentUserId ? `/student-cvs/?student_user_id=${studentUserId}` : '/student-cvs/'
