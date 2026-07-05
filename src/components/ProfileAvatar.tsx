@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { fetchProfilePicture } from '@/lib/profilePictureCache';
+import { BASE_URL } from '@/lib/apiClient';
 
 interface ProfileAvatarProps {
   userId?: number;
@@ -12,6 +13,15 @@ interface ProfileAvatarProps {
   title?: string;
 }
 
+const getFullUrl = (url: string | null | undefined) => {
+  if (!url) return null;
+  if (url.startsWith('/')) {
+    const base = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+    return `${base}${url}`;
+  }
+  return url;
+};
+
 export function ProfileAvatar({
   userId,
   name,
@@ -21,10 +31,10 @@ export function ProfileAvatar({
   imgClassName,
   title,
 }: ProfileAvatarProps) {
-  const [resolvedUrl, setResolvedUrl] = useState<string | null>(imageUrl || null);
+  const [resolvedUrl, setResolvedUrl] = useState<string | null>(() => getFullUrl(imageUrl));
 
   useEffect(() => {
-    setResolvedUrl(imageUrl || null);
+    setResolvedUrl(getFullUrl(imageUrl));
   }, [imageUrl]);
 
   useEffect(() => {

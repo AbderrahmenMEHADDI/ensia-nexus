@@ -30,6 +30,7 @@ import MyLabDetails from "./pages/MyLabDetails";
 import MyLabGroupDetails from "./pages/MyLabGroupDetails";
 import PublicProjects from "./pages/PublicProjects";
 import PublicProjectDetails from "./pages/PublicProjectDetails";
+import PublicMemberDetails from "./pages/PublicMemberDetails";
 import Unverified from "./pages/Unverified";
 import NotFound from "./pages/NotFound";
 
@@ -99,6 +100,7 @@ const AppRoutes = () => (
       <Route path="/group/:groupId" element={<GroupLanding />} />
       <Route path="/discovery/projects" element={<PublicProjects />} />
       <Route path="/discovery/projects/:projectId" element={<PublicProjectDetails />} />
+      <Route path="/member/:memberId" element={<PublicMemberDetails />} />
       <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignUp /></PublicOnlyRoute>} />
       <Route path="/complete-registration" element={<ProtectedRoute><CompleteRegistration /></ProtectedRoute>} />

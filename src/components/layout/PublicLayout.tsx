@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Users, FileText, FlaskConical, Cookie } from 'lucide-react';
+import { Search, Users, FileText, FlaskConical, Cookie, Linkedin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getCookie, setCookie } from '@/lib/cookies';
@@ -174,9 +174,28 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
           <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
             <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>© 2026 AISI. All rights reserved.</p>
             <div className="flex items-center gap-6">
-              <SocialIcon icon={Users} />
-              <SocialIcon icon={FileText} />
-              <SocialIcon icon={FlaskConical} />
+              <a
+                href="https://www.linkedin.com/company/aisi-research-team"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-105 transition-transform"
+                onMouseEnter={e => {
+                  const iconEl = e.currentTarget.querySelector('div');
+                  if (iconEl) {
+                    iconEl.style.borderColor = '#F47A1E';
+                    iconEl.style.color = '#F47A1E';
+                  }
+                }}
+                onMouseLeave={e => {
+                  const iconEl = e.currentTarget.querySelector('div');
+                  if (iconEl) {
+                    iconEl.style.borderColor = 'rgba(255,255,255,0.15)';
+                    iconEl.style.color = 'rgba(255,255,255,0.4)';
+                  }
+                }}
+              >
+                <SocialIcon icon={Linkedin} />
+              </a>
             </div>
           </div>
         </div>

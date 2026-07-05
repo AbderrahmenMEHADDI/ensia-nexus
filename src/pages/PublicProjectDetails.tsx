@@ -251,7 +251,12 @@ const PublicProjectDetails = () => {
                 <div className="flex items-center gap-4 mb-6">
                   <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden">
                     {leader?.profile_picture_url ? (
-                      <img src={leader.profile_picture_url} alt={leader.full_name} className="h-full w-full object-cover" />
+                      <img
+                        src={leader.profile_picture_url}
+                        alt={leader.full_name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                      />
                     ) : (
                       <Users className="h-8 w-8 text-slate-400" />
                     )}

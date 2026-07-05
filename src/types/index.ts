@@ -113,6 +113,7 @@ export interface GroupMember {
   user_name?: string;
   user_email?: string;
   user_role?: UserRole;
+  user_profile_picture_url?: string;
 }
 
 export interface GroupInvitation {

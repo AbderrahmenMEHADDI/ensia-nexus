@@ -10,8 +10,8 @@ export const authProvider = {
    * Sign in with Google OAuth.
    * Backend handles the redirect and sets HttpOnly cookies.
    */
-  async signInWithGoogle(idToken?: string): Promise<User> {
-    return api.post<User>('/auth/google', { id_token: idToken });
+  async signInWithGoogle(idToken?: string): Promise<{ user: User; is_new: boolean }> {
+    return api.post<{ user: User; is_new: boolean }>('/auth/google', { id_token: idToken });
   },
 
   /**

@@ -13,7 +13,7 @@ export const TEACHER_ROLES: UserRole[] = ['TEACHER'];
 
 interface AuthContextType extends AuthState {
   signIn: (credentials: { email: string; password: string }) => Promise<void>;
-  signInWithGoogle: (idToken?: string) => Promise<void>;
+  signInWithGoogle: (idToken?: string) => Promise<{ user: User; is_new: boolean }>;
   signUp: (data: any) => Promise<void>;
   completeRegistration: (data: any) => Promise<void>;
   signOut: () => Promise<void>;
@@ -92,8 +92,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithGoogle = useCallback(async (idToken?: string) => {
     setState(s => ({ ...s, isLoading: true }));
     try {
-      const user = await authProvider.signInWithGoogle(idToken);
-      setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
+      const res = await authProvider.signInWithGoogle(idToken);
+      setState(s => ({ ...s, user: res.user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
+      return res;
     } catch (error) {
       console.error('Sign in failed:', error);
       setState(s => ({ ...s, isLoading: false }));

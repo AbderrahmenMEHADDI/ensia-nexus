@@ -80,7 +80,7 @@ const Landing = () => {
 
   const activeLabsCount = data?.labs?.length ?? 0;
   const researchGroupsCount = data?.featured_teams?.length ?? 0;
-  const ongoingProjectsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0;
+  const projectsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0;
   const publicationsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.publication_count || 0), 0) ?? 0;
 
   return (
@@ -254,7 +254,7 @@ const Landing = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <StatItem label="Active Labs" value={loading ? "..." : `${activeLabsCount}`} />
             <StatItem label="Research Groups" value={loading ? "..." : `${researchGroupsCount}`} />
-            <StatItem label="Ongoing Projects" value={loading ? "..." : `${ongoingProjectsCount}`} />
+            <StatItem label="Projects" value={loading ? "..." : `${projectsCount}`} />
             <StatItem label="Publications" value={loading ? "..." : `${publicationsCount}`} />
           </div>
         </div>
@@ -339,7 +339,7 @@ const Landing = () => {
               {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : (() => {
-            const filteredTeams = data?.featured_teams?.filter((t) => !t.name.toLowerCase().includes('test')) ?? [];
+            const filteredTeams = data?.featured_teams ?? [];
             const visibleTeams = showAllTeams ? filteredTeams : filteredTeams.slice(0, 6);
             return (
               <>

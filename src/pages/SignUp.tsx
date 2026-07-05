@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader2, User as UserIcon, Mail, Lock, UserCircle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Loader2, UserCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ const SignUp = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const googleLoginContainerRef = useRef<HTMLDivElement | null>(null);
 
   const {
@@ -40,6 +41,9 @@ const SignUp = () => {
   } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
+      fullName: '',
+      email: '',
+      password: '',
       role: 'STUDENT',
     },
   });
@@ -89,9 +93,13 @@ const SignUp = () => {
 
     setSubmitting(true);
     try {
-      await signInWithGoogle(idToken);
-      toast({ title: 'Signed in with Google', description: 'Welcome to ENSIA Research Hub!' });
-      navigate('/projects', { replace: true });
+      const res = await signInWithGoogle(idToken);
+      toast({ title: 'Signed in with Google', description: 'Welcome to AISI Research Hub!' });
+      if (res.is_new) {
+        navigate('/complete-registration', { replace: true });
+      } else {
+        navigate('/projects', { replace: true });
+      }
     } catch (err: any) {
       toast({
         title: 'Google sign-up failed',
@@ -178,11 +186,18 @@ const SignUp = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
+                  className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
                   {...register('password')}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>

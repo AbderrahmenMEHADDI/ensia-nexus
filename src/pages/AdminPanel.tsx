@@ -10,7 +10,7 @@ import type { GroupMember, ResearchLab, ResearchGroup, ResearchLabAdmin, User, T
 import {
   Shield, Users, CheckCircle2, XCircle, Clock, Search, Plus,
   Building2, UserCog, UserPlus, FlaskConical, Loader2, Info,
-  Trash2, ArrowRight, UserCheck, Mail, FolderGit2, Archive, FileText
+  Trash2, ArrowRight, UserCheck, Mail, FolderGit2, Archive, FileText, Eye, EyeOff
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -74,7 +74,8 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   const [editLabHead, setEditLabHead] = useState('');
   const [newAdminFullName, setNewAdminFullName] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [newAdminPassword, setNewAdminPassword] = useState('admin');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [validatingGroupIds, setValidatingGroupIds] = useState<number[]>([]);
   const [deletingGroupIds, setDeletingGroupIds] = useState<number[]>([]);
   const [isAssigningMembers, setIsAssigningMembers] = useState(false);
@@ -1727,7 +1728,22 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
           <div className="space-y-4 py-2">
             <Input value={newAdminFullName} onChange={e => setNewAdminFullName(e.target.value)} placeholder="Full name" />
             <Input value={newAdminEmail} onChange={e => setNewAdminEmail(e.target.value)} placeholder="Email" />
-            <Input type="password" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} placeholder="Password" />
+            <div className="relative">
+              <Input 
+                type={showAdminPassword ? "text" : "password"} 
+                value={newAdminPassword} 
+                onChange={e => setNewAdminPassword(e.target.value)} 
+                placeholder="Password" 
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPassword(!showAdminPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateAdminOpen(false)}>Cancel</Button>

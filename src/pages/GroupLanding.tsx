@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiRepository } from '@/repositories/apiRepository';
-import type { TeamSummary, ProjectPreview, GroupMember, Publication } from '@/types';
+import type { TeamSummary, ProjectPreview, GroupMember, Publication, Teacher } from '@/types';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,7 @@ const GroupLanding = () => {
   const [team, setTeam] = useState<TeamSummary | null>(null);
   const [projects, setProjects] = useState<ProjectPreview[]>([]);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,15 +43,17 @@ const GroupLanding = () => {
       if (!groupId) return;
       try {
         const id = Number(groupId);
-        const [summary, teamProjects, groupMembers] = await Promise.all([
+        const [summary, teamProjects, groupMembers, allTeachers] = await Promise.all([
           apiRepository.getTeamSummary(id),
           apiRepository.getTeamProjects(id),
           apiRepository.getGroupMembersFiltered(id),
+          apiRepository.getTeachers({ limit: 1000 }),
         ]);
         
         setTeam(summary);
         setProjects(teamProjects.projects);
         setMembers(groupMembers);
+        setTeachers(allTeachers);
 
         // Fetch publications for the group's projects
         // For simplicity, we fetch recent publications from the first 3 projects
@@ -257,9 +260,10 @@ const GroupLanding = () => {
               <Users className="h-5 w-5 text-[#173C7E]" /> Research Team
             </h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-4">
               {members.map(member => {
                 const isLeader = member.user_id === team.leader_user_id;
+                const teacherInfo = teachers.find(t => t.user_id === member.user_id);
                 
                 // Assign a consistent pastel color based on user ID
                 const colors = [
@@ -270,25 +274,37 @@ const GroupLanding = () => {
                 const colorClass = colors[member.user_id % colors.length];
 
                 return (
-                  <div key={member.user_id} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${isLeader ? 'bg-slate-50 border-[#173C7E]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50'}`}>
-                    <div className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm ${colorClass}`}>
-                      {member.user_name?.[0] || '?'}
+                  <Link to={`/member/${member.user_id}`} key={member.user_id} className={`flex items-center gap-4 p-4 rounded-3xl border transition-all ${isLeader ? 'bg-slate-50 border-[#173C7E]/20 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50 hover:-translate-y-0.5'}`}>
+                    <div className="shrink-0">
+                      <ProfileAvatar
+                        userId={member.user_id}
+                        imageUrl={member.user_profile_picture_url}
+                        name={member.user_name || '?'}
+                        className={`h-20 w-20 rounded-2xl ${!member.user_profile_picture_url ? colorClass : ''}`}
+                        textClassName="text-xl font-bold"
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col">
-                        <span className="text-sm font-bold text-[#0F172A] truncate block">{member.user_name || 'Unknown'}</span>
+                        <span className="text-lg font-bold text-[#0F172A] truncate block group-hover:text-[#173C7E]">{member.user_name || 'Unknown'}</span>
+                        {teacherInfo?.research_interests && (
+                          <span className="text-sm text-slate-500 line-clamp-1 mt-0.5">
+                            {teacherInfo.research_interests}
+                          </span>
+                        )}
                         {isLeader ? (
-                          <span className="text-[10px] font-bold text-white uppercase tracking-widest bg-[#173C7E] px-1.5 py-0.5 rounded w-fit mt-0.5">
+                          <span className="text-xs font-bold text-white uppercase tracking-widest bg-[#173C7E] px-2 py-0.5 rounded-md w-fit mt-2">
                             Lead
                           </span>
                         ) : (
-                          <span className="text-[11px] font-medium text-slate-500 truncate block capitalize">
+                          <span className="text-xs font-medium text-slate-500 truncate block capitalize mt-1">
                             Researcher
                           </span>
                         )}
                       </div>
                     </div>
-                  </div>
+                    <ChevronRight className="h-5 w-5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+                  </Link>
                 );
               })}
             </div>
