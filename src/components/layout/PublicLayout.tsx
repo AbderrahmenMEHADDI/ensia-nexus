@@ -76,7 +76,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
             <div className="h-9 w-9 flex items-center justify-center group-hover:scale-105 transition-transform">
               <img src="/aisi-logo-color.svg" alt="Logo" className="h-6 w-6" />
             </div>
-            <span className="font-display font-bold text-[#0F172A] text-lg tracking-tight">ENSIA Nexus</span>
+            <span className="font-display font-bold text-[#0F172A] text-lg tracking-tight">AISI</span>
           </Link>
 
           {/* Nav Links */}
@@ -147,7 +147,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 <div className="h-8 w-8 flex items-center justify-center">
                   <img src="/aisi-logo-on-dark.svg" alt="Logo" className="h-5 w-5" />
                 </div>
-                <span className="font-display font-bold text-white text-lg">ENSIA Nexus</span>
+                <span className="font-display font-bold text-white text-lg">AISI</span>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 The official research management and collaboration platform of the École Nationale Supérieure d'Intelligence Artificielle.
@@ -172,7 +172,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
             ]} />
           </div>
           <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>© 2026 ENSIA Nexus. All rights reserved.</p>
+            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>© 2026 AISI. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <SocialIcon icon={Users} />
               <SocialIcon icon={FileText} />

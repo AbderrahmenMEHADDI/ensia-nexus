@@ -140,142 +140,142 @@ const SignUp = () => {
         {/* Right Side: Form */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-md">
 
-        <div className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100">
-          <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="fullName"
-                  placeholder="John Doe"
-                  className={`pl-10 ${errors.fullName ? 'border-destructive' : ''}`}
-                  {...register('fullName')}
-                />
+          <div className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100">
+            <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    placeholder="John Doe"
+                    className={`pl-10 ${errors.fullName ? 'border-destructive' : ''}`}
+                    {...register('fullName')}
+                  />
+                </div>
+                {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
               </div>
-              {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@ensia.edu.dz"
-                  className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
-                  {...register('email')}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@ensia.edu.dz"
+                    className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
+                    {...register('email')}
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
-                  {...register('password')}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
+                    {...register('password')}
+                  />
+                </div>
+                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
               </div>
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-            </div>
 
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(v: any) => setValue('role', v, { shouldValidate: true })}
-              >
-                <SelectTrigger className="w-full">
-                  <div className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Select your role" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="STUDENT">Student</SelectItem>
-                  <SelectItem value="TEACHER">Professor / Researcher</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
-              style={{ background: '#F47A1E', color: '#fff' }}
-              disabled={submitting || isLoading}
-            >
-              {submitting ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              ) : null}
-              Create Account
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
-          {GOOGLE_CLIENT_ID ? (
-            <>
-              <div
-                ref={googleLoginContainerRef}
-                className="absolute pointer-events-none opacity-0 h-0 overflow-hidden"
-                aria-hidden="true"
-              >
-                <GoogleLogin
-                  onSuccess={onGoogleSignUpSuccess}
-                  onError={onGoogleSignUpError}
-                  useOneTap={false}
-                />
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select
+                  value={selectedRole}
+                  onValueChange={(v: any) => setValue('role', v, { shouldValidate: true })}
+                >
+                  <SelectTrigger className="w-full">
+                    <div className="flex items-center gap-2">
+                      <UserCircle className="h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Select your role" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="STUDENT">Student</SelectItem>
+                    <SelectItem value="TEACHER">Professor / Researcher</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
               </div>
 
               <Button
+                type="submit"
+                className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
+                style={{ background: '#F47A1E', color: '#fff' }}
+                disabled={submitting || isLoading}
+              >
+                {submitting ? (
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                ) : null}
+                Create Account
+              </Button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
+
+            {GOOGLE_CLIENT_ID ? (
+              <>
+                <div
+                  ref={googleLoginContainerRef}
+                  className="absolute pointer-events-none opacity-0 h-0 overflow-hidden"
+                  aria-hidden="true"
+                >
+                  <GoogleLogin
+                    onSuccess={onGoogleSignUpSuccess}
+                    onError={onGoogleSignUpError}
+                    useOneTap={false}
+                  />
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full h-11"
+                  onClick={triggerGoogleSignUp}
+                  disabled={submitting || isLoading}
+                  type="button"
+                >
+                  Google
+                </Button>
+              </>
+            ) : (
+              <Button
                 variant="outline"
                 className="w-full h-11"
-                onClick={triggerGoogleSignUp}
+                onClick={() => {
+                  toast({
+                    title: 'Google client ID missing',
+                    description: 'Set VITE_GOOGLE_CLIENT_ID before using Google sign-up.',
+                    variant: 'destructive',
+                  });
+                }}
                 disabled={submitting || isLoading}
                 type="button"
               >
                 Google
               </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={() => {
-                toast({
-                  title: 'Google client ID missing',
-                  description: 'Set VITE_GOOGLE_CLIENT_ID before using Google sign-up.',
-                  variant: 'destructive',
-                });
-              }}
-              disabled={submitting || isLoading}
-              type="button"
-            >
-              Google
-            </Button>
-          )}
+            )}
 
-          <p className="text-sm text-center mt-6" style={{ color: '#64748B' }}>
-            Already have an account?{' '}
-            <a href="/signin" style={{ color: '#F47A1E' }} className="font-semibold hover:underline">Sign in</a>
-          </p>
-        </div>
-      </motion.div>
+            <p className="text-sm text-center mt-6" style={{ color: '#64748B' }}>
+              Already have an account?{' '}
+              <a href="/signin" style={{ color: '#F47A1E' }} className="font-semibold hover:underline">Sign in</a>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </PublicLayout>
   );

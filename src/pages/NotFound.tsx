@@ -9,7 +9,7 @@ const NotFound = () => {
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full bg-grid-white/[0.02] -z-10" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -z-10" />
-      
+
       <div className="max-w-2xl w-full text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -18,7 +18,7 @@ const NotFound = () => {
           className="mb-8"
         >
           <img src="/aisi-logo-color.svg" alt="ENSIA Logo" className="h-20 w-auto mx-auto mb-12 opacity-50 grayscale" />
-          
+
           <div className="relative inline-block">
             <h1 className="text-9xl md:text-[12rem] font-display font-black text-foreground/5 tracking-tighter leading-none select-none">
               404
@@ -48,8 +48,8 @@ const NotFound = () => {
                 Go to Dashboard
               </Button>
             </Link>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="rounded-full px-8 py-6 h-auto bg-transparent gap-2"
               onClick={() => window.history.back()}
             >
@@ -67,7 +67,7 @@ const NotFound = () => {
         >
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           <span className="text-[10px] uppercase font-bold tracking-[0.3em] text-muted-foreground">
-            ENSIA NEXUS SYSTEM STATUS: OPERATIONAL
+            AISI SYSTEM STATUS: OPERATIONAL
           </span>
         </motion.div>
       </div>
