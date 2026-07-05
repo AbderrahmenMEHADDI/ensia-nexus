@@ -78,6 +78,11 @@ const Landing = () => {
     fetchData();
   }, []);
 
+  const activeLabsCount = data?.labs?.length ?? 0;
+  const researchGroupsCount = data?.featured_teams?.length ?? 0;
+  const ongoingProjectsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0;
+  const publicationsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.publication_count || 0), 0) ?? 0;
+
   return (
     <PublicLayout
       navLinks={[
@@ -209,8 +214,8 @@ const Landing = () => {
 
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-extrabold leading-[1.08] tracking-tight text-white mb-6">
-              Where AI Excellence{' '}
-              <span className="block mt-1" style={{ color: '#F47A1E' }}>Meets Real-World Impact</span>
+              Applied Intelligence{' '}
+              <span className="block mt-1" style={{ color: '#F47A1E' }}>for Societal Impact</span>
             </h1>
 
             {/* Orange separator bar */}
@@ -218,7 +223,7 @@ const Landing = () => {
 
             {/* Subtitle */}
             <p className="text-base sm:text-lg leading-relaxed mb-10 max-w-xl" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              The central hub for ENSIA labs and groups to manage projects, track milestones, and showcase academic breakthroughs.
+              Putting AI to work for people and communities.
             </p>
 
             {/* CTAs */}
@@ -247,10 +252,10 @@ const Landing = () => {
       <section className="py-10 border-y border-border bg-muted/30">
         <div className="container px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatItem label="Active Labs" value="12+" />
-            <StatItem label="Research Groups" value="45+" />
-            <StatItem label="Ongoing Projects" value="180+" />
-            <StatItem label="Publications" value="320+" />
+            <StatItem label="Active Labs" value={loading ? "..." : `${activeLabsCount}`} />
+            <StatItem label="Research Groups" value={loading ? "..." : `${researchGroupsCount}`} />
+            <StatItem label="Ongoing Projects" value={loading ? "..." : `${ongoingProjectsCount}`} />
+            <StatItem label="Publications" value={loading ? "..." : `${publicationsCount}`} />
           </div>
         </div>
       </section>
@@ -406,7 +411,7 @@ const Landing = () => {
                   </Button>
                 </Link>
                 <Link to="/signin">
-                  <Button variant="outline" size="lg" className="rounded-full h-14 px-10 text-lg font-semibold text-white transition-all" style={{ borderColor: 'rgba(255,255,255,0.2)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <Button variant="ghost" size="lg" className="rounded-full h-14 px-10 text-lg font-semibold text-white border border-white/20 hover:bg-white/10 hover:text-white transition-all">
                     Sign In
                   </Button>
                 </Link>

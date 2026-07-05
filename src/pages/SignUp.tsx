@@ -53,6 +53,7 @@ const SignUp = () => {
         email: data.email,
         full_name: data.fullName,
         password: data.password,
+        role: data.role,
       });
       if (data.role === 'TEACHER') {
         toast({ title: 'Account created', description: 'Please complete teacher profile details. A verification email has also been sent.' });
