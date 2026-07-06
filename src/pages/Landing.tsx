@@ -639,11 +639,17 @@ const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featu
     {/* Top row: status dot + date */}
     <div className="flex items-center justify-between gap-2 mb-5 text-xs">
       <div className="flex items-center gap-2">
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-        </span>
-        <span className="text-emerald-600 font-medium">Open</span>
+        {project.accepting_collaborators ? (
+          <>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-emerald-600 font-medium">Open</span>
+          </>
+        ) : (
+          <span className="text-slate-500 font-medium">Internal</span>
+        )}
         {deadline && (
           <>
             <span className="text-slate-300">/</span>
@@ -684,7 +690,7 @@ const ProjectPreviewCard = ({ project, callId, callTitle, deadline, index, featu
         <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: '#94A3B8' }}>Group</span>
         <span className="text-sm font-semibold" style={{ color: '#334155' }}>{project.team_name}</span>
       </div>
-      {callId && onApply ? (
+      {project.accepting_collaborators && callId && onApply ? (
         applied ? (
           <button
             disabled

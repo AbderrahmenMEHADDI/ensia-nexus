@@ -178,7 +178,7 @@ export const ProjectDialogs = ({
               <div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
                   <Label className="text-sm font-medium">Accepting Collaborators</Label>
-                  <p className="text-[10px] text-muted-foreground">Allow students to apply.</p>
+                  <p className="text-[10px] text-muted-foreground">Allow Collaboration requests in the landing page.</p>
                 </div>
                 <Switch
                   checked={formAcceptingCollaborators}
@@ -317,7 +317,7 @@ export const ProjectDialogs = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PRIVATE">Private</SelectItem>
-                    <SelectItem value="PUBLIC">Public</SelectItem>
+                    <SelectItem value="PUBLIC">Public: Show in Landing Page</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -326,7 +326,7 @@ export const ProjectDialogs = ({
               <div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
                   <Label className="text-sm font-medium">Accepting Collaborators</Label>
-                  <p className="text-[10px] text-muted-foreground">Allow students to apply.</p>
+                  <p className="text-[10px] text-muted-foreground">Allow Collaboration requests in the landing page.</p>
                 </div>
                 <Switch
                   checked={editProjectAcceptingCollaborators}

@@ -26,6 +26,7 @@ export const apiRepository = {
   createUser: (data: Partial<User> & { full_name: string; email: string; role: UserRole; password?: string }) =>
     api.post<User>('/users/', data),
   getUser: (id: number) => api.get<User>(`/users/${id}/`),
+  getPublicUser: (id: number) => api.get<User>(`/users/public/${id}/`),
   updateUser: (id: number, data: Partial<User>) => api.put<User>(`/users/${id}/`, data),
   updateProfilePicture: (data: FormData) => api.put<User>(`/users/profile-picture`, data),
   changePassword: (data: Record<string, string>) => api.patch<User>('/auth/password', data),
@@ -232,7 +233,7 @@ export const apiRepository = {
   getSystemAnalytics: () => api.get<AnalyticsResponse>('/analytics/system-stats'),
 
   // ── Landing Page & discovery ──────────────────────────────────────────
-  getLandingPageData: () => api.get<LandingPageResponse>('/landing-page'),
+  getLandingPageData: () => api.get<LandingPageResponse>('/landing-page/'),
   getTeamSummary: (teamId: number) => api.get<TeamSummary>(`/landing-page/teams/${teamId}/summary`),
   getTeamProjects: (teamId: number) => api.get<TeamProjectsResponse>(`/landing-page/teams/${teamId}/projects`),
 

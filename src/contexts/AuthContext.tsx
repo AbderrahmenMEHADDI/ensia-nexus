@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       return user;
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // console.error removed for security
       setState({ user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false });
       return null;
     }
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const user = await authProvider.login(credentials);
       setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
-      console.error('Sign in failed:', error);
+      // console.error removed for security
       setState(s => ({ ...s, isLoading: false }));
       throw error;
     }
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setState(s => ({ ...s, user: res.user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
       return res;
     } catch (error) {
-      console.error('Sign in failed:', error);
+      // console.error removed for security
       setState(s => ({ ...s, isLoading: false }));
       throw error;
     }
@@ -108,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const user = await authProvider.signup(data);
       setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
-      console.error('Sign up failed:', error);
+      // console.error removed for security
       setState(s => ({ ...s, isLoading: false }));
       throw error;
     }
@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await authProvider.signOut();
       setState(s => ({ ...s, user: null, isAuthenticated: false, isLoading: false, isInitialLoading: false }));
     } catch (error) {
-      console.error('Sign out failed:', error);
+      // console.error removed for security
       setState(s => ({ ...s, isLoading: false }));
     }
   }, []);
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const user = await authProvider.completeRegistration(data);
       setState(s => ({ ...s, user, isAuthenticated: true, isLoading: false, isInitialLoading: false }));
     } catch (error) {
-      console.error('Complete registration failed:', error);
+      // console.error removed for security
       setState(s => ({ ...s, isLoading: false }));
       throw error;
     }

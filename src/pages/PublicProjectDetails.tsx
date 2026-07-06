@@ -54,17 +54,18 @@ const PublicProjectDetails = () => {
             const labData = await apiRepository.getLab(g.lab_id);
             setLab(labData);
           }
-          
-          if (g && g.leader_user_id) {
-            const leaderData = await apiRepository.getUser(g.leader_user_id);
-            setLeader(leaderData);
-          }
         } else {
           setGroup(null);
           setLab(null);
-          if (p.created_by) {
-            const leaderData = await apiRepository.getUser(p.created_by);
+        }
+
+        if (p.created_by) {
+          try {
+            const leaderData = await apiRepository.getPublicUser(p.created_by);
             setLeader(leaderData);
+          } catch (e) {
+            console.warn("Leader data restricted or unavailable");
+            setLeader(null);
           }
         }
 
