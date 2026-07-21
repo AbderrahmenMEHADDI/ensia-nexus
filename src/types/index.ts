@@ -141,6 +141,9 @@ export interface Project {
   created_by: number;
   created_at: string;
   participants?: ProjectParticipant[];
+  is_active: boolean;
+  landing_page_order: number;
+  focus_areas?: string;
 }
 
 export interface ProjectParticipant {
@@ -355,6 +358,8 @@ export interface ProjectPreview {
   open_collaboration_calls_count: number;
   publication_count: number;
   created_at?: string;
+  is_active?: boolean;
+  focus_areas?: string;
 }
 
 export interface TeamSummary {
@@ -421,4 +426,25 @@ export interface LandingPageResponse {
   publications: PublicationPreview[];
 }
 
+export interface ContactMessageInput {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  group_id?: number;
+}
+
+export interface ContactMessageResponse {
+  id: number;
+  group_id?: number;
+  sender_name: string;
+  sender_email: string;
+  recipient_email: string;
+  subject: string;
+  message: string;
+  is_sent: boolean;
+  created_at: string;
+}
+
 export * from './task_comment';
+

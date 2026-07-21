@@ -15,6 +15,8 @@ interface ProjectDialogsProps {
   setFormProjectTitle: (val: string) => void;
   formProjectDescription: string;
   setFormProjectDescription: (val: string) => void;
+  formFocusAreas: string;
+  setFormFocusAreas: (val: string) => void;
   formGroupId: string;
   setFormGroupId: (val: string) => void;
   formVisibility: Visibility;
@@ -46,6 +48,8 @@ interface ProjectDialogsProps {
   setEditProjectTitle?: (val: string) => void;
   editProjectDescription?: string;
   setEditProjectDescription?: (val: string) => void;
+  editProjectFocusAreas?: string;
+  setEditProjectFocusAreas?: (val: string) => void;
   editProjectVisibility?: Visibility;
   setEditProjectVisibility?: (val: Visibility) => void;
   editProjectAcceptingCollaborators?: boolean;
@@ -60,6 +64,11 @@ interface ProjectDialogsProps {
   setEditProjectGroupId?: (val: string) => void;
   currentGroupName?: string;
 
+  formProjectIsActive?: boolean;
+  setFormProjectIsActive?: (val: boolean) => void;
+  editProjectIsActive?: boolean;
+  setEditProjectIsActive?: (val: boolean) => void;
+
   deleteProjectConfirmOpen?: boolean;
   setDeleteProjectConfirmOpen?: (open: boolean) => void;
   deleteProjectLoading?: boolean;
@@ -73,6 +82,8 @@ export const ProjectDialogs = ({
   setFormProjectTitle,
   formProjectDescription,
   setFormProjectDescription,
+  formFocusAreas,
+  setFormFocusAreas,
   formGroupId,
   setFormGroupId,
   formVisibility,
@@ -104,6 +115,8 @@ export const ProjectDialogs = ({
   setEditProjectTitle,
   editProjectDescription,
   setEditProjectDescription,
+  editProjectFocusAreas,
+  setEditProjectFocusAreas,
   editProjectVisibility,
   setEditProjectVisibility,
   editProjectAcceptingCollaborators,
@@ -117,6 +130,11 @@ export const ProjectDialogs = ({
   editProjectGroupId,
   setEditProjectGroupId,
   currentGroupName,
+
+  formProjectIsActive,
+  setFormProjectIsActive,
+  editProjectIsActive,
+  setEditProjectIsActive,
 
   deleteProjectConfirmOpen,
   setDeleteProjectConfirmOpen,
@@ -139,6 +157,10 @@ export const ProjectDialogs = ({
             <div className="space-y-2">
               <Label>Description</Label>
               <Textarea value={formProjectDescription} onChange={e => setFormProjectDescription(e.target.value)} rows={4} placeholder="Project description" />
+            </div>
+            <div className="space-y-2">
+              <Label>Focus Areas</Label>
+              <Input value={formFocusAreas} onChange={e => setFormFocusAreas(e.target.value)} placeholder="e.g. AI, Machine Learning, NLP (comma separated)" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -196,6 +218,23 @@ export const ProjectDialogs = ({
                 />
               </div>
             </div>
+            {setFormProjectIsActive && (
+              <div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm pt-2">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Project Status</Label>
+                  <p className="text-[10px] text-muted-foreground">Mark this project as active or completed.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${formProjectIsActive ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
+                    {formProjectIsActive ? 'Active' : 'Completed'}
+                  </span>
+                  <Switch
+                    checked={formProjectIsActive}
+                    onCheckedChange={setFormProjectIsActive}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setProjectFormOpen(false)}>Cancel</Button>
@@ -282,6 +321,10 @@ export const ProjectDialogs = ({
               <Label>Description</Label>
               <Textarea value={editProjectDescription} onChange={e => setEditProjectDescription?.(e.target.value)} rows={4} placeholder="Project description" />
             </div>
+            <div className="space-y-2">
+              <Label>Focus Areas</Label>
+              <Input value={editProjectFocusAreas} onChange={e => setEditProjectFocusAreas?.(e.target.value)} placeholder="e.g. AI, Machine Learning, NLP (comma separated)" />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Research Group</Label>
@@ -344,6 +387,23 @@ export const ProjectDialogs = ({
                 />
               </div>
             </div>
+            {setEditProjectIsActive && (
+              <div className="flex items-center justify-between space-x-2 rounded-lg border p-3 shadow-sm pt-2">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">Project Status</Label>
+                  <p className="text-[10px] text-muted-foreground">Mark this project as active or completed.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${editProjectIsActive ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'}`}>
+                    {editProjectIsActive ? 'Active' : 'Completed'}
+                  </span>
+                  <Switch
+                    checked={editProjectIsActive}
+                    onCheckedChange={setEditProjectIsActive}
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditProjectOpen?.(false)}>Cancel</Button>

@@ -54,7 +54,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const publicPaths = ['/', '/signin', '/signup', '/forgot-password', '/reset-password', '/discovery', '/group'];
-  const isPublicPath = publicPaths.some(path => 
+  const isPublicPath = publicPaths.some(path =>
     location.pathname === path || (path !== '/' && location.pathname.startsWith(path + '/'))
   );
 

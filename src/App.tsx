@@ -128,12 +128,23 @@ const AppRoutes = () => (
   </Layout>
 );
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner richColors closeButton />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <NotificationProvider>
             <AppRoutes />

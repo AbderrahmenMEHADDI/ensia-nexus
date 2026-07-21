@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cookies';
+import { ProjectCard } from '@/components/shared/ProjectCard';
 
 const PublicProjects = () => {
   const { toast } = useToast();
@@ -35,8 +36,7 @@ const PublicProjects = () => {
   const [appliedCallIds, setAppliedCallIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLabId, setSelectedLabId] = useState('all');
-  const [selectedGroupId, setSelectedGroupId] = useState('all');
+  const [selectedFocusArea, setSelectedFocusArea] = useState('all');
   const [showCollabOnly, setShowCollabOnly] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
@@ -71,23 +71,31 @@ const PublicProjects = () => {
     loadData();
   }, []);
 
+  // Get all unique focus areas
+  const allFocusAreas = useMemo(() => {
+    const areas = new Set<string>();
+    projects.forEach(p => {
+      if (p.focus_areas) {
+        p.focus_areas.split(',').forEach(a => {
+          const trimmed = a.trim();
+          if (trimmed) areas.add(trimmed);
+        });
+      }
+    });
+    return Array.from(areas).sort();
+  }, [projects]);
+
   const filteredProjects = projects.filter(p => {
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const group = groups.find(g => g.id === p.group_id);
-    const matchesLab = selectedLabId === 'all' || (group && String(group.lab_id) === selectedLabId);
-    const matchesGroup = selectedGroupId === 'all' || String(p.group_id) === selectedGroupId;
+    const matchesFocusArea = selectedFocusArea === 'all' || 
+      (p.focus_areas && p.focus_areas.split(',').map(a => a.trim()).includes(selectedFocusArea));
     const matchesCollab = !showCollabOnly || p.accepting_collaborators;
-    return matchesSearch && matchesLab && matchesGroup && matchesCollab;
+    return matchesSearch && matchesFocusArea && matchesCollab;
   });
 
-  // Get groups filtered by selected lab for cascading filter
-  const filteredGroups = selectedLabId === 'all'
-    ? groups
-    : groups.filter(g => String(g.lab_id) === selectedLabId);
-
   return (
-    <PublicLayout activePath="/discovery/projects">
+    <PublicLayout>
       {/* ── Compact Header + Filters ── */}
       <div className="border-b" style={{ borderColor: '#E2E8F0' }}>
         <div className="container px-4 py-6">
@@ -95,7 +103,7 @@ const PublicProjects = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
             <div>
               <h1 className="text-2xl md:text-3xl font-display font-bold" style={{ color: '#173C7E' }}>
-                Project Board
+                Projects Hub
               </h1>
               <div className="w-10 h-1 rounded-full mt-2 mb-1" style={{ background: '#F47A1E' }} />
               <p className="text-sm" style={{ color: '#64748B' }}>
@@ -123,24 +131,13 @@ const PublicProjects = () => {
 
             {/* Filter selects */}
             <select
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none"
-              value={selectedLabId}
-              onChange={(e) => { setSelectedLabId(e.target.value); setSelectedGroupId('all'); }}
+              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none max-w-xs"
+              value={selectedFocusArea}
+              onChange={(e) => setSelectedFocusArea(e.target.value)}
             >
-              <option value="all">All Labs</option>
-              {labs.map(lab => (
-                <option key={lab.id} value={String(lab.id)}>{lab.name}</option>
-              ))}
-            </select>
-
-            <select
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none"
-              value={selectedGroupId}
-              onChange={(e) => setSelectedGroupId(e.target.value)}
-            >
-              <option value="all">All Teams</option>
-              {filteredGroups.map(g => (
-                <option key={g.id} value={String(g.id)}>{g.name}</option>
+              <option value="all">All Focus Areas</option>
+              {allFocusAreas.map(area => (
+                <option key={area} value={area}>{area}</option>
               ))}
             </select>
 
@@ -166,7 +163,7 @@ const PublicProjects = () => {
       <div className="flex-1">
         <div className="container px-4 py-8">
           {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="rounded-2xl bg-white p-6 animate-pulse h-64">
                   <div className="h-4 w-20 rounded-full bg-slate-200 mb-4" />
@@ -190,13 +187,13 @@ const PublicProjects = () => {
               <button
                 className="text-sm font-semibold"
                 style={{ color: '#F47A1E' }}
-                onClick={() => { setSearchQuery(''); setSelectedLabId('all'); setSelectedGroupId('all'); setShowCollabOnly(false); }}
+                onClick={() => { setSearchQuery(''); setSelectedFocusArea('all'); setShowCollabOnly(false); }}
               >
                 Clear all filters
               </button>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
               {filteredProjects.map((project, i) => {
                 const assocCall = openCalls.find(c => c.project_id === project.id);
                 const callId = assocCall ? assocCall.id : null;
@@ -204,11 +201,14 @@ const PublicProjects = () => {
                 return (
                   <ProjectCard
                     key={project.id}
-                    project={project}
-                    group={groups.find(g => g.id === project.group_id)}
-                    index={i}
+                    project={{
+                      ...project,
+                      group: groups.find(g => g.id === project.group_id)
+                    }}
+                    to={`/discovery/projects/${project.id}`}
                     callId={callId}
                     applied={applied}
+                    showFeaturedAccent={false}
                     onApply={(cId) => {
                       setApplyCallId(cId);
                       setApplyDialogOpen(true);
@@ -235,121 +235,7 @@ const PublicProjects = () => {
   );
 };
 
-/* ── Project Card ── */
 
-const ProjectCard = ({
-  project,
-  group,
-  index,
-  callId,
-  applied,
-  onApply
-}: {
-  project: Project;
-  group?: ResearchGroup;
-  index: number;
-  callId: number | null;
-  applied: boolean;
-  onApply?: (callId: number) => void;
-}) => {
-  const isOpen = project.accepting_collaborators;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.04 }}
-      className="group/card relative rounded-2xl bg-white flex flex-col cursor-default overflow-hidden shadow-[0_2px_20px_-4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_40px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300"
-      style={{ borderTop: isOpen ? '3px solid #F47A1E' : '3px solid #173C7E' }}
-    >
-      {/* Card front */}
-      <div className="p-6 flex flex-col flex-1">
-        {/* Status row */}
-        <div className="flex items-center justify-between mb-4">
-          {isOpen ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: '#059669' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
-              Open for Collaboration
-            </span>
-          ) : (
-            <span className="text-[11px] font-medium" style={{ color: '#94A3B8' }}>Internal Project</span>
-          )}
-          <span className="text-[10px] font-medium" style={{ color: '#CBD5E1' }}>#{project.id}</span>
-        </div>
-
-        {/* Title */}
-        <h4 className="font-display font-bold text-lg leading-snug mb-2 line-clamp-2" style={{ color: '#0F172A' }}>
-          {project.title}
-        </h4>
-
-        {/* Description */}
-        <p className="text-[13px] leading-relaxed line-clamp-2 mb-auto pb-4" style={{ color: '#64748B' }}>
-          {project.description || 'Advancing research through collaborative efforts and rigorous experimentation.'}
-        </p>
-
-        {/* Divider + bottom row */}
-        <div className="border-t" style={{ borderColor: '#F1F5F9' }} />
-        <div className="flex items-center justify-between pt-4">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: '#94A3B8' }}>Team</span>
-            <span className="text-sm font-semibold truncate" style={{ color: '#334155' }}>{group?.name || 'Independent'}</span>
-          </div>
-          {project.deadline && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium shrink-0" style={{ color: '#94A3B8' }}>
-              <Calendar className="h-3 w-3" />
-              {new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Full-cover sliding navy panel */}
-      <div
-        className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-4 -translate-x-full group-hover/card:translate-x-0 px-6"
-        style={{
-          background: '#173C7E',
-          transition: 'transform 420ms cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-      >
-        <h4 className="text-xl font-display font-bold text-white text-center leading-snug">{project.title}</h4>
-        <p className="text-sm text-center leading-relaxed line-clamp-2" style={{ color: 'rgba(255,255,255,0.55)' }}>
-          {group?.name || 'Independent Research'}
-        </p>
-        <div className="flex flex-col items-center gap-2 mt-2">
-          <Link
-            to={`/discovery/projects/${project.id}`}
-            className="inline-flex items-center gap-2 text-sm font-semibold group/link"
-            style={{ color: '#F47A1E' }}
-          >
-            View Project Details
-            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/link:translate-x-1" />
-          </Link>
-          {isOpen && callId && onApply && (
-            applied ? (
-              <button
-                disabled
-                className="inline-flex items-center gap-1.5 mt-2 h-9 px-5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-default"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" /> Applied
-              </button>
-            ) : (
-              <button
-                className="inline-flex items-center gap-1.5 mt-2 px-5 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110 group/btn"
-                style={{ background: '#F47A1E' }}
-                onClick={(e) => { e.stopPropagation(); onApply(callId); }}
-              >
-                <Send className="h-3.5 w-3.5 transition-transform duration-200 group-hover/btn:translate-x-0.5" /> Join
-              </button>
-            )
-          )}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
 
 /* ── Apply Dialog ── */
 const ApplyDialog = ({ open, onOpenChange, callId, onApplied }: {

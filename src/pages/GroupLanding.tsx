@@ -19,6 +19,10 @@ import {
   Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { apiRepository } from '@/repositories/apiRepository';
 import type { TeamSummary, ProjectPreview, GroupMember, Publication, Teacher } from '@/types';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
@@ -27,6 +31,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
+import { ProjectCard } from '@/components/shared/ProjectCard';
+import { PublicationCard } from '@/components/shared/PublicationCard';
 
 const GroupLanding = () => {
   const { toast } = useToast();
@@ -37,6 +43,13 @@ const GroupLanding = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Contact Leader state
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [sendingContact, setSendingContact] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+
 
   useEffect(() => {
     const loadGroupData = async () => {
@@ -74,7 +87,40 @@ const GroupLanding = () => {
     loadGroupData();
   }, [groupId]);
 
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.name.trim() || !contactForm.email.trim() || !contactForm.subject.trim() || !contactForm.message.trim()) {
+      toast({ title: 'Missing fields', description: 'Please fill out all contact fields.', variant: 'destructive' });
+      return;
+    }
+    setSendingContact(true);
+    try {
+      await apiRepository.sendContactMessage({
+        name: contactForm.name.trim(),
+        email: contactForm.email.trim(),
+        subject: contactForm.subject.trim(),
+        message: contactForm.message.trim(),
+        group_id: team?.id,
+      });
+      setContactSent(true);
+      toast({ title: 'Message Sent!', description: "Your message was sent to the team leader's email and stored in database." });
+    } catch (err: any) {
+      toast({ title: 'Failed to send message', description: err?.message || 'Something went wrong.', variant: 'destructive' });
+    } finally {
+      setSendingContact(false);
+    }
+  };
+
+  const handleCloseContactDialog = (v: boolean) => {
+    if (!v) {
+      setContactSent(false);
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+    }
+    setContactDialogOpen(v);
+  };
+
   if (loading) {
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
@@ -152,12 +198,7 @@ const GroupLanding = () => {
                 variant="outline" 
                 size="sm" 
                 className="h-7 rounded-full text-xs font-semibold px-3 border-slate-200 text-[#173C7E] hover:bg-slate-50"
-                onClick={() => {
-                  const leader = members.find(m => m.user_id === team.leader_user_id);
-                  if (leader?.user_email) {
-                    window.location.href = `mailto:${leader.user_email}`;
-                  }
-                }}
+                onClick={() => setContactDialogOpen(true)}
               >
                 <Mail className="h-3 w-3 mr-1.5" /> Contact Leader
               </Button>
@@ -207,43 +248,14 @@ const GroupLanding = () => {
               {projects.map((proj, index) => {
                 const isFeatured = index === 0;
                 return (
-                  <Link
+                  <ProjectCard
                     key={proj.id}
+                    project={{
+                      ...proj,
+                      landing_page_order: isFeatured ? 1 : 0,
+                    }}
                     to={`/discovery/projects/${proj.id}`}
-                    className={`block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${
-                      isFeatured ? 'border-l-4 border-l-[#F47A1E]' : ''
-                    }`}
-                  >
-                    {isFeatured && (
-                      <div className="absolute -top-3 left-4 bg-[#F47A1E] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
-                        Featured
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#173C7E] transition-colors truncate">
-                            {proj.title}
-                          </h3>
-                          {proj.accepting_collaborators ? (
-                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
-                              Hiring
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-slate-200 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
-                              Active
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-slate-500 line-clamp-1">
-                          {proj.description || "A collaborative research initiative focusing on advanced methodologies."}
-                        </p>
-                      </div>
-                      <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#173C7E] group-hover:bg-[#F47A1E] group-hover:text-white transition-all">
-                        <ArrowRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  </Link>
+                  />
                 );
               })}
               {projects.length === 0 && (
@@ -335,8 +347,8 @@ const GroupLanding = () => {
           </div>
 
           <div className="space-y-6">
-            {publications.map((pub, i) => (
-              <PublicationListItem key={pub.id} pub={pub} />
+            {publications.map((pub) => (
+              <PublicationCard key={pub.id} publication={pub} />
             ))}
             {publications.length === 0 && (
               <div className="py-20 text-center border border-background/10 rounded-[2rem]">
@@ -373,6 +385,57 @@ const GroupLanding = () => {
           </div>
         </div>
       </section>
+
+      {/* Contact Leader Dialog Modal */}
+      <Dialog open={contactDialogOpen} onOpenChange={handleCloseContactDialog}>
+        <DialogContent className="sm:max-w-lg">
+          {contactSent ? (
+            <div className="flex flex-col items-center text-center py-8 gap-4">
+              <div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Mail className="h-7 w-7 text-emerald-600" />
+              </div>
+              <DialogTitle className="text-2xl font-display font-bold text-[#0F172A]">Message Sent!</DialogTitle>
+              <p className="text-slate-600 max-w-xs leading-relaxed text-sm">
+                Your message has been delivered to the team leader's email and registered in the database.
+              </p>
+              <Button className="mt-4 rounded-full px-8" style={{ background: '#F47A1E', color: '#fff' }} onClick={() => handleCloseContactDialog(false)}>
+                Close
+              </Button>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl font-display font-bold text-[#173C7E]">Contact {members.find(m => m.user_id === team.leader_user_id)?.user_name || 'Team Leader'}</DialogTitle>
+                <DialogDescription>
+                  Send a direct inquiry regarding research in <strong>{team.name}</strong>.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleContactSubmit} className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="gl-contact-name">Your Name <span className="text-destructive">*</span></Label>
+                  <Input id="gl-contact-name" placeholder="John Doe" value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gl-contact-email">Your Email <span className="text-destructive">*</span></Label>
+                  <Input id="gl-contact-email" type="email" placeholder="john@example.com" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gl-contact-subject">Subject <span className="text-destructive">*</span></Label>
+                  <Input id="gl-contact-subject" placeholder="Research collaboration inquiry" value={contactForm.subject} onChange={e => setContactForm(f => ({ ...f, subject: e.target.value }))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gl-contact-message">Message <span className="text-destructive">*</span></Label>
+                  <Textarea id="gl-contact-message" placeholder="Type your message here..." rows={4} value={contactForm.message} onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))} required />
+                </div>
+                <Button type="submit" className="w-full rounded-lg h-11 text-sm font-semibold gap-2" style={{ background: '#F47A1E', color: '#fff' }} disabled={sendingContact}>
+                  {sendingContact ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {sendingContact ? 'Sending...' : 'Send Message'}
+                </Button>
+              </form>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </PublicLayout>
   );
 };
@@ -391,76 +454,6 @@ const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; valu
   </div>
 );
 
-const ProjectCard = ({ project }: { project: ProjectPreview }) => (
-  <Card className="rounded-[2rem] border-border bg-card hover:border-primary/20 transition-all group shadow-sm hover:shadow-xl hover:shadow-primary/5">
-    <CardHeader>
-      <div className="flex justify-between items-start mb-4">
-        {project.accepting_collaborators ? (
-          <Badge className="bg-green-500/10 text-green-600 border-green-500/20 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
-            Hiring Researchers
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
-            Internal Project
-          </Badge>
-        )}
-      </div>
-      <CardTitle className="text-2xl font-display group-hover:text-primary transition-colors line-clamp-1">{project.title}</CardTitle>
-      <CardDescription className="line-clamp-2 leading-relaxed mt-2">{project.description || "Advancing research and innovation through collaborative efforts."}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="flex items-center gap-6 pt-4 border-t border-border">
-        <div className="flex flex-col">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Collaborations</span>
-          <span className="text-sm font-semibold">{project.open_collaboration_calls_count} Open Calls</span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Scientific Output</span>
-          <span className="text-sm font-semibold">{project.publication_count} Publications</span>
-        </div>
-        <Link to={`/discovery/projects/${project.id}`} className="ml-auto">
-          <Button size="icon" variant="ghost" className="rounded-full group-hover:bg-primary group-hover:text-white transition-all">
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-        </Link>
-      </div>
-    </CardContent>
-  </Card>
-);
 
-const PublicationListItem = ({ pub }: { pub: Publication }) => {
-  const pubYear = pub.publication_date ? new Date(pub.publication_date).getFullYear() : null;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true }}
-      className="group p-6 rounded-2xl border border-background/10 hover:bg-background/5 transition-all flex flex-col md:flex-row md:items-center gap-6"
-    >
-      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-        <Award className="h-6 w-6 text-primary" />
-      </div>
-      <div className="flex-1 min-w-0 space-y-2">
-        <h4 className="text-xl font-bold line-clamp-1 group-hover:text-primary transition-colors">{pub.title}</h4>
-        <div className="flex flex-wrap gap-4 text-sm text-background/60">
-          {pubYear && (
-            <span className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" /> {pubYear}
-            </span>
-          )}
-          <span className="flex items-center gap-1.5 font-semibold text-background/80">
-            <ExternalLink className="h-4 w-4" /> {pub.venue || "Academic Journal"}
-          </span>
-        </div>
-      </div>
-      <a href={pub.paper_url || '#'} target="_blank" rel="noopener noreferrer">
-        <Button variant="ghost" className="rounded-full border border-background/20 text-background hover:bg-background hover:text-foreground">
-          Read Paper
-        </Button>
-      </a>
-    </motion.div>
-  );
-};
 
 export default GroupLanding;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Users, FileText, FlaskConical, Cookie, Linkedin } from 'lucide-react';
+import { Search, Cookie, Linkedin, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getCookie, setCookie } from '@/lib/cookies';
@@ -21,6 +21,7 @@ interface PublicLayoutProps {
 export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
   const [scrolled, setScrolled] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -46,8 +47,13 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
     setShowConsent(false);
   };
 
+  const resolvedNavLinks = navLinks || [
+    { label: 'Home', href: '/', isActive: true, isHash: false },
+    { label: 'Projects', href: '/discovery/projects', isActive: false, isHash: false },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/20">
+    <div className="min-h-screen flex flex-col bg-background selection:bg-primary/20 overflow-x-hidden w-full">
       {/* ── Slim Top Utility Bar ── */}
       <div className="w-full" style={{ background: '#0E1B2E' }}>
         <div className="container flex items-center justify-between px-4 sm:px-6 h-8 text-[11px] tracking-wide" style={{ color: 'rgba(255,255,255,0.45)' }}>
@@ -71,29 +77,26 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
         "sticky top-0 z-50 w-full transition-shadow duration-300 border-b border-[#E3E7EE] bg-white",
         scrolled ? "shadow-md" : "shadow-sm"
       )}>
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between py-5 sm:py-6 px-6 sm:px-12 gap-6">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between py-4 sm:py-5 px-4 sm:px-8 gap-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-4 group shrink-0">
+          <Link to="/" className="flex items-center gap-3 group shrink-0">
             <AisiLogo className="w-8 h-8 shrink-0 transition-transform duration-300 group-hover:scale-105" />
-            <span className="font-display font-bold text-[18px] tracking-wider leading-none text-[#173C7E]">
+            <span className="font-display font-bold text-[17px] sm:text-[18px] tracking-wider leading-none text-[#173C7E]">
               AISI
-              <small className="block font-sans font-medium text-[11px] tracking-normal text-[#5E6B7C] mt-1 whitespace-nowrap hidden min-[560px]:block">
+              <small className="block font-sans font-medium text-[11px] tracking-normal text-[#5E6B7C] mt-1 whitespace-nowrap hidden min-[640px]:block">
                 Applied Intelligence for Societal Impact
               </small>
             </span>
           </Link>
 
-          {/* Nav Links */}
-          <div className="hidden md:flex items-center gap-8 ml-auto mr-4">
-            {(navLinks || [
-              { label: 'Home', href: '/', isActive: true, isHash: false },
-              { label: 'Projects', href: '/discovery/projects', isActive: false, isHash: false },
-            ]).map((link) => link.isHash ? (
+          {/* Desktop Nav Links (Visible on lg screens 1024px+) */}
+          <div className="hidden lg:flex items-center gap-5 xl:gap-7 ml-auto mr-4">
+            {resolvedNavLinks.map((link) => link.isHash ? (
               <a
                 key={link.label}
                 href={link.href}
                 className={cn(
-                  "relative py-2 text-[14.5px] font-sans font-medium transition-colors duration-150",
+                  "relative py-2 text-[14px] font-sans font-medium transition-colors duration-150 whitespace-nowrap",
                   link.isActive
                     ? "text-[#173C7E]"
                     : "text-[#5E6B7C] hover:text-[#2E9FDA]"
@@ -101,7 +104,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               >
                 {link.label}
                 {link.isActive && (
-                  <span className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
+                  <span className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
                 )}
               </a>
             ) : (
@@ -109,7 +112,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 key={link.label}
                 to={link.href}
                 className={cn(
-                  "relative py-2 text-[14.5px] font-sans font-medium transition-colors duration-150",
+                  "relative py-2 text-[14px] font-sans font-medium transition-colors duration-150 whitespace-nowrap",
                   link.isActive
                     ? "text-[#173C7E]"
                     : "text-[#5E6B7C] hover:text-[#2E9FDA]"
@@ -117,24 +120,79 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               >
                 {link.label}
                 {link.isActive && (
-                  <span className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
+                  <span className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
                 )}
               </Link>
             ))}
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button className="h-9 w-9 rounded-lg flex items-center justify-center text-[#5E6B7C] hover:bg-gray-100 transition-colors" aria-label="Search">
               <Search className="h-[18px] w-[18px]" />
             </button>
             <Link to="/signup" className="hidden sm:block">
-              <Button className="rounded-lg px-5 h-9 text-sm font-semibold shadow-none" style={{ background: '#F47A1E', color: '#fff' }}>
+              <Button className="rounded-lg px-4 sm:px-5 h-9 text-sm font-semibold shadow-none whitespace-nowrap" style={{ background: '#F47A1E', color: '#fff' }}>
                 Join Hub
               </Button>
             </Link>
+            
+            {/* Mobile / Tablet Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden h-9 w-9 rounded-lg flex items-center justify-center text-[#5E6B7C] hover:bg-gray-100 transition-colors"
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Collapsible Mobile / Tablet Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-100 bg-white px-6 py-4 animate-in slide-in-from-top-2 duration-200 shadow-lg">
+            <div className="flex flex-col space-y-3">
+              {resolvedNavLinks.map((link) => link.isHash ? (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "py-2 text-base font-sans font-medium transition-colors border-b border-slate-50",
+                    link.isActive ? "text-[#173C7E] font-semibold" : "text-[#5E6B7C] hover:text-[#2E9FDA]"
+                  )}
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    "py-2 text-base font-sans font-medium transition-colors border-b border-slate-50",
+                    link.isActive ? "text-[#173C7E] font-semibold" : "text-[#5E6B7C] hover:text-[#2E9FDA]"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              <div className="pt-2 flex flex-col gap-3 sm:hidden">
+                <Link to="/signin" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="outline" className="w-full rounded-lg h-10 text-sm font-semibold">
+                    Sign in
+                  </Button>
+                </Link>
+                <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full rounded-lg h-10 text-sm font-semibold shadow-none" style={{ background: '#F47A1E', color: '#fff' }}>
+                    Join Hub
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* ── Main Content ── */}

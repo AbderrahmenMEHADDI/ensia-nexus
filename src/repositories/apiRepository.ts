@@ -8,13 +8,21 @@ import type {
   Task, TaskUpdate, StudentCVEntry, StudentPreviousProject,
   UserRole, GroupInvitation, ProjectReviewStatus,
   Publication, CollaborationCall, CollaborationSubmission, Notification, NotificationListResponse, AnalyticsResponse,
-  LandingPageResponse, TeamSummary, TeamProjectsResponse
+  LandingPageResponse, TeamSummary, TeamProjectsResponse, ContactMessageInput, ContactMessageResponse
 } from '@/types';
 
 /**
  * Centralized API repository for all entity CRUD operations.
  */
 export const apiRepository = {
+  // ── Contact Form ────────────────────────────────────────────────────────
+  sendContactMessage: (data: ContactMessageInput) => {
+    if (data.group_id) {
+      return api.post<ContactMessageResponse>(`/groups/${data.group_id}/contact`, data);
+    }
+    return api.post<ContactMessageResponse>('/contact', data);
+  },
+
   // ── Users ────────────────────────────────────────────────────────────────
   getUsers: (params?: { skip?: number; limit?: number }) => {
     const searchParams = new URLSearchParams();
@@ -138,6 +146,8 @@ export const apiRepository = {
   deleteProject: (id: number) => api.delete<void>(`/projects/${id}`),
   reviewProject: (id: number, data: { status: ProjectReviewStatus; decision_note?: string }) =>
     api.post<Project>(`/projects/${id}/review`, data),
+  reorderProjects: (projectIds: number[]) =>
+    api.put<Project[]>('/projects/reorder', { project_ids: projectIds }),
 
   // ── Project participants ──────────────────────────────────────────────────
   getProjectParticipants: (projectId?: number) =>

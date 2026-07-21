@@ -74,19 +74,25 @@ export const useProjectBoard = () => {
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [formProjectTitle, setFormProjectTitle] = useState('');
   const [formProjectDescription, setFormProjectDescription] = useState('');
+  const [formFocusAreas, setFormFocusAreas] = useState('');
   const [formGroupId, setFormGroupId] = useState('');
   const [formVisibility, setFormVisibility] = useState<Visibility>('PRIVATE');
   const [formAcceptingCollaborators, setFormAcceptingCollaborators] = useState(false);
   const [formDeadline, setFormDeadline] = useState('');
+  const [formProjectIsActive, setFormProjectIsActive] = useState(true);
+  const [formProjectLandingOrder, setFormProjectLandingOrder] = useState(0);
   const [formCreateProjectLoading, setFormCreateProjectLoading] = useState(false);
 
   const [editProjectOpen, setEditProjectOpen] = useState(false);
   const [editProjectTitle, setEditProjectTitle] = useState('');
   const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [editProjectFocusAreas, setEditProjectFocusAreas] = useState('');
   const [editProjectVisibility, setEditProjectVisibility] = useState<Visibility>('PRIVATE');
   const [editProjectAcceptingCollaborators, setEditProjectAcceptingCollaborators] = useState(false);
   const [editProjectDeadline, setEditProjectDeadline] = useState('');
   const [editProjectGroupId, setEditProjectGroupId] = useState<string>('none');
+  const [editProjectIsActive, setEditProjectIsActive] = useState(true);
+  const [editProjectLandingOrder, setEditProjectLandingOrder] = useState(0);
   const [editProjectLoading, setEditProjectLoading] = useState(false);
 
   const [deleteProjectConfirmOpen, setDeleteProjectConfirmOpen] = useState(false);
@@ -429,6 +435,9 @@ export const useProjectBoard = () => {
         accepting_collaborators: formAcceptingCollaborators,
         deadline: formDeadline || undefined,
         created_by: user.id,
+        is_active: formProjectIsActive,
+        landing_page_order: formProjectLandingOrder,
+        focus_areas: formFocusAreas.trim() || undefined,
       });
       const refreshedProjects = await apiRepository.getProjects();
       setProjects(refreshedProjects);
@@ -437,10 +446,13 @@ export const useProjectBoard = () => {
       setProjectFormOpen(false);
       setFormProjectTitle('');
       setFormProjectDescription('');
+      setFormFocusAreas('');
       setFormGroupId('');
       setFormVisibility('PRIVATE');
       setFormAcceptingCollaborators(false);
       setFormDeadline('');
+      setFormProjectIsActive(true);
+      setFormProjectLandingOrder(0);
       toast({ title: 'Project created' });
     } catch {
       toast({ title: 'Failed to create project', variant: 'destructive' });
@@ -453,10 +465,13 @@ export const useProjectBoard = () => {
     if (!project) return;
     setEditProjectTitle(project.title);
     setEditProjectDescription(project.description || '');
+    setEditProjectFocusAreas(project.focus_areas || '');
     setEditProjectVisibility(project.visibility);
     setEditProjectAcceptingCollaborators(project.accepting_collaborators);
     setEditProjectDeadline(project.deadline || '');
     setEditProjectGroupId(project.group_id ? String(project.group_id) : 'none');
+    setEditProjectIsActive(project.is_active);
+    setEditProjectLandingOrder(project.landing_page_order || 0);
     setEditProjectOpen(true);
   };
 
@@ -470,6 +485,9 @@ export const useProjectBoard = () => {
       accepting_collaborators: editProjectAcceptingCollaborators,
       deadline: editProjectDeadline || null,
       group_id: editProjectGroupId === 'none' ? null : parseInt(editProjectGroupId),
+      is_active: editProjectIsActive,
+      landing_page_order: editProjectLandingOrder,
+      focus_areas: editProjectFocusAreas.trim() || null,
     };
     try {
       const updated = await apiRepository.updateProject(project.id, data);
@@ -659,10 +677,41 @@ export const useProjectBoard = () => {
     }
   };
 
-  const teacherProjects = filterProjectsForTeacher(projects);
+  const handleReorderProjects = async (reorderedProjects: Project[]) => {
+    const updated = projects.map(p => {
+      const idx = reorderedProjects.findIndex(rp => rp.id === p.id);
+      if (idx !== -1) {
+        return { ...p, landing_page_order: idx };
+      }
+      return p;
+    });
+    setProjects(updated);
+
+    try {
+      const ids = reorderedProjects.map(p => p.id);
+      const res = await apiRepository.reorderProjects(ids);
+      setProjects(res);
+      toast({ title: 'Projects reordered successfully' });
+    } catch (err: any) {
+      toast({ title: 'Failed to save project order', description: err.message, variant: 'destructive' });
+      const original = await apiRepository.getProjects();
+      setProjects(original);
+    }
+  };
+
+  const sortedProjects = [...projects].sort((a, b) => {
+    const orderA = a.landing_page_order ?? 0;
+    const orderB = b.landing_page_order ?? 0;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const teacherProjects = filterProjectsForTeacher(sortedProjects);
   const displayProjects = isStudent && hasJoined
-    ? projects.filter(p => joinedProjectIds.includes(Number(p.id)))
-    : (isStudent ? projects : teacherProjects);
+    ? sortedProjects.filter(p => joinedProjectIds.includes(Number(p.id)))
+    : (isStudent ? sortedProjects : teacherProjects);
 
   return {
     user,
@@ -678,6 +727,7 @@ export const useProjectBoard = () => {
     participants,
     resources,
     groups,
+    groupMembers,
     labs,
     allUsers,
     selectedProjectId,
@@ -768,6 +818,18 @@ export const useProjectBoard = () => {
     handleReviewSelectedProject,
     getApplyButtonLabel,
     getBlockingApplication,
+    formProjectIsActive,
+    setFormProjectIsActive,
+    formProjectLandingOrder,
+    setFormProjectLandingOrder,
+    formFocusAreas,
+    setFormFocusAreas,
+    editProjectIsActive,
+    setEditProjectIsActive,
+    editProjectLandingOrder,
+    setEditProjectLandingOrder,
+    editProjectFocusAreas,
+    setEditProjectFocusAreas,
     editProjectOpen,
     setEditProjectOpen,
     editProjectTitle,
@@ -790,6 +852,7 @@ export const useProjectBoard = () => {
     handleOpenEditProject,
     handleUpdateProject,
     handleDeleteProject,
+    handleReorderProjects,
     resourceFormOpen,
     setResourceFormOpen,
     newResourceTitle,

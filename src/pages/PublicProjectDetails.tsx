@@ -26,6 +26,7 @@ import type { Project, ResearchGroup, ResearchLab, User } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PublicLayout } from '@/components/layout/PublicLayout';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 
 const PublicProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -43,11 +44,13 @@ const PublicProjectDetails = () => {
         const p = await apiRepository.getProject(Number(projectId));
         setProject(p);
         
+        let groupObj: ResearchGroup | null = null;
         if (p.group_id) {
           const [g, labs] = await Promise.all([
             apiRepository.getGroup(p.group_id),
             apiRepository.getLabs()
           ]);
+          groupObj = g;
           setGroup(g);
           
           if (g && g.lab_id) {
@@ -59,9 +62,10 @@ const PublicProjectDetails = () => {
           setLab(null);
         }
 
-        if (p.created_by) {
+        const leaderUserId = p.created_by || groupObj?.leader_user_id;
+        if (leaderUserId) {
           try {
-            const leaderData = await apiRepository.getPublicUser(p.created_by);
+            const leaderData = await apiRepository.getPublicUser(leaderUserId);
             setLeader(leaderData);
           } catch (e) {
             console.warn("Leader data restricted or unavailable");
@@ -101,7 +105,7 @@ const PublicProjectDetails = () => {
         <h1 className="text-3xl font-display font-bold mb-2">Project Unavailable</h1>
         <p className="text-muted-foreground max-w-md mb-8">We couldn't find the project you're looking for. It might be private or the link might be broken.</p>
         <Link to="/discovery/projects">
-          <Button variant="outline" className="rounded-full px-8">Back to Board</Button>
+          <Button variant="outline" className="rounded-full px-8">Back to Projects</Button>
         </Link>
       </div>
     );
@@ -206,16 +210,33 @@ const PublicProjectDetails = () => {
             <Separator className="bg-border/50" />
 
             <section>
-              <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
-                <Globe className="h-6 w-6 text-primary" />
+              <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2" style={{ color: '#173C7E' }}>
+                <Globe className="h-6 w-6" style={{ color: '#F47A1E' }} />
                 Key Focus Areas
               </h2>
               <div className="flex flex-wrap gap-3">
-                {["Academic Research", "Cross-disciplinary", "ENSIA Innovation", "Nexus Collaboration"].map(tag => (
-                  <Badge key={tag} variant="secondary" className="px-4 py-2 rounded-xl text-sm font-medium bg-muted/50 hover:bg-primary/10 transition-colors cursor-default border border-border">
-                    {tag}
-                  </Badge>
-                ))}
+                {project.focus_areas ? (
+                  project.focus_areas.split(/[,;\n]+/).map(tag => {
+                    const trimmed = tag.trim();
+                    if (!trimmed) return null;
+                    return (
+                      <span
+                        key={trimmed}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border shadow-sm transition-all hover:scale-105"
+                        style={{
+                          background: 'rgba(23, 60, 126, 0.08)',
+                          color: '#173C7E',
+                          borderColor: 'rgba(23, 60, 126, 0.2)',
+                        }}
+                      >
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ background: '#F47A1E' }} />
+                        {trimmed}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-slate-400 italic">No specific focus areas listed for this project.</p>
+                )}
               </div>
             </section>
 
@@ -250,37 +271,37 @@ const PublicProjectDetails = () => {
               </div>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden">
-                    {leader?.profile_picture_url ? (
-                      <img
-                        src={leader.profile_picture_url}
-                        alt={leader.full_name}
-                        className="h-full w-full object-cover"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                      />
-                    ) : (
-                      <Users className="h-8 w-8 text-slate-400" />
-                    )}
+                  <div className="shrink-0">
+                    <ProfileAvatar
+                      userId={leader?.id || 0}
+                      imageUrl={leader?.profile_picture_url}
+                      name={leader?.full_name || 'Project Lead'}
+                      className="h-16 w-16 rounded-2xl text-xl font-bold border border-slate-200 shadow-sm"
+                    />
                   </div>
-                  <div>
-                    <div className="font-bold text-lg text-[#0F172A]">{leader?.full_name || "Nexus Researcher"}</div>
-                    <div className="text-sm text-slate-500">{leader?.institution || "ENSIA Academic"}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-lg text-[#0F172A] truncate">{leader?.full_name || "Nexus Researcher"}</div>
+                    <div className="text-sm text-slate-500 truncate">{leader?.institution || "ENSIA Academic"}</div>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Mail className="h-4 w-4 text-[#F47A1E]" />
-                    <span className="truncate">{leader?.email || "Email restricted"}</span>
+                  <div className="flex items-center gap-3 text-sm text-slate-500 min-w-0">
+                    <Mail className="h-4 w-4 text-[#F47A1E] shrink-0" />
+                    <span className="truncate">{leader?.contact_email || leader?.email || "Email restricted"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Shield className="h-4 w-4 text-[#F47A1E]" />
+                    <Shield className="h-4 w-4 text-[#F47A1E] shrink-0" />
                     <span>Validated Researcher</span>
                   </div>
                 </div>
                 <Separator className="my-6" />
                 <Button className="w-full rounded-lg h-11 font-semibold gap-2 bg-slate-100 text-[#173C7E] hover:bg-slate-200" onClick={() => {
-                  if (leader?.email) window.location.href = `mailto:${leader.email}?subject=Inquiry: ${project.title}`;
-                  else toast({ title: "Contact info restricted" });
+                  const leadEmail = leader?.contact_email || leader?.email;
+                  if (leadEmail && !leadEmail.includes('restricted')) {
+                    window.location.href = `mailto:${leadEmail}?subject=Inquiry: ${project.title}`;
+                  } else {
+                    toast({ title: "Contact info restricted" });
+                  }
                 }}>
                   Contact Researcher
                 </Button>
