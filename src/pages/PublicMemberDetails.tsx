@@ -21,7 +21,7 @@ export default function PublicMemberDetails() {
       if (!memberId) return;
       try {
         setLoading(true);
-        const userData = await apiRepository.getUser(Number(memberId));
+        const userData = await apiRepository.getPublicUser(Number(memberId));
         setUser(userData);
 
         if (userData.role === 'TEACHER') {

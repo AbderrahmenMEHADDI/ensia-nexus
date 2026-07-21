@@ -30,29 +30,31 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRepository } from '@/repositories/apiRepository';
-import type { LandingPageResponse, LandingLab, TeamSummary } from '@/types';
+import type { LandingPageResponse, LandingLab, TeamSummary, GroupMember, PublicationPreview, Teacher, ProjectPreview } from '@/types';
+import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
+import { Badge } from '@/components/ui/badge';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cookies';
 import { BASE_URL } from '@/lib/apiClient';
+import { AisiLogo } from '@/components/shared/AisiLogo';
 
 const Landing = () => {
   const [data, setData] = useState<LandingPageResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
-  const [showAllTeams, setShowAllTeams] = useState(false);
   const [applyCallId, setApplyCallId] = useState<number | null>(null);
   const [appliedCallIds, setAppliedCallIds] = useState<number[]>([]);
-  
-  // Hero day/night mode state
-  const [heroMode, setHeroMode] = useState<'light' | 'dark'>('light');
 
-  const toggleHeroMode = () => {
-    setHeroMode(prev => (prev === 'light' ? 'dark' : 'light'));
-  };
+  // States for AISI focused team
+  const [aisiTeam, setAisiTeam] = useState<TeamSummary | null>(null);
+  const [aisiProjects, setAisiProjects] = useState<ProjectPreview[]>([]);
+  const [aisiMembers, setAisiMembers] = useState<GroupMember[]>([]);
+  const [aisiPublications, setAisiPublications] = useState<PublicationPreview[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   useEffect(() => {
     setAppliedCallIds(getAppliedCollaborations());
@@ -67,8 +69,33 @@ const Landing = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await apiRepository.getLandingPageData();
+        const [res, allTeachers] = await Promise.all([
+          apiRepository.getLandingPageData(),
+          apiRepository.getTeachers({ limit: 1000 })
+        ]);
         setData(res);
+        setTeachers(allTeachers);
+
+        // Identify the AISI team. Since it's one-team focused, we fetch the first featured team.
+        const mainTeam = res.featured_teams?.[0];
+        if (mainTeam) {
+          const [teamProjects, groupMembers] = await Promise.all([
+            apiRepository.getTeamProjects(mainTeam.id),
+            apiRepository.getGroupMembersFiltered(mainTeam.id)
+          ]);
+          setAisiTeam(mainTeam);
+          setAisiProjects(teamProjects.projects);
+          setAisiMembers(groupMembers);
+
+          // Get publications for this group's projects.
+          if (teamProjects.projects.length > 0) {
+            const pubsPromises = teamProjects.projects.slice(0, 3).map(p =>
+              apiRepository.getPublications({ project_id: p.id, limit: 5 })
+            );
+            const pubsResults = await Promise.all(pubsPromises);
+            setAisiPublications(pubsResults.flat() as any);
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch landing page data', err);
       } finally {
@@ -78,182 +105,72 @@ const Landing = () => {
     fetchData();
   }, []);
 
-  const activeLabsCount = data?.labs?.length ?? 0;
-  const researchGroupsCount = data?.featured_teams?.length ?? 0;
   const projectsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0;
   const publicationsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.publication_count || 0), 0) ?? 0;
-
   return (
     <PublicLayout
       navLinks={[
         { label: 'Home', href: '#', isHash: true, isActive: true },
         { label: 'Opportunities', href: '#opportunities', isHash: true },
-        { label: 'Teams', href: '#discovery', isHash: true },
-        { label: 'Labs', href: '#labs', isHash: true },
+        { label: 'Activities', href: '#activities', isHash: true },
+        { label: 'Team', href: '#team', isHash: true },
         { label: 'Projects', href: '/discovery/projects', isHash: false },
       ]}
     >
 
       {/* ── Hero Section ── */}
-      <section className="relative overflow-hidden" style={{ minHeight: 'calc(100vh - 96px)' }}>
-        {/* Day/Night Blur Dissolve Background Images */}
-        <div className="absolute inset-0 z-0 select-none pointer-events-none overflow-hidden">
-          {/* Night Image Layer */}
-          <div
-            className="absolute inset-0 bg-fade-layer bg-cover bg-center"
-            style={{
-              backgroundImage: "url('/hero_night.png')",
-              opacity: heroMode === 'dark' ? 1 : 0,
-              filter: heroMode === 'dark' ? 'blur(0px)' : 'blur(12px)',
-            }}
-          />
-          {/* Day Image Layer */}
-          <div
-            className="absolute inset-0 bg-fade-layer bg-cover bg-center"
-            style={{
-              backgroundImage: "url('/hero_day.jpg')",
-              opacity: heroMode === 'light' ? 1 : 0,
-              filter: heroMode === 'light' ? 'blur(0px)' : 'blur(12px)',
-            }}
-          />
-          {/* Medium opacity blue layer on the images */}
-          <div className="absolute inset-0 bg-[#173C7E]/40 mix-blend-multiply animate-fade-in" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#173C7E] via-[#173C7E]/30 to-[#173C7E]/25" />
-        </div>
-
-        {/* Orange gradient top edge */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] z-10" style={{ background: 'linear-gradient(90deg, #F47A1E 0%, #FF9A44 40%, transparent 80%)' }} />
-
-        {/* Dot grid pattern */}
-        <div className="absolute inset-0 z-10" style={{
-          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }} />
-
-        {/* Soft glow upper-right */}
-        <div className="absolute -top-32 -right-32 w-[600px] h-[600px] rounded-full z-10" style={{
-          background: 'radial-gradient(circle, rgba(244,122,30,0.08) 0%, rgba(244,122,30,0.02) 40%, transparent 70%)',
-        }} />
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] rounded-full z-10" style={{
-          background: 'radial-gradient(circle, rgba(59,130,246,0.04) 0%, transparent 60%)',
-        }} />
-
-        {/* Neumorphic Mode Toggle Switcher */}
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-30">
-          <button
-            onClick={toggleHeroMode}
-            className={cn(
-              "relative w-[100px] h-[48px] rounded-full p-1.5 transition-all duration-500 ease-in-out cursor-pointer select-none border border-transparent shadow-[inset_0_2px_6px_rgba(0,0,0,0.15)]",
-              heroMode === 'light'
-                ? "bg-[#e2e8f0] border-gray-200/20"
-                : "bg-[#1e293b] border-slate-700/20"
-            )}
-            aria-label="Toggle hero background theme"
-          >
-            {/* Faint Background Icons */}
-            <div className="absolute inset-0 flex items-center justify-between px-3.5 pointer-events-none">
-              {/* Sun Icon on the left (faint in Dark mode, hidden under knob in Light mode) */}
-              <Sun
-                className={cn(
-                  "h-4.5 w-4.5 transition-all duration-500",
-                  heroMode === 'light'
-                    ? "opacity-0 scale-50 -translate-x-2"
-                    : "opacity-25 text-slate-500 scale-100 translate-x-0"
-                )}
-              />
-              {/* Moon Icon on the right (faint in Light mode, hidden under knob in Dark mode) */}
-              <Moon
-                className={cn(
-                  "h-4.5 w-4.5 transition-all duration-500",
-                  heroMode === 'dark'
-                    ? "opacity-0 scale-50 translate-x-2"
-                    : "opacity-35 text-[#173C7E] scale-100 translate-x-0"
-                )}
-              />
-            </div>
-
-            {/* Slider Knob */}
-            <div
-              className={cn(
-                "absolute top-[5px] left-[5px] h-[36px] w-[36px] rounded-full flex items-center justify-center shadow-[0_3px_8px_rgba(0,0,0,0.15)] transition-transform duration-500",
-                heroMode === 'light'
-                  ? "translate-x-0 bg-gradient-to-br from-[#FF9F00] to-[#F47A1E] shadow-[0_3px_8px_rgba(244,122,30,0.35)]"
-                  : "translate-x-[52px] bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] shadow-[0_3px_8px_rgba(59,130,246,0.35)]"
-              )}
-              style={{
-                transitionTimingFunction: 'var(--return-easing)'
-              }}
+      <header className="py-[clamp(64px,9vw,120px)] overflow-hidden bg-background">
+        <div className="max-w-[1200px] mx-auto px-6 sm:px-12 grid grid-cols-1 min-[801px]:grid-cols-[3fr_2fr] items-center gap-14 min-[801px]:gap-20">
+          <div className="hero-text">
+            <h1
+              className="font-display font-bold leading-[1.12] tracking-tight text-[#173C7E] max-w-[16ch] mb-6 animate-fade-up"
+              style={{ fontSize: 'clamp(38px, 4.4vw, 58px)' }}
             >
-              {heroMode === 'light' ? (
-                <Sun className="h-4.5 w-4.5 text-white fill-white animate-fade-in" />
-              ) : (
-                <Moon className="h-4.5 w-4.5 text-white fill-white animate-fade-in" />
-              )}
-            </div>
-          </button>
-        </div>
-
-        {/* Hero Content */}
-        <div className="container relative z-10 px-4 sm:px-6 flex items-center" style={{ minHeight: 'calc(100vh - 96px)' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="max-w-2xl py-20 md:py-0"
-          >
-            {/* Status Badge */}
-            <div className="inline-flex items-center gap-2.5 mb-8 px-4 py-2 rounded-full border" style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#F47A1E' }} />
-                <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#F47A1E' }} />
-              </span>
-              <span className="text-xs font-medium tracking-wide uppercase" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                Advanced Research Collaboration
-              </span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-extrabold leading-[1.08] tracking-tight text-white mb-6">
-              Applied Intelligence{' '}
-              <span className="block mt-1" style={{ color: '#F47A1E' }}>for Societal Impact</span>
+              Applied intelligence, built for public <span className="text-[#F47A1E]">impact</span>.
             </h1>
-
-            {/* Orange separator bar */}
-            <div className="w-16 h-1 rounded-full mb-6" style={{ background: '#F47A1E' }} />
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg leading-relaxed mb-10 max-w-xl" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              Putting AI to work for people and communities.
+            <p className="font-sans font-normal text-[18px] leading-relaxed text-[#0E1B2E] max-w-[52ch] mb-10 animate-fade-up [animation-delay:0.06s]">
+              We design and deploy AI systems that move from research to production — for public institutions, research partners, and the communities they serve.
             </p>
+            <div className="flex items-center flex-wrap gap-6 animate-fade-up [animation-delay:0.12s]">
+              <a
+                href="#opportunities"
+                className="inline-flex items-center gap-2 bg-[#F47A1E] text-white font-sans font-semibold text-base py-4 px-8 rounded-lg hover:bg-[#dd6c14] transition-colors duration-150 group"
+              >
+                Deploy Solution
+                <svg
+                  className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 8h10M9 4l4 4-4 4"
+                    stroke="#fff"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
+              <a
+                href="#docs"
+                className="inline-block text-[#2E9FDA] font-sans font-medium text-base py-4 border-b border-[#2E9FDA]/35 hover:border-[#2E9FDA] transition-colors duration-150"
+              >
+                Read the Documentation
+              </a>
+            </div>
+          </div>
 
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-start gap-3"
-            >
-              <a href="#opportunities">
-                <Button size="lg" className="rounded-lg px-7 py-5 text-base h-auto font-semibold gap-2 hover:-translate-y-0.5 transition-all duration-200" style={{ background: '#F47A1E', color: '#fff', boxShadow: '0 4px 20px rgba(244,122,30,0.25)' }}>
-                  Collaborate With Us <ArrowRight className="h-4 w-4" />
-                </Button>
-              </a>
-              <a href="#discovery">
-                <Button size="lg" className="rounded-lg px-7 py-5 text-base h-auto font-semibold transition-all" style={{ background: 'transparent', color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.2)' }} onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }} onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent'; }}>
-                  Browse Teams
-                </Button>
-              </a>
-            </motion.div>
-          </motion.div>
+          <div className="flex items-center justify-center animate-fade-up [animation-delay:0.1s]">
+            <AisiLogo className="w-[clamp(132px,12vw,176px)] h-[clamp(132px,12vw,176px)]" />
+          </div>
         </div>
-      </section>
+      </header>
 
       {/* Stats Section */}
       <section className="py-10 border-y border-border bg-muted/30">
         <div className="container px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatItem label="Active Labs" value={loading ? "..." : `${activeLabsCount}`} />
-            <StatItem label="Research Groups" value={loading ? "..." : `${researchGroupsCount}`} />
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-8">
             <StatItem label="Projects" value={loading ? "..." : `${projectsCount}`} />
             <StatItem label="Publications" value={loading ? "..." : `${publicationsCount}`} />
           </div>
@@ -326,67 +243,198 @@ const Landing = () => {
 
 
 
-      {/* Featured Research Groups */}
-      <section id="discovery" className="py-24 md:py-32" style={{ background: '#EFF2F7' }}>
-        <div className="container px-4">
+      {/* AISI Research Projects & Activities Section */}
+      <section id="activities" className="py-24 md:py-32 bg-white border-t border-slate-100">
+        <div className="container max-w-5xl mx-auto px-6">
           <SectionHeader
-            title="Featured Research Groups"
-            subtitle="Join a team pushing the boundaries of AI research."
+            title="Research Projects & Publications"
+            subtitle="Explore our active projects and latest scientific contributions."
           />
 
           {loading ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
-              {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
-            </div>
-          ) : (() => {
-            const filteredTeams = data?.featured_teams ?? [];
-            const visibleTeams = showAllTeams ? filteredTeams : filteredTeams.slice(0, 6);
-            return (
-              <>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-7">
-                  {visibleTeams.map((team, i) => (
-                    <TeamCard key={team.id} team={team} index={i} />
-                  ))}
-                </div>
-                {filteredTeams.length > 6 && !showAllTeams && (
-                  <div className="text-center mt-10">
-                    <Button
-                      variant="outline"
-                      className="rounded-full px-8 gap-2 border-[#173C7E]/20 text-[#173C7E] hover:bg-[#173C7E] hover:text-white transition-colors"
-                      onClick={() => setShowAllTeams(true)}
-                    >
-                      Show More Groups <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
-      </section>
-
-      {/* Research Labs */}
-      <section id="labs" className="py-24 md:py-32">
-        <div className="container px-4">
-          <SectionHeader
-            title="Research Laboratories"
-            subtitle="Explore specialized labs driving innovation at ENSIA."
-          />
-
-          {loading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
-              {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} tall />)}
+            <div className="grid md:grid-cols-2 gap-10 mt-12">
+              <CardSkeleton tall />
+              <CardSkeleton tall />
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
-              {data?.labs.map((lab, i) => (
-                <LabCard key={lab.id} lab={lab} index={i} />
-              ))}
+            <div className="grid md:grid-cols-2 gap-10 mt-12">
+              {/* Left Column: Projects */}
+              <div className="space-y-6">
+                <h3 className="text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2 border-b border-slate-200 pb-3">
+                  <FolderOpen className="h-6 w-6 text-[#173C7E]" /> Active Projects
+                </h3>
+                <div className="space-y-4">
+                  {aisiProjects.map((proj, index) => {
+                    const isFeatured = index === 0;
+                    return (
+                      <Link
+                        key={proj.id}
+                        to={`/discovery/projects/${proj.id}`}
+                        className={`block relative p-6 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 group ${
+                          isFeatured ? 'border-l-4 border-l-[#F47A1E]' : ''
+                        }`}
+                      >
+                        {isFeatured && (
+                          <div className="absolute -top-3 left-4 bg-[#F47A1E] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+                            Featured
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-3 mb-1.5">
+                              <h4 className="font-display font-bold text-lg text-[#0F172A] group-hover:text-[#173C7E] transition-colors truncate">
+                                {proj.title}
+                              </h4>
+                              {proj.accepting_collaborators ? (
+                                <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
+                                  Hiring
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-slate-200 text-[10px] uppercase font-bold tracking-wider shrink-0 py-0 h-5">
+                                  Active
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-500 line-clamp-2">
+                              {proj.description || "A collaborative research initiative focusing on advanced methodologies."}
+                            </p>
+                          </div>
+                          <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 flex items-center justify-center text-[#173C7E] group-hover:bg-[#F47A1E] group-hover:text-white transition-all">
+                            <ArrowRight className="h-5 w-5 group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  {aisiProjects.length === 0 && (
+                    <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-sm text-slate-500 italic">No public projects listed yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Publications */}
+              <div className="space-y-6">
+                <h3 className="text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2 border-b border-slate-200 pb-3">
+                  <BookOpen className="h-6 w-6 text-[#173C7E]" /> Publications & Activities
+                </h3>
+                <div className="space-y-4">
+                  {aisiPublications.map((pub) => {
+                    const pubYear = pub.publication_date ? new Date(pub.publication_date).getFullYear() : null;
+                    return (
+                      <div
+                        key={pub.id}
+                        className="p-5 bg-white rounded-2xl border border-slate-100 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] flex flex-col justify-between gap-4"
+                      >
+                        <div className="space-y-1">
+                          <h4 className="font-bold text-slate-900 line-clamp-2">{pub.title}</h4>
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-500 pt-1">
+                            {pubYear && <span className="font-medium">{pubYear}</span>}
+                            {pub.venue && <span className="font-semibold text-slate-600">{pub.venue}</span>}
+                          </div>
+                        </div>
+                        {pub.paper_url && (
+                          <a
+                            href={pub.paper_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#173C7E] hover:text-[#F47A1E] transition-colors self-start"
+                          >
+                            Read Paper <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {aisiPublications.length === 0 && (
+                    <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-sm text-slate-500 italic">No publications recorded yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </section>
 
+      {/* Dedicated Meet the Team Section */}
+      <section id="team" className="py-24 md:py-32 bg-slate-50 border-t border-b border-slate-100">
+        <div className="container max-w-6xl mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-4xl font-display font-bold text-[#2E9FDA] tracking-tight">
+              Meet the Team
+            </h2>
+            <div className="w-12 h-1 bg-[#2E9FDA] mx-auto rounded-full" />
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 mt-12">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="space-y-4 text-center">
+                  <div className="h-28 w-28 md:h-36 md:w-36 rounded-full bg-slate-200 animate-pulse mx-auto" />
+                  <div className="h-4 w-24 bg-slate-200 animate-pulse mx-auto rounded" />
+                  <div className="h-3 w-16 bg-slate-100 animate-pulse mx-auto rounded" />
+                </div>
+              ))}
+            </div>
+          ) : aisiTeam ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-8 gap-y-12 mt-12">
+              {aisiMembers.map((member) => {
+                const isLeader = member.user_id === aisiTeam.leader_user_id;
+                
+                const colors = [
+                  'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700', 
+                  'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700',
+                  'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700'
+                ];
+                const colorClass = colors[member.user_id % colors.length];
+
+                return (
+                  <div key={member.user_id} className="text-center group flex flex-col items-center">
+                    <Link to={`/member/${member.user_id}`} className="block focus:outline-none">
+                      <div className="relative">
+                        <ProfileAvatar
+                          userId={member.user_id}
+                          imageUrl={member.user_profile_picture_url}
+                          name={member.user_name || '?'}
+                          className={`h-28 w-28 md:h-36 md:w-36 rounded-full mx-auto shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:scale-105 ${
+                            !member.user_profile_picture_url ? colorClass : ''
+                          }`}
+                          textClassName="text-2xl font-bold"
+                        />
+                      </div>
+                      <span className="font-display font-bold text-[17px] leading-snug text-slate-800 mt-4 block group-hover:text-[#173C7E] transition-colors truncate max-w-[180px]">
+                        {member.user_name || 'Unknown Member'}
+                      </span>
+                    </Link>
+                    <span className="text-[13px] text-slate-500 mt-0.5 block capitalize truncate max-w-[180px]">
+                      {isLeader ? 'Team Lead' : (member.user_role?.toLowerCase() || 'Researcher')}
+                    </span>
+                    {member.user_email ? (
+                      <a
+                        href={`mailto:${member.user_email}`}
+                        className="text-sm font-semibold text-[#2E9FDA] hover:text-[#173C7E] transition-colors mt-2 inline-block"
+                      >
+                        Email
+                      </a>
+                    ) : (
+                      <span className="text-sm font-semibold text-slate-300 mt-2 inline-block select-none">
+                        No Email
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 mt-12">
+              <p className="text-sm text-slate-500 italic">No team summary found.</p>
+            </div>
+          )}
+        </div>
+      </section>
 
 
       {/* CTA Section */}
@@ -596,8 +644,8 @@ const TeamCard = ({ team, index }: { team: TeamSummary; index: number }) => {
       <div
         className="absolute inset-0 z-10 rounded-2xl flex flex-col items-center justify-center gap-4 -translate-x-full group-hover/card:translate-x-0 px-6"
         style={{
-          background: team.picture_url 
-            ? `linear-gradient(rgba(23,60,126, 0.2), rgba(23,60,126, 0.3))` 
+          background: team.picture_url
+            ? `linear-gradient(rgba(23,60,126, 0.2), rgba(23,60,126, 0.3))`
             : '#173C7E',
           backgroundImage: team.picture_url
             ? `linear-gradient(rgba(23,60,126, 0.2), rgba(23,60,126, 0.3)), url(${team.picture_url.startsWith('/') ? `${BASE_URL}${team.picture_url}` : team.picture_url})`

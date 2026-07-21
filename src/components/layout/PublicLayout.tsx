@@ -4,6 +4,7 @@ import { Search, Users, FileText, FlaskConical, Cookie, Linkedin } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getCookie, setCookie } from '@/lib/cookies';
+import { AisiLogo } from '../shared/AisiLogo';
 
 interface NavLinkItem {
   label: string;
@@ -67,20 +68,23 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
 
       {/* ── White Sticky Navbar ── */}
       <nav className={cn(
-        "sticky top-0 z-50 w-full transition-shadow duration-300 bg-white border-b",
-        scrolled ? "shadow-md border-gray-200/80" : "shadow-sm border-gray-100"
+        "sticky top-0 z-50 w-full transition-shadow duration-300 border-b border-[#E3E7EE] bg-white",
+        scrolled ? "shadow-md" : "shadow-sm"
       )}>
-        <div className="container flex items-center justify-between px-4 sm:px-6 h-16">
+        <div className="max-w-[1200px] mx-auto flex items-center justify-between py-5 sm:py-6 px-6 sm:px-12 gap-6">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="h-9 w-9 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <img src="/aisi-logo-color.svg" alt="Logo" className="h-6 w-6" />
-            </div>
-            <span className="font-display font-bold text-[#0F172A] text-lg tracking-tight">AISI</span>
+          <Link to="/" className="flex items-center gap-4 group shrink-0">
+            <AisiLogo className="w-8 h-8 shrink-0 transition-transform duration-300 group-hover:scale-105" />
+            <span className="font-display font-bold text-[18px] tracking-wider leading-none text-[#173C7E]">
+              AISI
+              <small className="block font-sans font-medium text-[11px] tracking-normal text-[#5E6B7C] mt-1 whitespace-nowrap hidden min-[560px]:block">
+                Applied Intelligence for Societal Impact
+              </small>
+            </span>
           </Link>
 
           {/* Nav Links */}
-          <div className="hidden md:flex items-center gap-1 ml-auto mr-4">
+          <div className="hidden md:flex items-center gap-8 ml-auto mr-4">
             {(navLinks || [
               { label: 'Home', href: '/', isActive: true, isHash: false },
               { label: 'Projects', href: '/discovery/projects', isActive: false, isHash: false },
@@ -89,15 +93,15 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 key={link.label}
                 href={link.href}
                 className={cn(
-                  "relative px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                  "relative py-2 text-[14.5px] font-sans font-medium transition-colors duration-150",
                   link.isActive
-                    ? "text-[#0F172A]"
-                    : "text-[#475569] hover:text-[#0F172A] hover:bg-gray-100"
+                    ? "text-[#173C7E]"
+                    : "text-[#5E6B7C] hover:text-[#2E9FDA]"
                 )}
               >
                 {link.label}
                 {link.isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
+                  <span className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
                 )}
               </a>
             ) : (
@@ -105,15 +109,15 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 key={link.label}
                 to={link.href}
                 className={cn(
-                  "relative px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                  "relative py-2 text-[14.5px] font-sans font-medium transition-colors duration-150",
                   link.isActive
-                    ? "text-[#0F172A]"
-                    : "text-[#475569] hover:text-[#0F172A] hover:bg-gray-100"
+                    ? "text-[#173C7E]"
+                    : "text-[#5E6B7C] hover:text-[#2E9FDA]"
                 )}
               >
                 {link.label}
                 {link.isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
+                  <span className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-[#F47A1E]" />
                 )}
               </Link>
             ))}
@@ -121,7 +125,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
-            <button className="h-9 w-9 rounded-lg flex items-center justify-center text-[#475569] hover:bg-gray-100 transition-colors" aria-label="Search">
+            <button className="h-9 w-9 rounded-lg flex items-center justify-center text-[#5E6B7C] hover:bg-gray-100 transition-colors" aria-label="Search">
               <Search className="h-[18px] w-[18px]" />
             </button>
             <Link to="/signup" className="hidden sm:block">

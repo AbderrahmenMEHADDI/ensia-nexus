@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Loader2, Plus, ExternalLink, FileText, GitBranch, Database, Trash2 } from 'lucide-react';
+import { Loader2, Plus, ExternalLink, FileText, GitBranch, Database, Trash2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProjectBoard } from './ProjectBoard/hooks/useProjectBoard';
 import { ProjectBoardHeader } from './ProjectBoard/components/ProjectBoardHeader';
@@ -8,6 +8,7 @@ import { TaskDialogs } from './ProjectBoard/components/TaskDialogs';
 import { ProjectDialogs } from './ProjectBoard/components/ProjectDialogs';
 import { StudentDiscoveryView } from './ProjectBoard/components/StudentDiscoveryView';
 import { ResourceDialogs } from './ProjectBoard/components/ResourceDialogs';
+import { PublicationDialogs } from './ProjectBoard/components/PublicationDialogs';
 import type { TaskStatus } from '@/types';
 
 const statusColumns: { status: TaskStatus; label: string; color: string }[] = [
@@ -230,6 +231,59 @@ const ProjectBoard = () => {
             <p className="text-sm text-muted-foreground italic">No resources added yet.</p>
           )}
         </div>
+
+        {/* Publications */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-display font-bold" style={{ color: '#173C7E' }}>Publications</h2>
+            {board.user?.role !== 'ADMIN' && (!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
+              <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E] hover:text-white" onClick={() => board.setPublicationFormOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Add Publication
+              </Button>
+            )}
+          </div>
+          
+          {board.publications.length > 0 ? (
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {board.publications.map(pub => {
+                const creator = board.getUserById(pub.authors?.[0]?.user_id || NaN);
+                return (
+                  <div key={pub.id} className="relative group p-4 rounded-2xl border border-slate-100 bg-white hover:border-[#F47A1E]/30 transition-colors shadow-sm">
+                    <a
+                      href={pub.paper_url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 pr-6 block h-full w-full"
+                    >
+                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#2E9FDA', color: '#fff' }}>
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-[#0F172A] block truncate" title={pub.title}>{pub.title}</span>
+                        <span className="text-xs uppercase font-bold tracking-widest text-[#94A3B8] truncate block mt-1">
+                          {pub.venue || 'Journal'} · {pub.publication_date ? new Date(pub.publication_date).getFullYear() : 'N/A'}
+                        </span>
+                      </div>
+                      {pub.paper_url && <ExternalLink className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: '#2E9FDA' }} />}
+                    </a>
+                    
+                    {board.canManageProjects && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); board.handleDeletePublication(pub.id); }}
+                        className="absolute top-2 right-2 p-1.5 bg-destructive/10 text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground focus:opacity-100"
+                        title="Delete publication"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No publications added yet.</p>
+          )}
+        </div>
       </motion.div>
 
       <TaskDialogs
@@ -335,6 +389,29 @@ const ProjectBoard = () => {
         setNewResourceUrl={board.setNewResourceUrl}
         createResourceLoading={board.createResourceLoading}
         handleCreateResource={board.handleCreateResource}
+      />
+
+      <PublicationDialogs
+        publicationFormOpen={board.publicationFormOpen}
+        setPublicationFormOpen={board.setPublicationFormOpen}
+        newPubTitle={board.newPubTitle}
+        setNewPubTitle={board.setNewPubTitle}
+        newPubAbstract={board.newPubAbstract}
+        setNewPubAbstract={board.setNewPubAbstract}
+        newPubDate={board.newPubDate}
+        setNewPubDate={board.setNewPubDate}
+        newPubVenue={board.newPubVenue}
+        setNewPubVenue={board.setNewPubVenue}
+        newPubDoi={board.newPubDoi}
+        setNewPubDoi={board.setNewPubDoi}
+        newPubUrl={board.newPubUrl}
+        setNewPubUrl={board.setNewPubUrl}
+        newPubAuthors={board.newPubAuthors}
+        setNewPubAuthors={board.setNewPubAuthors}
+        createPubLoading={board.createPubLoading}
+        handleCreatePublication={board.handleCreatePublication}
+        participants={board.participants}
+        getUserById={board.getUserById}
       />
 
       {board.isStudent && board.publicProjects.length > 0 && (

@@ -21,6 +21,7 @@ import type {
   ProjectApplication,
   ParticipantRole,
   Visibility,
+  Publication,
 } from '@/types';
 
 export const useProjectBoard = () => {
@@ -104,6 +105,18 @@ export const useProjectBoard = () => {
   const [newResourceUrl, setNewResourceUrl] = useState('');
   const [createResourceLoading, setCreateResourceLoading] = useState(false);
 
+  // Publications states
+  const [publications, setPublications] = useState<Publication[]>([]);
+  const [publicationFormOpen, setPublicationFormOpen] = useState(false);
+  const [newPubTitle, setNewPubTitle] = useState('');
+  const [newPubAbstract, setNewPubAbstract] = useState('');
+  const [newPubDate, setNewPubDate] = useState('');
+  const [newPubVenue, setNewPubVenue] = useState('');
+  const [newPubDoi, setNewPubDoi] = useState('');
+  const [newPubUrl, setNewPubUrl] = useState('');
+  const [newPubAuthors, setNewPubAuthors] = useState<number[]>([]);
+  const [createPubLoading, setCreatePubLoading] = useState(false);
+
   const fetchAllUsers = async () => {
     if (user?.role !== 'ADMIN') return [];
     const pageSize = 500;
@@ -119,14 +132,16 @@ export const useProjectBoard = () => {
   };
 
   const loadProjectData = async (projectId: number) => {
-    const [t, part, res] = await Promise.all([
+    const [t, part, res, pubs] = await Promise.all([
       apiRepository.getTasks(projectId),
       apiRepository.getProjectParticipants(projectId),
       apiRepository.getProjectResources(projectId),
+      apiRepository.getPublications({ project_id: projectId }),
     ]);
     setLocalTasks(t);
     setParticipants(part);
     setResources(res);
+    setPublications(pubs);
   };
 
   const filterProjectsForTeacher = (allProjs: Project[], groupsList = groups, membersList = groupMembers) => {
@@ -584,6 +599,66 @@ export const useProjectBoard = () => {
     }
   };
 
+  const handleCreatePublication = async () => {
+    if (!selectedProjectId) return;
+    if (!newPubTitle.trim()) {
+      toast({ title: 'Title is required', variant: 'destructive' });
+      return;
+    }
+    setCreatePubLoading(true);
+    try {
+      const mappedAuthors = newPubAuthors.map((uid, index) => ({
+        user_id: uid,
+        author_order: index + 1,
+        is_corresponding: index === 0,
+      }));
+
+      if (mappedAuthors.length === 0 && user) {
+        mappedAuthors.push({
+          user_id: user.id,
+          author_order: 1,
+          is_corresponding: true,
+        });
+      }
+
+      const created = await apiRepository.createPublication({
+        project_id: selectedProjectId,
+        title: newPubTitle.trim(),
+        abstract: newPubAbstract.trim() || undefined,
+        publication_date: newPubDate || undefined,
+        venue: newPubVenue.trim() || undefined,
+        doi: newPubDoi.trim() || undefined,
+        paper_url: newPubUrl.trim() || undefined,
+        authors: mappedAuthors,
+      });
+
+      setPublications(prev => [...prev, created]);
+      setPublicationFormOpen(false);
+      setNewPubTitle('');
+      setNewPubAbstract('');
+      setNewPubDate('');
+      setNewPubVenue('');
+      setNewPubDoi('');
+      setNewPubUrl('');
+      setNewPubAuthors(user ? [user.id] : []);
+      toast({ title: 'Publication added successfully' });
+    } catch (err: any) {
+      toast({ title: 'Failed to add publication', description: err.message, variant: 'destructive' });
+    } finally {
+      setCreatePubLoading(false);
+    }
+  };
+
+  const handleDeletePublication = async (pubId: number) => {
+    try {
+      await apiRepository.deletePublication(pubId);
+      setPublications(prev => prev.filter(p => p.id !== pubId));
+      toast({ title: 'Publication deleted' });
+    } catch (err: any) {
+      toast({ title: 'Failed to delete publication', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const teacherProjects = filterProjectsForTeacher(projects);
   const displayProjects = isStudent && hasJoined
     ? projects.filter(p => joinedProjectIds.includes(Number(p.id)))
@@ -726,5 +801,26 @@ export const useProjectBoard = () => {
     createResourceLoading,
     handleCreateResource,
     handleDeleteResource,
+    publications,
+    setPublications,
+    publicationFormOpen,
+    setPublicationFormOpen,
+    newPubTitle,
+    setNewPubTitle,
+    newPubAbstract,
+    setNewPubAbstract,
+    newPubDate,
+    setNewPubDate,
+    newPubVenue,
+    setNewPubVenue,
+    newPubDoi,
+    setNewPubDoi,
+    newPubUrl,
+    setNewPubUrl,
+    newPubAuthors,
+    setNewPubAuthors,
+    createPubLoading,
+    handleCreatePublication,
+    handleDeletePublication,
   };
 };
