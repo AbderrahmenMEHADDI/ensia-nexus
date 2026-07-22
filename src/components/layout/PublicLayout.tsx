@@ -47,6 +47,37 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
     setShowConsent(false);
   };
 
+  const handleHashClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const targetId = href.replace('#', '');
+    if (!targetId || targetId === '#') {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      window.history.pushState(null, '', '/');
+      return;
+    }
+
+    const element = document.getElementById(targetId);
+    if (element) {
+      const navbarHeight = scrolled ? 72 : 80;
+      // Target the heading / title element inside the section for exact alignment
+      const headingElement = element.querySelector('h1, h2, h3, .section-header') || element;
+      const headingTop = headingElement.getBoundingClientRect().top + window.scrollY;
+      
+      // Align heading directly below fixed navbar with comfortable margin
+      const offsetPosition = headingTop - navbarHeight - 20;
+      
+      window.scrollTo({
+        top: Math.max(0, offsetPosition),
+        behavior: 'smooth'
+      });
+      
+      window.history.pushState(null, '', href);
+    }
+  };
+
   const resolvedNavLinks = navLinks || [
     { label: 'Home', href: '/', isActive: true, isHash: false },
     { label: 'Projects', href: '/discovery/projects', isActive: false, isHash: false },
@@ -95,6 +126,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
               <a
                 key={link.label}
                 href={link.href}
+                onClick={(e) => handleHashClick(e, link.href)}
                 className={cn(
                   "relative py-2 text-[14px] font-sans font-medium transition-colors duration-150 whitespace-nowrap",
                   link.isActive
@@ -156,7 +188,10 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 <a
                   key={link.label}
                   href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    handleHashClick(e, link.href);
+                    setMobileMenuOpen(false);
+                  }}
                   className={cn(
                     "py-2 text-base font-sans font-medium transition-colors border-b border-slate-50",
                     link.isActive ? "text-[#173C7E] font-semibold" : "text-[#5E6B7C] hover:text-[#2E9FDA]"

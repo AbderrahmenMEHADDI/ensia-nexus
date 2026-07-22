@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Loader2, UserCircle, Briefcase, Building2, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
@@ -14,18 +15,18 @@ import * as z from 'zod';
 
 const completeRegistrationSchema = z.object({
   role: z.enum(['STUDENT', 'TEACHER']),
-  experienceYears: z.number().min(0, 'Experience years must be 0 or more').optional(),
-  grade: z.enum(['MCA', 'PROFESSOR', 'DOCTOR', 'RESEARCHER']).optional(),
+  bio: z.string().min(10, 'Biography must be at least 10 characters').optional(),
+  grade: z.enum(['FULL_PROFESSOR', 'ASSOCIATE_PROFESSOR', 'ASSISTANT_PROFESSOR']).optional(),
   department: z.string().optional(),
   researchInterests: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.role !== 'TEACHER') return;
 
-  if (data.experienceYears === undefined || Number.isNaN(data.experienceYears)) {
+  if (!data.bio?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ['experienceYears'],
-      message: 'Experience years is required for teachers',
+      path: ['bio'],
+      message: 'Biography is required for teachers',
     });
   }
 
@@ -87,7 +88,7 @@ const CompleteRegistration = () => {
         role: data.role,
         ...(data.role === 'TEACHER'
           ? {
-            experience_years: data.experienceYears,
+            bio: data.bio?.trim(),
             grade: data.grade,
             department: data.department?.trim(),
             research_interests: data.researchInterests?.trim(),
@@ -150,19 +151,16 @@ const CompleteRegistration = () => {
             {selectedRole === 'TEACHER' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="experienceYears">Experience Years</Label>
+                  <Label htmlFor="bio">Biography / Short Description</Label>
                   <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="experienceYears"
-                      type="number"
-                      min={0}
-                      placeholder="5"
-                      className={`pl-10 ${errors.experienceYears ? 'border-destructive' : ''}`}
-                      {...register('experienceYears', { valueAsNumber: true })}
+                    <Textarea
+                      id="bio"
+                      placeholder="A short description of your academic background and biography..."
+                      className={`min-h-[80px] ${errors.bio ? 'border-destructive' : ''}`}
+                      {...register('bio')}
                     />
                   </div>
-                  {errors.experienceYears && <p className="text-xs text-destructive">{errors.experienceYears.message}</p>}
+                  {errors.bio && <p className="text-xs text-destructive">{errors.bio.message}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -178,10 +176,9 @@ const CompleteRegistration = () => {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MCA">MCA</SelectItem>
-                      <SelectItem value="PROFESSOR">Professor</SelectItem>
-                      <SelectItem value="DOCTOR">Doctor</SelectItem>
-                      <SelectItem value="RESEARCHER">Researcher</SelectItem>
+                      <SelectItem value="FULL_PROFESSOR">Full Professor</SelectItem>
+                      <SelectItem value="ASSOCIATE_PROFESSOR">Associate Professor</SelectItem>
+                      <SelectItem value="ASSISTANT_PROFESSOR">Assistant Professor</SelectItem>
                     </SelectContent>
                   </Select>
                   {errors.grade && <p className="text-xs text-destructive">{errors.grade.message}</p>}

@@ -35,6 +35,7 @@ interface PublicationDialogsProps {
   handleCreatePublication: () => void;
   participants: ProjectParticipant[];
   getUserById: (id: number) => User | undefined;
+  authorOptions?: User[];
 }
 
 export const PublicationDialogs = ({
@@ -58,6 +59,7 @@ export const PublicationDialogs = ({
   handleCreatePublication,
   participants,
   getUserById,
+  authorOptions,
 }: PublicationDialogsProps) => {
 
   const handleAuthorToggle = (userId: number) => {
@@ -143,29 +145,29 @@ export const PublicationDialogs = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Authors (Project Participants)</Label>
-            <div className="border border-slate-100 rounded-xl p-3 max-h-[120px] overflow-y-auto space-y-2.5">
-              {participants.map((p) => {
-                const u = getUserById(p.user_id);
-                const name = u?.full_name || `User #${p.user_id}`;
+            <Label>Authors (AISI Team Members)</Label>
+            <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 max-h-[160px] overflow-y-auto space-y-2.5">
+              {(authorOptions && authorOptions.length > 0 ? authorOptions : participants.map(p => getUserById(p.user_id)).filter(Boolean) as User[]).map((u) => {
+                const name = u.full_name || `User #${u.id}`;
                 return (
-                  <div key={p.user_id} className="flex items-center space-x-2.5">
+                  <div key={u.id} className="flex items-center space-x-2.5">
                     <Checkbox
-                      id={`author-${p.user_id}`}
-                      checked={newPubAuthors.includes(p.user_id)}
-                      onCheckedChange={() => handleAuthorToggle(p.user_id)}
+                      id={`author-${u.id}`}
+                      checked={newPubAuthors.includes(u.id)}
+                      onCheckedChange={() => handleAuthorToggle(u.id)}
                     />
                     <label
-                      htmlFor={`author-${p.user_id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      htmlFor={`author-${u.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center justify-between w-full pr-2"
                     >
-                      {name} <span className="text-xs text-slate-400 capitalize">({p.participant_role.toLowerCase()})</span>
+                      <span>{name}</span>
+                      <span className="text-xs text-slate-400 capitalize">({u.role?.toLowerCase() || 'member'})</span>
                     </label>
                   </div>
                 );
               })}
-              {participants.length === 0 && (
-                <p className="text-xs text-muted-foreground italic">No participants found in this project.</p>
+              {(!authorOptions || authorOptions.length === 0) && participants.length === 0 && (
+                <p className="text-xs text-muted-foreground italic">No team members found.</p>
               )}
             </div>
           </div>

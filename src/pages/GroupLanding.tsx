@@ -202,6 +202,17 @@ const GroupLanding = () => {
               >
                 <Mail className="h-3 w-3 mr-1.5" /> Contact Leader
               </Button>
+              <a
+                href="https://www.linkedin.com/company/aisi-research-team"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center h-7 rounded-full text-xs font-semibold px-3 border border-slate-200 text-[#173C7E] bg-white hover:bg-slate-50 transition-colors"
+              >
+                <svg className="h-3 w-3 mr-1.5 text-[#0A66C2] fill-current" viewBox="0 0 24 24">
+                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.779-1.75-1.75s.784-1.75 1.75-1.75 1.75.779 1.75 1.75-.784 1.75-1.75 1.75zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                </svg>
+                Team LinkedIn
+              </a>
               <div className="h-4 w-[1px] bg-slate-200" />
               <div className="flex items-center gap-1.5">
                 <div className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-50" />
@@ -304,7 +315,11 @@ const GroupLanding = () => {
                             {teacherInfo.research_interests}
                           </span>
                         )}
-                        {isLeader ? (
+                        {teacherInfo?.grade ? (
+                          <span className="text-xs font-medium text-slate-500 truncate block capitalize mt-1">
+                            {teacherInfo.grade.replace('_', ' ').toLowerCase()}
+                          </span>
+                        ) : isLeader ? (
                           <span className="text-xs font-bold text-white uppercase tracking-widest bg-[#173C7E] px-2 py-0.5 rounded-md w-fit mt-2">
                             Lead
                           </span>

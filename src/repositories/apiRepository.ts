@@ -189,11 +189,12 @@ export const apiRepository = {
     api.get<TaskUpdate[]>(`/task-updates/?task_id=${taskId}`),
 
   // ── Publications ─────────────────────────────────────────────────────────
-  getPublications: (params?: { skip?: number; limit?: number; project_id?: number }) => {
+  getPublications: (params?: { skip?: number; limit?: number; project_id?: number; user_id?: number }) => {
     const searchParams = new URLSearchParams();
     if (params?.skip) searchParams.set('skip', params.skip.toString());
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.project_id) searchParams.set('project_id', params.project_id.toString());
+    if (params?.user_id) searchParams.set('user_id', params.user_id.toString());
     const qs = searchParams.toString();
     return api.get<Publication[]>(qs ? `/publications/?${qs}` : '/publications/');
   },

@@ -6,7 +6,7 @@ export type ProjectReviewStatus = 'APPROVED' | 'REJECTED';
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'BLOCKED' | 'DONE' | 'CANCELLED';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type ParticipantRole = 'MEMBER' | 'REVIEWER' | 'OBSERVER' | 'LEAD';
-export type TeacherGrade = 'MCA' | 'PROFESSOR' | 'DOCTOR' | 'RESEARCHER';
+export type TeacherGrade = 'FULL_PROFESSOR' | 'ASSOCIATE_PROFESSOR' | 'ASSISTANT_PROFESSOR';
 export type ResourceType = 'INTERNAL_DOC' | 'GIT_REPO' | 'DATASET' | 'OTHER';
 
 export interface User {
@@ -69,10 +69,13 @@ export interface StudentPreviousProject {
 
 export interface Teacher {
   user_id: number;
-  experience_years: number;
   grade: TeacherGrade;
   department: string;
   research_interests?: string;
+  bio?: string;
+  teaching_modules?: string;
+  google_scholar?: string;
+  linkedin?: string;
   created_at: string;
 }
 

@@ -47,6 +47,118 @@ import { AisiLogo } from '@/components/shared/AisiLogo';
 import { ProjectCard } from '@/components/shared/ProjectCard';
 import { PublicationCard } from '@/components/shared/PublicationCard';
 
+const getMemberRows = <T,>(items: T[], targetMax = 5): T[][] => {
+  const total = items.length;
+  if (total === 0) return [];
+  if (total <= targetMax) return [items];
+
+  const rows: T[][] = [];
+  let index = 0;
+
+  while (index < total) {
+    let remaining = total - index;
+
+    let countToTake = targetMax;
+    if (remaining === targetMax + 1) {
+      countToTake = Math.ceil(remaining / 2);
+    } else if (remaining < targetMax) {
+      countToTake = remaining;
+    }
+
+    rows.push(items.slice(index, index + countToTake));
+    index += countToTake;
+  }
+
+  return rows;
+};
+
+// Team Member Card Component matching reference HTML
+const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember; isLeader: boolean; teacherInfo?: Teacher }) => {
+  let roleText = 'TEACHER';
+  if (isLeader) {
+    roleText = 'TEAM LEAD';
+  } else if (member.user_role === 'TEACHER' && teacherInfo?.grade) {
+    roleText = teacherInfo.grade.replace('_', ' ').toUpperCase();
+  } else if (member.user_role) {
+    roleText = member.user_role.toUpperCase();
+  }
+
+  const defaultBios = [
+    'Leading cutting-edge research in computational sciences and guiding our team toward breakthrough discoveries.',
+    'Passionate educator committed to developing the next generation of researchers with innovative teaching methodologies.',
+    'Expert in advanced technologies with a focus on practical applications and collaborative research initiatives.',
+    'Dedicated to fostering innovation in academic environments with emphasis on interdisciplinary collaboration.',
+    'Specializing in research excellence and mentoring emerging scholars with a commitment to quality.',
+    'Contributing valuable insights in research development and advancement with interdisciplinary expertise.',
+  ];
+  const bioText = teacherInfo?.bio || defaultBios[member.user_id % defaultBios.length];
+
+  const pastelColors = [
+    'bg-[#d8bfd8]',
+    'bg-[#f0d9e8]',
+    'bg-[#b3e5db]',
+    'bg-[#add8f5]',
+    'bg-[#b3e0d8]',
+    'bg-[#d1eee9]',
+    'bg-[#f5e6d3]',
+    'bg-[#e8d5f2]',
+    'bg-[#f5d9e8]'
+  ];
+  const pastelBg = pastelColors[member.user_id % pastelColors.length];
+
+  return (
+    <div className="bg-white border border-[#e5e7eb] rounded-none p-[20px] text-left flex flex-col h-full hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 w-full">
+      {/* Profile Circle */}
+      <div className="mb-4 shrink-0">
+        <ProfileAvatar
+          userId={member.user_id}
+          imageUrl={member.user_profile_picture_url}
+          name={member.user_name || '?'}
+          className={`w-[100px] h-[100px] rounded-full shadow-none text-2xl font-bold text-slate-700 ${!member.user_profile_picture_url ? pastelBg : ''}`}
+          textClassName="text-2xl font-bold"
+        />
+      </div>
+
+      {/* Member Name */}
+      <div className="text-[16px] font-bold text-[#003d7a] mb-1 leading-snug break-words" title={member.user_name}>
+        {member.user_name || 'Unknown Member'}
+      </div>
+
+      {/* Member Role */}
+      <div className="text-[12px] font-semibold text-[#ff6b35] uppercase tracking-[0.5px] mb-3">
+        {roleText}
+      </div>
+
+      {/* Member Bio Snippet */}
+      <div className="text-[14px] text-[#6b7280] leading-[1.5] mb-4 flex-1 line-clamp-3">
+        {bioText}
+      </div>
+
+      {/* Card Footer */}
+      <div className="flex flex-col gap-3 items-start pt-1">
+        <Link
+          to={`/member/${member.user_id}`}
+          className="text-[14px] font-medium text-[#2E9FDA] hover:text-[#173C7E] hover:underline cursor-pointer"
+        >
+          Read more &rarr;
+        </Link>
+        {member.user_email ? (
+          <a
+            href={`mailto:${member.user_email}`}
+            className="bg-[#ff6b35] hover:bg-[#e55a24] text-white text-[13px] font-semibold px-4 py-2 rounded-none transition-colors border-none inline-block"
+          >
+            Contact
+          </a>
+        ) : (
+          <span className="bg-[#ff6b35]/60 text-white text-[13px] font-semibold px-4 py-2 rounded-none cursor-not-allowed inline-block">
+            Contact
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Landing = () => {
   const { toast } = useToast();
   const [data, setData] = useState<LandingPageResponse | null>(null);
@@ -98,9 +210,9 @@ const Landing = () => {
             apiRepository.getTeamProjects(mainGroup.id),
             apiRepository.getGroupMembersFiltered(mainGroup.id)
           ]);
-          
+
           const labName = res.labs?.find(l => l.id === mainGroup.lab_id)?.name || "Artificial Intelligence Research Lab";
-          
+
           const teamSummary: TeamSummary = {
             id: mainGroup.id,
             lab_id: mainGroup.lab_id,
@@ -250,158 +362,240 @@ const Landing = () => {
       </section>
 
       {/* Objectives Section */}
-      <section id="objectives" className="py-24 md:py-32 bg-white relative">
-        <div className="container max-w-5xl mx-auto px-6">
-          <SectionHeader
-            title="Team Objectives"
-            subtitle="Understand our core mission, foundational technologies, and practical research focus."
-          />
+      <section id="objectives" className="scroll-mt-24 py-16 md:py-24 bg-white relative border-b border-slate-100">
+        <div className="container max-w-7xl mx-auto px-8 md:px-12">
+          {/* Header */}
+          <div className="mb-16 md:mb-20">
+            <span className="text-xs uppercase font-bold tracking-widest text-[#F47A1E] block mb-2 font-mono">
+              OUR PURPOSE
+            </span>
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-[#003d7a] tracking-tight">
+              Team Objectives
+            </h2>
+            <div className="h-[2.5px] w-24 bg-[#F47A1E] mt-5" />
+          </div>
 
-          <div className="mt-16 space-y-8">
-            {/* Mission Card */}
-            <div className="bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/40 rounded-[2.5rem] border border-slate-200/80 p-8 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="h-12 w-12 rounded-2xl bg-[#173C7E] text-white flex items-center justify-center shrink-0 shadow-md">
-                  <Target className="h-6 w-6 text-[#F47A1E]" />
+          <div className="grid lg:grid-cols-12 gap-16 lg:gap-24 items-start">
+            {/* Column 1: Mission Statement Pull-Quote (lg:col-span-5) */}
+            <section className="lg:col-span-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-100 pb-12 lg:pb-0 lg:pr-16 relative">
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#F47A1E] text-white text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-sm">01</span>
+                  <span className="text-xs uppercase font-bold tracking-widest text-[#173C7E] font-mono">MISSION STATEMENT</span>
                 </div>
-                <div>
-                  <span className="text-xs uppercase font-bold tracking-widest text-[#F47A1E] block mb-1">
-                    Our Purpose
-                  </span>
-                  <h3 className="text-2xl md:text-3xl font-display font-bold text-[#173C7E]">
-                    Mission
-                  </h3>
-                </div>
-              </div>
-              <p className="text-lg md:text-xl text-slate-700 leading-relaxed font-sans font-medium">
-                Put AI to work for real societal impact—designing and deploying intelligent systems that deliver measurable, practical changes in the real world.
-              </p>
-            </div>
 
-            {/* Core Technologies & Focus Cards */}
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Core Technologies Card */}
-              <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col justify-between space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-[#173C7E] flex items-center justify-center shrink-0">
-                      <Cpu className="h-5 w-5 text-[#173C7E]" />
-                    </div>
-                    <h4 className="text-xl font-display font-bold text-[#0F172A]">
-                      Core Technologies
-                    </h4>
-                  </div>
-                  <p className="text-base text-slate-600 leading-relaxed font-sans">
-                    Machine Learning, Deep Learning, Computational Intelligence, Recommender Systems, and Natural Language Processing (NLP).
+                <div className="relative pl-2 pt-2">
+                  <span className="absolute -left-2 -top-6 text-7xl font-serif text-[#F47A1E]/20 select-none">“</span>
+                  <p className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#173C7E] leading-[1.4] tracking-tight font-medium">
+                    Put AI to work for real societal impact—designing and deploying intelligent systems that deliver measurable, practical changes in the real world.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-                  {['Machine Learning', 'Deep Learning', 'Computational Intelligence', 'Recommender Systems', 'NLP'].map((tag) => (
-                    <Badge key={tag} variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium px-2.5 py-1 rounded-md">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
               </div>
+            </section>
 
-              {/* Focus Card */}
-              <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col justify-between space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-orange-50 text-[#F47A1E] flex items-center justify-center shrink-0">
-                      <Globe2 className="h-5 w-5 text-[#F47A1E]" />
+            {/* Column 2: Capabilities + Focus (lg:col-span-7) */}
+            <div className="lg:col-span-7 flex flex-col justify-between space-y-12 pl-0 lg:pl-4 lg:-mt-20">
+              
+              {/* 02. Capabilities */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#173C7E] text-white text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-sm">02</span>
+                  <span className="text-xs uppercase font-bold tracking-widest text-[#173C7E] font-mono">CAPABILITIES</span>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-x-10 gap-y-6 mt-4">
+                  {/* Left sub-column */}
+                  <div className="space-y-5 border-l-2 border-[#F47A1E]/25 pl-6">
+                    <div className="space-y-1.5">
+                      <h4 className="font-sans font-bold text-base text-[#003d7a] tracking-wide">Machine Learning</h4>
+                      <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                        Pattern discovery and data-driven insights.
+                      </p>
                     </div>
-                    <h4 className="text-xl font-display font-bold text-[#0F172A]">
-                      Focus
-                    </h4>
+                    <div className="space-y-1.5">
+                      <h4 className="font-sans font-bold text-base text-[#003d7a] tracking-wide">Deep Learning</h4>
+                      <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                        Hierarchical neural network architectures.
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="font-sans font-bold text-base text-[#003d7a] tracking-wide">Computational Intelligence</h4>
+                      <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                        Optimization algorithms and evolutionary search.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-base text-slate-600 leading-relaxed font-sans">
-                    Moving beyond abstract research to solve pressing, complex challenges across critical domains.
-                  </p>
+
+                  {/* Right sub-column */}
+                  <div className="space-y-5 border-l-2 border-[#173C7E]/25 pl-6">
+                    <div className="space-y-1.5">
+                      <h4 className="font-sans font-bold text-base text-[#003d7a] tracking-wide">Recommender Systems</h4>
+                      <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                        Personalization and collaborative filtering.
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="font-sans font-bold text-base text-[#003d7a] tracking-wide">Natural Language Processing</h4>
+                      <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                        Semantic translation and dialogue systems.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="pt-2 border-t border-slate-100">
-                  <a
-                    href="#opportunities"
-                    className="text-sm font-semibold text-[#173C7E] hover:text-[#F47A1E] transition-colors inline-flex items-center gap-1.5"
-                  >
-                    Explore our research opportunities <ArrowRight className="h-4 w-4" />
-                  </a>
+              </section>
+
+              {/* Hairline Divider */}
+              <div className="border-t border-slate-150 w-full" />
+
+              {/* 03. Focus Block */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#173C7E] text-white text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-sm">03</span>
+                  <span className="text-xs uppercase font-bold tracking-widest text-[#173C7E] font-mono">PRACTICAL FOCUS</span>
                 </div>
-              </div>
+                
+                <div className="flex items-center gap-6 mt-3 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
+                  {/* Node Motif SVG */}
+                  <svg className="w-14 h-14 text-[#173C7E] shrink-0" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="30" stroke="currentColor" strokeOpacity="0.08" strokeWidth="1" />
+                    <circle cx="50" cy="50" r="18" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" strokeDasharray="2,2" />
+                    <line x1="50" y1="50" x2="50" y2="20" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+                    <line x1="50" y1="50" x2="76" y2="58" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+                    <line x1="50" y1="50" x2="28" y2="68" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+                    <circle cx="50" cy="20" r="3.5" fill="#F47A1E" />
+                    <circle cx="76" cy="58" r="3" fill="#173C7E" />
+                    <circle cx="28" cy="68" r="3" fill="#173C7E" />
+                    <circle cx="50" cy="50" r="2" fill="#173C7E" />
+                  </svg>
+
+                  <div className="flex-1 text-sm sm:text-base text-slate-600 leading-relaxed">
+                    <span className="font-bold text-[#0F172A] mr-1.5">Real Societal Applications:</span>
+                    Moving beyond abstract research to solve pressing challenges across critical public domains.
+                    <a
+                      href="#opportunities"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wider text-[#173C7E] hover:text-[#F47A1E] transition-colors border-b border-[#173C7E]/20 pb-0.5 ml-3 font-mono uppercase"
+                    >
+                      Explore Opportunities <ArrowRight className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Dedicated Meet the Team Section */}
-      <section id="team" className="py-24 md:py-32 bg-slate-50 border-t border-b border-slate-100">
-        <div className="container max-w-5xl mx-auto px-6">
-          <SectionHeader
-            title="Meet the Team"
-            subtitle="Meet the scientists, developers, and researchers driving our mission forward."
-          />
+      {/* Dedicated Meet the Team Section (Matching meet_the_team_left_sharp_small_btn.html UI) */}
+      <section id="team" className="scroll-mt-24 py-16 md:py-24 bg-[#f9fafb] border-t border-b border-[#e5e7eb] overflow-x-hidden">
+        <div className="container max-w-[1400px] mx-auto px-4 md:px-6">
+          <div className="mb-10">
+            <h1 className="text-[36px] font-bold text-[#003d7a] relative inline-block mb-2 font-display">
+              Meet the Team
+              <span className="absolute -bottom-3 left-0 w-[80px] h-[4px] bg-[#ff6b35]" />
+            </h1>
+            <p className="text-[#6b7280] text-[16px] mt-5 max-w-[600px]">
+              Meet the scientists, developers, and researchers driving our mission forward.
+            </p>
+          </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 mt-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mt-10">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="space-y-4 text-center">
-                  <div className="h-28 w-28 md:h-36 md:w-36 rounded-full bg-slate-200 animate-pulse mx-auto" />
-                  <div className="h-4 w-24 bg-slate-200 animate-pulse mx-auto rounded" />
-                  <div className="h-3 w-16 bg-slate-100 animate-pulse mx-auto rounded" />
+                <div key={i} className="bg-white border border-[#e5e7eb] rounded-none p-5 h-[320px] animate-pulse space-y-4">
+                  <div className="w-[100px] h-[100px] rounded-full bg-slate-200" />
+                  <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                  <div className="h-3 w-1/2 bg-slate-100 rounded" />
+                  <div className="h-12 w-full bg-slate-100 rounded" />
                 </div>
               ))}
             </div>
           ) : aisiTeam ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-8 gap-y-12 mt-12">
-              {aisiMembers.map((member) => {
-                const isLeader = member.user_id === aisiTeam.leader_user_id;
-                
-                const colors = [
-                  'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700', 
-                  'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700',
-                  'bg-rose-100 text-rose-700', 'bg-cyan-100 text-cyan-700'
-                ];
-                const colorClass = colors[member.user_id % colors.length];
+            <div className="mt-10 space-y-5">
+              {/* 1. DESKTOP LAYOUT (lg screens & up: Row 1 = 5 items, Row 2 = 4 items centered underneath) */}
+              <div className="hidden lg:block space-y-5">
+                {/* Row 1: First 5 members */}
+                <div className="grid grid-cols-5 gap-5">
+                  {aisiMembers.slice(0, 5).map((member) => (
+                    <TeamMemberCard
+                      key={member.user_id}
+                      member={member}
+                      isLeader={member.user_id === aisiTeam.leader_user_id}
+                      teacherInfo={teachers.find(t => t.user_id === member.user_id)}
+                    />
+                  ))}
+                </div>
 
-                return (
-                  <div key={member.user_id} className="text-center group flex flex-col items-center">
-                    <Link to={`/member/${member.user_id}`} className="block focus:outline-none">
-                      <div className="relative">
-                        <ProfileAvatar
-                          userId={member.user_id}
-                          imageUrl={member.user_profile_picture_url}
-                          name={member.user_name || '?'}
-                          className={`h-28 w-28 md:h-36 md:w-36 rounded-full mx-auto shadow-sm group-hover:shadow-md transition-all duration-300 group-hover:scale-105 ${
-                            !member.user_profile_picture_url ? colorClass : ''
-                          }`}
-                          textClassName="text-2xl font-bold"
+                {/* Row 2: Next 4 members centered underneath Row 1 */}
+                {aisiMembers.length > 5 && (
+                  <div className="flex justify-center gap-5 w-full">
+                    {aisiMembers.slice(5, 9).map((member) => (
+                      <div key={member.user_id} className="w-[calc((100%-80px)/5)]">
+                        <TeamMemberCard
+                          member={member}
+                          isLeader={member.user_id === aisiTeam.leader_user_id}
+                          teacherInfo={teachers.find(t => t.user_id === member.user_id)}
                         />
                       </div>
-                      <span className="font-display font-bold text-[17px] leading-snug text-slate-800 mt-4 block group-hover:text-[#173C7E] transition-colors truncate max-w-[180px]">
-                        {member.user_name || 'Unknown Member'}
-                      </span>
-                    </Link>
-                    <span className="text-[13px] text-slate-500 mt-0.5 block capitalize truncate max-w-[180px]">
-                      {isLeader ? 'Team Lead' : (member.user_role?.toLowerCase() || 'Researcher')}
-                    </span>
-                    {member.user_email ? (
-                      <a
-                        href={`mailto:${member.user_email}`}
-                        className="text-sm font-semibold text-[#2E9FDA] hover:text-[#173C7E] transition-colors mt-2 inline-block"
-                      >
-                        Email
-                      </a>
-                    ) : (
-                      <span className="text-sm font-semibold text-slate-300 mt-2 inline-block select-none">
-                        No Email
-                      </span>
-                    )}
+                    ))}
                   </div>
-                );
-              })}
+                )}
+
+                {/* Overflow items if total members > 9: centered flex row */}
+                {aisiMembers.length > 9 && (
+                  <div className="flex flex-wrap justify-center gap-5 w-full pt-2">
+                    {aisiMembers.slice(9).map((member) => (
+                      <div key={member.user_id} className="w-[calc((100%-80px)/5)]">
+                        <TeamMemberCard
+                          member={member}
+                          isLeader={member.user_id === aisiTeam.leader_user_id}
+                          teacherInfo={teachers.find(t => t.user_id === member.user_id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. TABLET / MEDIUM LAYOUT (md to lg screens: 3-column grid => 3 + 3 + 3 = 9, 0 orphans) */}
+              <div className="hidden md:max-lg:grid grid-cols-3 gap-5">
+                {aisiMembers.map((member) => (
+                  <TeamMemberCard
+                    key={member.user_id}
+                    member={member}
+                    isLeader={member.user_id === aisiTeam.leader_user_id}
+                    teacherInfo={teachers.find(t => t.user_id === member.user_id)}
+                  />
+                ))}
+              </div>
+
+              {/* 3. MOBILE LAYOUT (below md screens: 2-column or 1-column responsive layout) */}
+              <div className="block md:hidden">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 justify-items-center">
+                  {aisiMembers.map((member, index) => {
+                    const isLast = index === aisiMembers.length - 1;
+                    const isOdd = aisiMembers.length % 2 !== 0;
+
+                    return (
+                      <div
+                        key={member.user_id}
+                        className={cn(
+                          "w-full max-w-[320px]",
+                          isLast && isOdd ? "sm:col-span-2 sm:max-w-[320px] sm:mx-auto" : ""
+                        )}
+                      >
+                        <TeamMemberCard
+                          member={member}
+                          isLeader={member.user_id === aisiTeam.leader_user_id}
+                          teacherInfo={teachers.find(t => t.user_id === member.user_id)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 mt-12">
+            <div className="p-8 text-center bg-white rounded-none border border-dashed border-[#e5e7eb] mt-10">
               <p className="text-sm text-slate-500 italic">No team summary found.</p>
             </div>
           )}
@@ -409,7 +603,7 @@ const Landing = () => {
       </section>
 
       {/* AISI Research Projects & Activities Section */}
-      <section id="activities" className="py-24 md:py-32 bg-white border-t border-slate-100">
+      <section id="activities" className="scroll-mt-24 py-16 md:py-24 bg-white border-t border-slate-100">
         <div className="container max-w-5xl mx-auto px-6">
           <SectionHeader
             title="Research Projects & Publications"
@@ -450,7 +644,7 @@ const Landing = () => {
               {/* Right Column: Publications */}
               <div className="space-y-6">
                 <h3 className="text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2 border-b border-slate-200 pb-3">
-                  <BookOpen className="h-6 w-6 text-[#173C7E]" /> Publications & Contributions  
+                  <BookOpen className="h-6 w-6 text-[#173C7E]" /> Publications & Contributions
                 </h3>
                 <div className="space-y-4">
                   {aisiPublications.map((pub) => (
@@ -469,7 +663,7 @@ const Landing = () => {
       </section>
 
       {/* Research Opportunities Section */}
-      <section id="opportunities" className="py-24 md:py-32 relative" style={{ background: '#EFF2F7' }}>
+      <section id="opportunities" className="scroll-mt-24 py-16 md:py-24 relative" style={{ background: '#EFF2F7' }}>
         <div className="container max-w-5xl mx-auto px-6">
           {/* Section header */}
           <SectionHeader
@@ -484,33 +678,33 @@ const Landing = () => {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-7 md:gap-8">
-              {((data?.open_collaboration_calls && data.open_collaboration_calls.length > 0) 
-                ? data.open_collaboration_calls 
+              {((data?.open_collaboration_calls && data.open_collaboration_calls.length > 0)
+                ? data.open_collaboration_calls
                 : (data?.open_projects || []))?.slice(0, 6).map((item: any, i: number) => {
-                const isCall = !!item.project;
-                const project = isCall ? item.project : item;
-                const callId = isCall ? item.id : null;
-                const callTitle = isCall ? item.title : null;
-                const deadline = isCall ? item.deadline : null;
-                return (
-                  <ProjectCard
-                    key={isCall ? `call-${item.id}` : `proj-${item.id}`}
-                    project={{
-                      ...project,
-                      deadline: deadline || project.deadline,
-                    }}
-                    leftAccent="orange"
-                    hideTags={true}
-                    to={`/discovery/projects/${project.id}`}
-                    callId={callId}
-                    applied={callId ? appliedCallIds.includes(callId) : false}
-                    onApply={(cId: number) => {
-                      setApplyCallId(cId);
-                      setApplyDialogOpen(true);
-                    }}
-                  />
-                );
-              })}
+                  const isCall = !!item.project;
+                  const project = isCall ? item.project : item;
+                  const callId = isCall ? item.id : null;
+                  const callTitle = isCall ? item.title : null;
+                  const deadline = isCall ? item.deadline : null;
+                  return (
+                    <ProjectCard
+                      key={isCall ? `call-${item.id}` : `proj-${item.id}`}
+                      project={{
+                        ...project,
+                        deadline: deadline || project.deadline,
+                      }}
+                      leftAccent="orange"
+                      hideTags={true}
+                      to={`/discovery/projects/${project.id}`}
+                      callId={callId}
+                      applied={callId ? appliedCallIds.includes(callId) : false}
+                      onApply={(cId: number) => {
+                        setApplyCallId(cId);
+                        setApplyDialogOpen(true);
+                      }}
+                    />
+                  );
+                })}
             </div>
           )}
 
@@ -537,7 +731,7 @@ const Landing = () => {
       />
 
       {/* Contact Us Section */}
-      <section id="contact" className="py-24 md:py-32 bg-white border-t border-b border-slate-100">
+      <section id="contact" className="scroll-mt-24 py-16 md:py-24 bg-white border-t border-b border-slate-100">
         <div className="container max-w-5xl mx-auto px-6">
           <SectionHeader
             title="Contact the Team"

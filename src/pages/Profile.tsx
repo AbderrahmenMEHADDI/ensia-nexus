@@ -30,9 +30,17 @@ const Profile = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const [website, setWebsite] = useState('');
-  const [experienceYears, setExperienceYears] = useState<number | ''>('');
+  const [bio, setBio] = useState('');
+  const [teachingModules, setTeachingModules] = useState('');
+  const [googleScholar, setGoogleScholar] = useState('');
+  const [linkedin, setLinkedin] = useState('');
   const [grade, setGrade] = useState<TeacherGrade | ''>('');
   const [researchInterests, setResearchInterests] = useState('');
+
+  const formatGrade = (rawGrade?: string) => {
+    if (!rawGrade) return '-';
+    return rawGrade.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  };
   const [previousProjects, setPreviousProjects] = useState<StudentPreviousProject[]>([]);
   const [showPreviousProjectForm, setShowPreviousProjectForm] = useState(false);
   const [savingPreviousProject, setSavingPreviousProject] = useState(false);
@@ -64,9 +72,12 @@ const Profile = () => {
           try {
             const tData = await apiRepository.getTeacherProfile(user.id);
             setTeacher(tData);
-            setExperienceYears(tData.experience_years ?? '');
             setGrade(tData.grade ?? '');
             setResearchInterests(tData.research_interests ?? '');
+            setBio(tData.bio ?? '');
+            setTeachingModules(tData.teaching_modules ?? '');
+            setGoogleScholar(tData.google_scholar ?? '');
+            setLinkedin(tData.linkedin ?? '');
           } catch { /* not a teacher */ }
         } else if (user.role === 'STUDENT') {
           try {
@@ -122,10 +133,13 @@ const Profile = () => {
 
       if (isTeacher) {
         const updatedTeacher = await apiRepository.updateTeacherProfile(user.id, {
-          experience_years: experienceYears === '' ? 0 : Number(experienceYears),
-          grade: grade || 'RESEARCHER',
+          grade: grade || 'ASSISTANT_PROFESSOR',
           department: department.trim() || null,
           research_interests: researchInterests.trim() || null,
+          bio: bio.trim() || null,
+          teaching_modules: teachingModules.trim() || null,
+          google_scholar: googleScholar.trim() || null,
+          linkedin: linkedin.trim() || null,
         });
         setTeacher(updatedTeacher);
       }
@@ -361,11 +375,7 @@ const Profile = () => {
                     </div>
                     <div className="flex flex-col space-y-1">
                       <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Grade</span>
-                      <span className="text-sm font-medium text-foreground">{teacher?.grade}</span>
-                    </div>
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Experience</span>
-                      <span className="text-sm font-medium text-foreground">{teacher?.experience_years} years</span>
+                      <span className="text-sm font-medium text-foreground">{formatGrade(teacher?.grade)}</span>
                     </div>
                     {teacher.research_interests && (
                       <div className="flex flex-col space-y-3 pt-2 border-t border-border">
@@ -434,11 +444,35 @@ const Profile = () => {
                         <>
                           <div className="space-y-1">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase">Grade</span>
-                            <p className="text-sm font-medium text-foreground">{teacher?.grade || '-'}</p>
+                            <p className="text-sm font-medium text-foreground">{formatGrade(teacher?.grade)}</p>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Experience Years</span>
-                            <p className="text-sm font-medium text-foreground">{teacher?.experience_years !== undefined ? `${teacher.experience_years} years` : '-'}</p>
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Google Scholar</span>
+                            <p className="text-sm font-medium text-foreground">
+                              {teacher?.google_scholar ? (
+                                <a href={teacher.google_scholar} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                                  Google Scholar Link <ExternalLink className="h-3 w-3" />
+                                </a>
+                              ) : '-'}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">LinkedIn</span>
+                            <p className="text-sm font-medium text-foreground">
+                              {teacher?.linkedin ? (
+                                <a href={teacher.linkedin} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">
+                                  LinkedIn Link <ExternalLink className="h-3 w-3" />
+                                </a>
+                              ) : '-'}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Teaching Modules</span>
+                            <p className="text-sm font-medium text-foreground">{teacher?.teaching_modules || '-'}</p>
+                          </div>
+                          <div className="space-y-1 sm:col-span-2">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Biography / Short Description</span>
+                            <p className="text-sm font-medium text-foreground whitespace-pre-wrap">{teacher?.bio || '-'}</p>
                           </div>
                           <div className="space-y-1 sm:col-span-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase">Research Interests</span>
@@ -478,20 +512,43 @@ const Profile = () => {
                                   <SelectValue placeholder="Select grade" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="MCA">MCA</SelectItem>
-                                  <SelectItem value="PROFESSOR">Professor</SelectItem>
-                                  <SelectItem value="DOCTOR">Doctor</SelectItem>
-                                  <SelectItem value="RESEARCHER">Researcher</SelectItem>
+                                  <SelectItem value="FULL_PROFESSOR">Full Professor</SelectItem>
+                                  <SelectItem value="ASSOCIATE_PROFESSOR">Associate Professor</SelectItem>
+                                  <SelectItem value="ASSISTANT_PROFESSOR">Assistant Professor</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-2">
-                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Experience Years</Label>
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Google Scholar Link</Label>
                               <Input
-                                type="number"
-                                min={0}
-                                value={experienceYears}
-                                onChange={e => setExperienceYears(e.target.value === '' ? '' : Number(e.target.value))}
+                                value={googleScholar}
+                                onChange={e => setGoogleScholar(e.target.value)}
+                                placeholder="https://scholar.google.com/citations?user=..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">LinkedIn Profile Link</Label>
+                              <Input
+                                value={linkedin}
+                                onChange={e => setLinkedin(e.target.value)}
+                                placeholder="https://linkedin.com/in/..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Teaching Modules (comma-separated)</Label>
+                              <Input
+                                value={teachingModules}
+                                onChange={e => setTeachingModules(e.target.value)}
+                                placeholder="Machine Learning, Databases"
+                              />
+                            </div>
+                            <div className="space-y-2 sm:col-span-2">
+                              <Label className="text-[10px] uppercase font-bold text-muted-foreground">Biography / Short Description</Label>
+                              <Textarea
+                                value={bio}
+                                onChange={e => setBio(e.target.value)}
+                                placeholder="Describe your academic role, achievements, and biography..."
+                                rows={3}
                               />
                             </div>
                             <div className="space-y-2 sm:col-span-2">

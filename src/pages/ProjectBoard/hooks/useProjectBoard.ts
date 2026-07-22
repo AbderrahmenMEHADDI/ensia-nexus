@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRepository } from '@/repositories/apiRepository';
 import { useToast } from '@/hooks/use-toast';
@@ -236,16 +236,25 @@ export const useProjectBoard = () => {
   const group = project && project.group_id ? getGroupById(project.group_id) : null;
   const lab = group ? getLabById(group.lab_id) : null;
 
-  const selectedMemberFormProject = projects.find(p => Number(p.id) === Number(formMemberProjectId));
-  const availableMemberOptions = selectedMemberFormProject
-    ? groupMembers
-        .filter(gm => gm.group_id === selectedMemberFormProject.group_id && gm.is_active)
-        .map(gm => ({
+  const availableMemberOptions = useMemo(() => {
+    const userMap = new Map<number, User>();
+    groupMembers.forEach(gm => {
+      if (gm.is_active && !userMap.has(gm.user_id)) {
+        userMap.set(gm.user_id, {
           id: gm.user_id,
           full_name: gm.user_name || `User ${gm.user_id}`,
           email: gm.user_email || '',
-        } as User))
-    : [];
+          role: (gm.user_role as any) || 'TEACHER',
+        } as User);
+      }
+    });
+    allUsers.forEach(u => {
+      if (!userMap.has(u.id)) {
+        userMap.set(u.id, u);
+      }
+    });
+    return Array.from(userMap.values());
+  }, [groupMembers, allUsers]);
 
   const joinedProjectIds = projects
     .filter(p => p.participants?.some(part => part.user_id === user?.id))

@@ -106,7 +106,9 @@ const ProjectBoard = () => {
   const listToRender = localProjectsList || filteredProjects;
 
   const isIndividualProjectCreator = board.project ? (
-    (board.project.group_id === null && board.project.created_by === board.user?.id && board.user?.role === 'TEACHER') ||
+    board.user?.role === 'TEACHER' ||
+    board.user?.role === 'ADMIN' ||
+    (board.project.group_id === null && board.project.created_by === board.user?.id) ||
     (board.project.group_id !== null && board.project.group_id !== undefined && board.group?.leader_user_id === board.user?.id)
   ) : false;
 
@@ -461,86 +463,6 @@ const ProjectBoard = () => {
         )}
       </div>
 
-      {/* Team Members List */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
-        <h2 className="text-lg font-display font-bold text-slate-800">Team Members</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {displayMembers.map(member => (
-            <div key={member.user_id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-50 bg-slate-50/20">
-              <ProfileAvatar
-                userId={member.user_id}
-                name={member.user_name}
-                className="h-10 w-10 rounded-full"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold text-slate-700 truncate" title={member.user_name}>
-                  {member.user_name}
-                </div>
-              </div>
-            </div>
-          ))}
-          {displayMembers.length === 0 && (
-            <div className="col-span-full py-4 text-center text-slate-400 italic text-sm">
-              No members found.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Resources */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-display font-bold text-slate-800">Resources</h2>
-          {board.user?.role !== 'ADMIN' && (!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
-            <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E]/10" onClick={() => board.setResourceFormOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Add Resource
-            </Button>
-          )}
-        </div>
-        
-        {board.resources.length > 0 ? (
-          <div className="grid sm:grid-cols-2 gap-3">
-            {board.resources.map(res => {
-              const Icon = resourceIcons[res.resource_type] || ExternalLink;
-              const creator = board.getUserById(res.created_by || NaN);
-              return (
-                <div key={res.id} className="relative group p-4 rounded-xl border border-slate-100 bg-white hover:border-[#F47A1E]/30 transition-colors shadow-sm">
-                  <a
-                    href={res.url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 pr-6 block h-full w-full"
-                  >
-                    <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-50 text-[#F47A1E]">
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-slate-700 block truncate" title={res.title}>{res.title}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-[#94A3B8] truncate block mt-0.5">
-                        {res.resource_type.replace('_', ' ')} · {creator?.full_name || 'System'}
-                      </span>
-                    </div>
-                    <ExternalLink className="h-4 w-4 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-[#F47A1E]" />
-                  </a>
-                  
-                  {(board.canManageProjects || board.user?.id === res.created_by) && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); board.handleDeleteResource(res.id); }}
-                      className="absolute top-2 right-2 p-1.5 bg-destructive/5 text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground focus:opacity-100"
-                      title="Delete resource"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-slate-400 italic">No resources added yet.</p>
-        )}
-      </div>
-
       {/* Publications */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
@@ -591,6 +513,32 @@ const ProjectBoard = () => {
         ) : (
           <p className="text-sm text-slate-400 italic">No publications added yet.</p>
         )}
+      </div>
+
+      {/* Team Members List */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
+        <h2 className="text-lg font-display font-bold text-slate-800">Team Members</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {displayMembers.map(member => (
+            <div key={member.user_id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-50 bg-slate-50/20">
+              <ProfileAvatar
+                userId={member.user_id}
+                name={member.user_name}
+                className="h-10 w-10 rounded-full"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold text-slate-700 truncate" title={member.user_name}>
+                  {member.user_name}
+                </div>
+              </div>
+            </div>
+          ))}
+          {displayMembers.length === 0 && (
+            <div className="col-span-full py-4 text-center text-slate-400 italic text-sm">
+              No members found.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -684,18 +632,7 @@ const ProjectBoard = () => {
         setEditProjectIsActive={board.setEditProjectIsActive}
       />
 
-      <ResourceDialogs
-        resourceFormOpen={board.resourceFormOpen}
-        setResourceFormOpen={board.setResourceFormOpen}
-        newResourceTitle={board.newResourceTitle}
-        setNewResourceTitle={board.setNewResourceTitle}
-        newResourceType={board.newResourceType}
-        setNewResourceType={board.setNewResourceType}
-        newResourceUrl={board.newResourceUrl}
-        setNewResourceUrl={board.setNewResourceUrl}
-        createResourceLoading={board.createResourceLoading}
-        handleCreateResource={board.handleCreateResource}
-      />
+
 
       <PublicationDialogs
         publicationFormOpen={board.publicationFormOpen}
@@ -718,6 +655,7 @@ const ProjectBoard = () => {
         handleCreatePublication={board.handleCreatePublication}
         participants={board.participants}
         getUserById={board.getUserById}
+        authorOptions={board.availableMemberOptions}
       />
 
       {board.isStudent && board.publicProjects.length > 0 && (

@@ -246,7 +246,7 @@ const AdminPanel = ({ myLabsOnly = false }: AdminPanelProps) => {
   }, [userPage, roleFilter, userSearch]);
 
   const getUserById = (id: number) => userLookup[id];
-  const eligibleTeachers = teachers.filter(t => t.grade === 'MCA' || t.grade === 'PROFESSOR');
+  const eligibleTeachers = teachers;
   const headTeacherUsers = eligibleTeachers
     .map(t => ({ teacher: t, user: userLookup[t.user_id] }))
     .filter(({ user }) => user && user.role === 'TEACHER');
