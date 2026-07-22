@@ -365,14 +365,11 @@ const Landing = () => {
       <section id="objectives" className="scroll-mt-24 py-16 md:py-24 bg-white relative border-b border-slate-100">
         <div className="container max-w-7xl mx-auto px-8 md:px-12">
           {/* Header */}
-          <div className="mb-16 md:mb-20">
-            <span className="text-xs uppercase font-bold tracking-widest text-[#F47A1E] block mb-2 font-mono">
-              OUR PURPOSE
-            </span>
+          <div className="mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-[#003d7a] tracking-tight">
               Team Objectives
             </h2>
-            <div className="h-[2.5px] w-24 bg-[#F47A1E] mt-5" />
+            <div className="h-[4.5px] w-24 bg-[#F47A1E] mt-4 rounded-full" />
           </div>
 
           <div className="grid lg:grid-cols-12 gap-16 lg:gap-24 items-start">
@@ -455,18 +452,8 @@ const Landing = () => {
                 </div>
                 
                 <div className="flex items-center gap-6 mt-3 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
-                  {/* Node Motif SVG */}
-                  <svg className="w-14 h-14 text-[#173C7E] shrink-0" viewBox="0 0 100 100" fill="none">
-                    <circle cx="50" cy="50" r="30" stroke="currentColor" strokeOpacity="0.08" strokeWidth="1" />
-                    <circle cx="50" cy="50" r="18" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" strokeDasharray="2,2" />
-                    <line x1="50" y1="50" x2="50" y2="20" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
-                    <line x1="50" y1="50" x2="76" y2="58" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
-                    <line x1="50" y1="50" x2="28" y2="68" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
-                    <circle cx="50" cy="20" r="3.5" fill="#F47A1E" />
-                    <circle cx="76" cy="58" r="3" fill="#173C7E" />
-                    <circle cx="28" cy="68" r="3" fill="#173C7E" />
-                    <circle cx="50" cy="50" r="2" fill="#173C7E" />
-                  </svg>
+                  {/* AISI Logo */}
+                  <AisiLogo className="w-12 h-12 shrink-0" />
 
                   <div className="flex-1 text-sm sm:text-base text-slate-600 leading-relaxed">
                     <span className="font-bold text-[#0F172A] mr-1.5">Real Societal Applications:</span>
