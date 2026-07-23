@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
@@ -74,6 +74,8 @@ const getMemberRows = <T,>(items: T[], targetMax = 5): T[][] => {
 
 // Team Member Card Component matching reference HTML
 const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember; isLeader: boolean; teacherInfo?: Teacher }) => {
+  const navigate = useNavigate();
+
   let roleText = 'TEACHER';
   if (isLeader) {
     roleText = 'TEAM LEAD';
@@ -106,8 +108,19 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
   ];
   const pastelBg = pastelColors[member.user_id % pastelColors.length];
 
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Avoid navigation if user clicked a link, button, or interactive element inside the card
+    if ((e.target as HTMLElement).closest('a, button')) {
+      return;
+    }
+    navigate(`/member/${member.user_id}`);
+  };
+
   return (
-    <div className="bg-white border border-[#e5e7eb] rounded-none p-[20px] text-left flex flex-col h-full hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 w-full">
+    <div 
+      onClick={handleCardClick}
+      className="bg-white border border-[#e5e7eb] rounded-none p-[20px] text-left flex flex-col h-full hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 w-full cursor-pointer"
+    >
       {/* Profile Circle */}
       <div className="mb-4 shrink-0">
         <ProfileAvatar
@@ -138,6 +151,7 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
       <div className="flex flex-col gap-3 items-start pt-1">
         <Link
           to={`/member/${member.user_id}`}
+          onClick={(e) => e.stopPropagation()}
           className="text-[14px] font-medium text-[#2E9FDA] hover:text-[#173C7E] hover:underline cursor-pointer"
         >
           Read more &rarr;
@@ -145,6 +159,7 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
         {member.user_email ? (
           <a
             href={`mailto:${member.user_email}`}
+            onClick={(e) => e.stopPropagation()}
             className="bg-[#ff6b35] hover:bg-[#e55a24] text-white text-[13px] font-semibold px-4 py-2 rounded-none transition-colors border-none inline-block"
           >
             Contact

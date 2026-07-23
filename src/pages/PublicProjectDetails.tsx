@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PublicProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -89,10 +90,87 @@ const PublicProjectDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary opacity-50" />
-        <p className="text-muted-foreground font-medium animate-pulse">Retrieving project dossier...</p>
-      </div>
+      <PublicLayout>
+        {/* Skeleton Hero Header */}
+        <header className="relative pt-12 pb-24 overflow-hidden border-b border-border bg-[#F8FAFC]">
+          <div className="container px-4 mb-8">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <Skeleton className="h-5 w-40 rounded-lg" />
+              <Skeleton className="h-9 w-9 rounded-full" />
+            </div>
+          </div>
+          <div className="container px-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex gap-3 mb-6">
+                <Skeleton className="h-6 w-24 rounded-full" />
+                <Skeleton className="h-6 w-32 rounded-full" />
+              </div>
+              <Skeleton className="h-12 w-3/4 rounded-xl mb-4" />
+              <Skeleton className="h-12 w-1/2 rounded-xl mb-8" />
+              <div className="flex flex-wrap gap-6 items-center">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-12 w-12 rounded-2xl" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-4 w-28" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Skeleton Content Section */}
+        <main className="container px-4 py-20">
+          <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-12">
+            {/* Main Content Skeleton */}
+            <div className="lg:col-span-2 space-y-12">
+              <section className="space-y-4">
+                <Skeleton className="h-7 w-48 rounded-lg" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </section>
+              <Separator className="bg-border/50" />
+              <section className="space-y-4">
+                <Skeleton className="h-7 w-48 rounded-lg" />
+                <div className="flex flex-wrap gap-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} className="h-9 w-28 rounded-xl" />
+                  ))}
+                </div>
+              </section>
+              <Skeleton className="h-44 w-full rounded-2xl" />
+            </div>
+
+            {/* Sidebar Skeleton */}
+            <div className="space-y-8">
+              <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="p-6 bg-slate-150">
+                  <Skeleton className="h-6 w-24" />
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-16 w-16 rounded-2xl" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-10 w-full rounded-lg" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </PublicLayout>
     );
   }
 

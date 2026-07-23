@@ -274,7 +274,7 @@ const ProjectBoard = () => {
               >
                 <div className="min-w-0 flex-1">
                   <span className={cn(
-                    "font-semibold text-sm truncate block",
+                    "font-semibold text-sm break-words whitespace-normal block",
                     isActive ? "text-[#173C7E]" : "text-slate-700 group-hover:text-[#173C7E]"
                   )}>
                     {proj.title}
@@ -468,7 +468,7 @@ const ProjectBoard = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-display font-bold text-slate-800">Publications</h2>
           {board.user?.role !== 'ADMIN' && (!board.isStudent || board.participants.some(p => p.user_id === board.user?.id)) && (
-            <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E]/10" onClick={() => board.setPublicationFormOpen(true)}>
+            <Button size="sm" variant="outline" className="rounded-lg h-9 font-semibold text-[#173C7E] border-[#173C7E]/20 hover:bg-[#173C7E]/10" onClick={board.handleOpenCreatePublication}>
               <Plus className="h-4 w-4 mr-1" /> Add Publication
             </Button>
           )}
@@ -483,7 +483,7 @@ const ProjectBoard = () => {
                     href={pub.paper_url || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 pr-6 block h-full w-full"
+                    className="flex items-center gap-3 pr-14 block h-full w-full"
                   >
                     <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-50 text-[#2E9FDA]">
                       <BookOpen className="h-4 w-4" />
@@ -498,13 +498,22 @@ const ProjectBoard = () => {
                   </a>
                   
                   {board.canManageProjects && (
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); board.handleDeletePublication(pub.id); }}
-                      className="absolute top-2 right-2 p-1.5 bg-destructive/5 text-destructive rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground focus:opacity-100"
-                      title="Delete publication"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); board.handleOpenEditPublication(pub); }}
+                        className="p-1.5 bg-blue-500/5 text-blue-600 rounded-md hover:bg-[#173C7E] hover:text-white transition-colors"
+                        title="Edit publication"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); board.handleDeletePublication(pub.id); }}
+                        className="p-1.5 bg-destructive/5 text-destructive rounded-md hover:bg-destructive hover:text-white transition-colors"
+                        title="Delete publication"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               );
@@ -656,6 +665,7 @@ const ProjectBoard = () => {
         participants={board.participants}
         getUserById={board.getUserById}
         authorOptions={board.availableMemberOptions}
+        editingPublicationId={board.editingPublicationId}
       />
 
       {board.isStudent && board.publicProjects.length > 0 && (

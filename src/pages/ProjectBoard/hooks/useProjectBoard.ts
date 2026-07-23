@@ -122,6 +122,7 @@ export const useProjectBoard = () => {
   const [newPubUrl, setNewPubUrl] = useState('');
   const [newPubAuthors, setNewPubAuthors] = useState<number[]>([]);
   const [createPubLoading, setCreatePubLoading] = useState(false);
+  const [editingPublicationId, setEditingPublicationId] = useState<number | null>(null);
 
   const fetchAllUsers = async () => {
     if (user?.role !== 'ADMIN') return [];
@@ -626,6 +627,30 @@ export const useProjectBoard = () => {
     }
   };
 
+  const handleOpenCreatePublication = () => {
+    setEditingPublicationId(null);
+    setNewPubTitle('');
+    setNewPubAbstract('');
+    setNewPubDate('');
+    setNewPubVenue('');
+    setNewPubDoi('');
+    setNewPubUrl('');
+    setNewPubAuthors(user ? [user.id] : []);
+    setPublicationFormOpen(true);
+  };
+
+  const handleOpenEditPublication = (pub: Publication) => {
+    setEditingPublicationId(pub.id);
+    setNewPubTitle(pub.title || '');
+    setNewPubAbstract(pub.abstract || '');
+    setNewPubDate(pub.publication_date || '');
+    setNewPubVenue(pub.venue || '');
+    setNewPubDoi(pub.doi || '');
+    setNewPubUrl(pub.paper_url || '');
+    setNewPubAuthors(pub.authors?.map(a => a.user_id) || []);
+    setPublicationFormOpen(true);
+  };
+
   const handleCreatePublication = async () => {
     if (!selectedProjectId) return;
     if (!newPubTitle.trim()) {
@@ -648,7 +673,7 @@ export const useProjectBoard = () => {
         });
       }
 
-      const created = await apiRepository.createPublication({
+      const payload = {
         project_id: selectedProjectId,
         title: newPubTitle.trim(),
         abstract: newPubAbstract.trim() || undefined,
@@ -657,10 +682,20 @@ export const useProjectBoard = () => {
         doi: newPubDoi.trim() || undefined,
         paper_url: newPubUrl.trim() || undefined,
         authors: mappedAuthors,
-      });
+      };
 
-      setPublications(prev => [...prev, created]);
+      if (editingPublicationId) {
+        const updated = await apiRepository.updatePublication(editingPublicationId, payload);
+        setPublications(prev => prev.map(p => p.id === editingPublicationId ? updated : p));
+        toast({ title: 'Publication updated successfully' });
+      } else {
+        const created = await apiRepository.createPublication(payload);
+        setPublications(prev => [...prev, created]);
+        toast({ title: 'Publication added successfully' });
+      }
+
       setPublicationFormOpen(false);
+      setEditingPublicationId(null);
       setNewPubTitle('');
       setNewPubAbstract('');
       setNewPubDate('');
@@ -668,9 +703,12 @@ export const useProjectBoard = () => {
       setNewPubDoi('');
       setNewPubUrl('');
       setNewPubAuthors(user ? [user.id] : []);
-      toast({ title: 'Publication added successfully' });
     } catch (err: any) {
-      toast({ title: 'Failed to add publication', description: err.message, variant: 'destructive' });
+      toast({ 
+        title: editingPublicationId ? 'Failed to update publication' : 'Failed to add publication', 
+        description: err.message, 
+        variant: 'destructive' 
+      });
     } finally {
       setCreatePubLoading(false);
     }
@@ -894,5 +932,9 @@ export const useProjectBoard = () => {
     createPubLoading,
     handleCreatePublication,
     handleDeletePublication,
+    editingPublicationId,
+    setEditingPublicationId,
+    handleOpenCreatePublication,
+    handleOpenEditPublication,
   };
 };

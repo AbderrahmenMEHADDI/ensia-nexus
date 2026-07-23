@@ -36,6 +36,7 @@ interface PublicationDialogsProps {
   participants: ProjectParticipant[];
   getUserById: (id: number) => User | undefined;
   authorOptions?: User[];
+  editingPublicationId?: number | null;
 }
 
 export const PublicationDialogs = ({
@@ -60,6 +61,7 @@ export const PublicationDialogs = ({
   participants,
   getUserById,
   authorOptions,
+  editingPublicationId,
 }: PublicationDialogsProps) => {
 
   const handleAuthorToggle = (userId: number) => {
@@ -74,9 +76,11 @@ export const PublicationDialogs = ({
     <Dialog open={publicationFormOpen} onOpenChange={setPublicationFormOpen}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Research Publication</DialogTitle>
+          <DialogTitle>{editingPublicationId ? 'Edit Research Publication' : 'Add Research Publication'}</DialogTitle>
           <DialogDescription>
-            Publish the research outputs and academic contributions of this project.
+            {editingPublicationId 
+              ? 'Update the details and authors of this publication.' 
+              : 'Publish the research outputs and academic contributions of this project.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -179,7 +183,7 @@ export const PublicationDialogs = ({
           </Button>
           <Button onClick={handleCreatePublication} disabled={createPubLoading || !newPubTitle.trim()}>
             {createPubLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Add Publication
+            {editingPublicationId ? 'Save Changes' : 'Add Publication'}
           </Button>
         </DialogFooter>
       </DialogContent>
