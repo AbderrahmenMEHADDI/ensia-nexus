@@ -228,6 +228,15 @@ const Landing = () => {
 
           const labName = res.labs?.find(l => l.id === mainGroup.lab_id)?.name || "Artificial Intelligence Research Lab";
 
+          // Get all publications including independent publications
+          const allPubs = await apiRepository.getPublications({ include_independent: true, limit: 1000 });
+          const sortedPubs = [...allPubs].sort((a, b) => {
+            const orderA = (a as any).landing_page_order ?? 0;
+            const orderB = (b as any).landing_page_order ?? 0;
+            if (orderA !== orderB) return orderA - orderB;
+            return new Date((b as any).publication_date || (b as any).created_at || 0).getTime() - new Date((a as any).publication_date || (a as any).created_at || 0).getTime();
+          });
+
           const teamSummary: TeamSummary = {
             id: mainGroup.id,
             lab_id: mainGroup.lab_id,
@@ -238,21 +247,16 @@ const Landing = () => {
             picture_url: mainGroup.picture_url,
             project_count: teamProjects.projects.length,
             open_project_count: teamProjects.projects.filter(p => p.accepting_collaborators).length,
-            publication_count: teamProjects.projects.reduce((sum, p) => sum + (p.publication_count || 0), 0)
+            publication_count: sortedPubs.length
           };
 
           setAisiTeam(teamSummary);
           setAisiProjects(teamProjects.projects);
           setAisiMembers(groupMembers);
-
-          // Get publications for this group's projects.
-          if (teamProjects.projects.length > 0) {
-            const pubsPromises = teamProjects.projects.map(p =>
-              apiRepository.getPublications({ project_id: p.id, limit: 10 })
-            );
-            const pubsResults = await Promise.all(pubsPromises);
-            setAisiPublications(pubsResults.flat() as any);
-          }
+          setAisiPublications(sortedPubs as any);
+        } else {
+          const allPubs = await apiRepository.getPublications({ include_independent: true, limit: 1000 });
+          setAisiPublications(allPubs as any);
         }
       } catch (err) {
         console.error('Failed to fetch landing page data', err);
@@ -264,7 +268,9 @@ const Landing = () => {
   }, []);
 
   const projectsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0;
-  const publicationsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.publication_count || 0), 0) ?? 0;
+  const publicationsCount = aisiPublications.length > 0
+    ? aisiPublications.length
+    : (data?.featured_teams?.reduce((sum, t) => sum + (t.publication_count || 0), 0) || data?.publications?.length || 0);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -16,18 +16,20 @@ import {
   Bookmark,
   CheckCircle2,
   Mail,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { apiRepository } from '@/repositories/apiRepository';
-import type { Project, ResearchGroup, ResearchLab, User } from '@/types';
+import type { Project, ResearchGroup, ResearchLab, User, Publication } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PublicationCard } from '@/components/shared/PublicationCard';
 
 const PublicProjectDetails = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -36,14 +38,19 @@ const PublicProjectDetails = () => {
   const [group, setGroup] = useState<ResearchGroup | null>(null);
   const [lab, setLab] = useState<ResearchLab | null>(null);
   const [leader, setLeader] = useState<User | null>(null);
+  const [publications, setPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       if (!projectId) return;
       try {
-        const p = await apiRepository.getProject(Number(projectId));
+        const [p, pubs] = await Promise.all([
+          apiRepository.getProject(Number(projectId)),
+          apiRepository.getPublications({ project_id: Number(projectId) })
+        ]);
         setProject(p);
+        setPublications(pubs);
         
         let groupObj: ResearchGroup | null = null;
         if (p.group_id) {
@@ -317,6 +324,24 @@ const PublicProjectDetails = () => {
                 )}
               </div>
             </section>
+
+            {/* Project Publications */}
+            {publications.length > 0 && (
+              <>
+                <Separator className="bg-border/50" />
+                <section>
+                  <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2" style={{ color: '#173C7E' }}>
+                    <BookOpen className="h-6 w-6" style={{ color: '#F47A1E' }} />
+                    Project Publications ({publications.length})
+                  </h2>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {publications.map(pub => (
+                      <PublicationCard key={pub.id} publication={pub} />
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
 
             {/* Application Info for non-logged in */}
             <section className="p-8 rounded-2xl bg-white shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100 relative overflow-hidden">

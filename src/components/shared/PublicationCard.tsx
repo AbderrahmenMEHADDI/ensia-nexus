@@ -35,7 +35,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({
     ? new Date(publication.publication_date).getFullYear()
     : publication.year || '';
 
-  const venueName = publication.venue || publication.journal || 'Academic Repository';
+  const venueName = publication.venue || publication.journal || '';
 
   const metaText = [pubYear, venueName].filter(Boolean).join(' • ');
 

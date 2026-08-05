@@ -189,12 +189,21 @@ export const apiRepository = {
     api.get<TaskUpdate[]>(`/task-updates/?task_id=${taskId}`),
 
   // ── Publications ─────────────────────────────────────────────────────────
-  getPublications: (params?: { skip?: number; limit?: number; project_id?: number; user_id?: number }) => {
+  getPublications: (params?: {
+    skip?: number;
+    limit?: number;
+    project_id?: number;
+    user_id?: number;
+    include_independent?: boolean;
+    independent_only?: boolean;
+  }) => {
     const searchParams = new URLSearchParams();
     if (params?.skip) searchParams.set('skip', params.skip.toString());
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.project_id) searchParams.set('project_id', params.project_id.toString());
     if (params?.user_id) searchParams.set('user_id', params.user_id.toString());
+    if (params?.include_independent) searchParams.set('include_independent', 'true');
+    if (params?.independent_only) searchParams.set('independent_only', 'true');
     const qs = searchParams.toString();
     return api.get<Publication[]>(qs ? `/publications/?${qs}` : '/publications/');
   },
@@ -202,6 +211,7 @@ export const apiRepository = {
   createPublication: (data: Partial<Publication>) => api.post<Publication>('/publications/', data),
   updatePublication: (id: number, data: Partial<Publication>) => api.put<Publication>(`/publications/${id}`, data),
   deletePublication: (id: number) => api.delete<void>(`/publications/${id}`),
+  reorderPublications: (publicationIds: number[]) => api.put<Publication[]>('/publications/reorder', { publication_ids: publicationIds }),
 
   // ── Collaboration ─────────────────────────────────────────────────────────
   getCollaborationCalls: (projectId: number) =>

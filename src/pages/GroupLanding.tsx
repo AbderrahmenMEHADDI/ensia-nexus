@@ -68,16 +68,26 @@ const GroupLanding = () => {
         setMembers(groupMembers);
         setTeachers(allTeachers);
 
-        // Fetch publications for the group's projects
-        // For simplicity, we fetch recent publications from the first 3 projects
-        if (teamProjects.projects.length > 0) {
-          const pubsPromises = teamProjects.projects.slice(0, 3).map(p => 
-            apiRepository.getPublications({ project_id: p.id, limit: 5 })
-          );
-          const pubsResults = await Promise.all(pubsPromises);
-          const allPubs = pubsResults.flat();
-          setPublications(allPubs);
-        }
+        // Fetch publications for all group projects & independent publications
+        const pubsPromises = teamProjects.projects.map(p => 
+          apiRepository.getPublications({ project_id: p.id, limit: 100 })
+        );
+        const independentPubsPromise = apiRepository.getPublications({ independent_only: true, limit: 100 });
+        const [pubsResults, independentPubs] = await Promise.all([
+          Promise.all(pubsPromises),
+          independentPubsPromise
+        ]);
+        const allPubsMap = new Map<number, Publication>();
+        pubsResults.flat().forEach(p => allPubsMap.set(p.id, p));
+        independentPubs.forEach(p => allPubsMap.set(p.id, p));
+        const sortedPubs = Array.from(allPubsMap.values()).sort((a, b) => {
+          const orderA = (a as any).landing_page_order ?? 0;
+          const orderB = (b as any).landing_page_order ?? 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return new Date((b as any).publication_date || (b as any).created_at || 0).getTime() - new Date((a as any).publication_date || (a as any).created_at || 0).getTime();
+        });
+        setPublications(sortedPubs);
+        setTeam(prev => prev ? { ...prev, publication_count: sortedPubs.length } : summary);
       } catch (err) {
         console.error('Failed to load group landing data', err);
       } finally {

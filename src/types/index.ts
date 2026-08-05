@@ -271,6 +271,7 @@ export interface Publication {
   doi?: string;
   paper_url?: string;
   citation_count: number;
+  landing_page_order?: number;
   created_at?: string;
   authors: PublicationAuthor[];
 }

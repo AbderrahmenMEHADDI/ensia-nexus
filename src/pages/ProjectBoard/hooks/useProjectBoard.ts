@@ -113,7 +113,10 @@ export const useProjectBoard = () => {
 
   // Publications states
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [standalonePublications, setStandalonePublications] = useState<Publication[]>([]);
+  const [selectedItem, setSelectedItem] = useState<{ type: 'PROJECT' | 'PUBLICATION'; id: number } | null>(null);
   const [publicationFormOpen, setPublicationFormOpen] = useState(false);
+  const [formPubProjectId, setFormPubProjectId] = useState<string>('none');
   const [newPubTitle, setNewPubTitle] = useState('');
   const [newPubAbstract, setNewPubAbstract] = useState('');
   const [newPubDate, setNewPubDate] = useState('');
@@ -143,7 +146,7 @@ export const useProjectBoard = () => {
       apiRepository.getTasks(projectId),
       apiRepository.getProjectParticipants(projectId),
       apiRepository.getProjectResources(projectId),
-      apiRepository.getPublications({ project_id: projectId }),
+      apiRepository.getPublications({ project_id: projectId, include_independent: true }),
     ]);
     setLocalTasks(t);
     setParticipants(part);
@@ -165,13 +168,14 @@ export const useProjectBoard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [p, g, gm, l, u, a] = await Promise.all([
+        const [p, g, gm, l, u, a, standalonePubs] = await Promise.all([
           apiRepository.getProjects(),
           apiRepository.getGroups(),
           apiRepository.getGroupMembers(),
           apiRepository.getLabs(),
           fetchAllUsers(),
           isStudent ? apiRepository.getMyApplications() : apiRepository.getApplications(),
+          apiRepository.getPublications({ include_independent: true }),
         ]);
         setProjects(p);
         setGroups(g);
@@ -179,6 +183,7 @@ export const useProjectBoard = () => {
         setLabs(l);
         setAllUsers(u);
         setApplications(a);
+        setStandalonePublications(standalonePubs);
         
         let initialProjectId: number | null = null;
         if (p.length > 0) {
@@ -195,7 +200,10 @@ export const useProjectBoard = () => {
 
         if (initialProjectId) {
           setSelectedProjectId(initialProjectId);
+          setSelectedItem({ type: 'PROJECT', id: initialProjectId });
           await loadProjectData(initialProjectId);
+        } else if (standalonePubs.length > 0) {
+          setSelectedItem({ type: 'PUBLICATION', id: standalonePubs[0].id });
         }
       } catch (e) {
         console.error('ProjectBoard load error:', e);
@@ -209,11 +217,25 @@ export const useProjectBoard = () => {
   const handleProjectChange = async (val: string) => {
     const id = Number(val);
     setSelectedProjectId(id);
+    setSelectedItem({ type: 'PROJECT', id });
     setLoading(true);
     try {
       await loadProjectData(id);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleItemSelect = async (item: { type: 'PROJECT' | 'PUBLICATION'; id: number }) => {
+    setSelectedItem(item);
+    if (item.type === 'PROJECT') {
+      setSelectedProjectId(item.id);
+      setLoading(true);
+      try {
+        await loadProjectData(item.id);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -629,6 +651,20 @@ export const useProjectBoard = () => {
 
   const handleOpenCreatePublication = () => {
     setEditingPublicationId(null);
+    setFormPubProjectId(selectedProjectId ? String(selectedProjectId) : 'none');
+    setNewPubTitle('');
+    setNewPubAbstract('');
+    setNewPubDate('');
+    setNewPubVenue('');
+    setNewPubDoi('');
+    setNewPubUrl('');
+    setNewPubAuthors(user ? [user.id] : []);
+    setPublicationFormOpen(true);
+  };
+
+  const handleOpenCreatePublicationStandalone = () => {
+    setEditingPublicationId(null);
+    setFormPubProjectId('none');
     setNewPubTitle('');
     setNewPubAbstract('');
     setNewPubDate('');
@@ -641,6 +677,7 @@ export const useProjectBoard = () => {
 
   const handleOpenEditPublication = (pub: Publication) => {
     setEditingPublicationId(pub.id);
+    setFormPubProjectId(pub.project_id ? String(pub.project_id) : 'none');
     setNewPubTitle(pub.title || '');
     setNewPubAbstract(pub.abstract || '');
     setNewPubDate(pub.publication_date || '');
@@ -652,7 +689,6 @@ export const useProjectBoard = () => {
   };
 
   const handleCreatePublication = async () => {
-    if (!selectedProjectId) return;
     if (!newPubTitle.trim()) {
       toast({ title: 'Title is required', variant: 'destructive' });
       return;
@@ -673,8 +709,10 @@ export const useProjectBoard = () => {
         });
       }
 
+      const projIdNum = formPubProjectId && formPubProjectId !== 'none' ? Number(formPubProjectId) : null;
+
       const payload = {
-        project_id: selectedProjectId,
+        project_id: projIdNum,
         title: newPubTitle.trim(),
         abstract: newPubAbstract.trim() || undefined,
         publication_date: newPubDate || undefined,
@@ -687,10 +725,13 @@ export const useProjectBoard = () => {
       if (editingPublicationId) {
         const updated = await apiRepository.updatePublication(editingPublicationId, payload);
         setPublications(prev => prev.map(p => p.id === editingPublicationId ? updated : p));
+        setStandalonePublications(prev => prev.map(p => p.id === editingPublicationId ? updated : p));
         toast({ title: 'Publication updated successfully' });
       } else {
         const created = await apiRepository.createPublication(payload);
         setPublications(prev => [...prev, created]);
+        setStandalonePublications(prev => [created, ...prev]);
+        setSelectedItem({ type: 'PUBLICATION', id: created.id });
         toast({ title: 'Publication added successfully' });
       }
 
@@ -717,7 +758,20 @@ export const useProjectBoard = () => {
   const handleDeletePublication = async (pubId: number) => {
     try {
       await apiRepository.deletePublication(pubId);
-      setPublications(prev => prev.filter(p => p.id !== pubId));
+      const remainingPubs = publications.filter(p => p.id !== pubId);
+      const remainingStandalone = standalonePublications.filter(p => p.id !== pubId);
+      setPublications(remainingPubs);
+      setStandalonePublications(remainingStandalone);
+      if (selectedItem?.type === 'PUBLICATION' && selectedItem.id === pubId) {
+        // Stay on publications tab: pick the next standalone publication
+        if (remainingStandalone.length > 0) {
+          setSelectedItem({ type: 'PUBLICATION', id: remainingStandalone[0].id });
+        } else if (projects.length > 0) {
+          handleItemSelect({ type: 'PROJECT', id: projects[0].id });
+        } else {
+          setSelectedItem(null);
+        }
+      }
       toast({ title: 'Publication deleted' });
     } catch (err: any) {
       toast({ title: 'Failed to delete publication', description: err.message, variant: 'destructive' });
@@ -746,6 +800,28 @@ export const useProjectBoard = () => {
     }
   };
 
+  const handleReorderPublications = async (reorderedPubs: Publication[]) => {
+    const updated = standalonePublications.map(p => {
+      const idx = reorderedPubs.findIndex(rp => rp.id === p.id);
+      if (idx !== -1) {
+        return { ...p, landing_page_order: idx };
+      }
+      return p;
+    });
+    setStandalonePublications(updated);
+
+    try {
+      const ids = reorderedPubs.map(p => p.id);
+      const res = await apiRepository.reorderPublications(ids);
+      setStandalonePublications(res);
+      toast({ title: 'Publications reordered successfully' });
+    } catch (err: any) {
+      toast({ title: 'Failed to save publication order', description: err.message, variant: 'destructive' });
+      const original = await apiRepository.getPublications({ include_independent: true });
+      setStandalonePublications(original);
+    }
+  };
+
   const sortedProjects = [...projects].sort((a, b) => {
     const orderA = a.landing_page_order ?? 0;
     const orderB = b.landing_page_order ?? 0;
@@ -753,6 +829,15 @@ export const useProjectBoard = () => {
       return orderA - orderB;
     }
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  const sortedPublications = [...standalonePublications].sort((a, b) => {
+    const orderA = a.landing_page_order ?? 0;
+    const orderB = b.landing_page_order ?? 0;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return new Date(b.publication_date || b.created_at || 0).getTime() - new Date(a.publication_date || a.created_at || 0).getTime();
   });
 
   const teacherProjects = filterProjectsForTeacher(sortedProjects);
@@ -900,6 +985,7 @@ export const useProjectBoard = () => {
     handleUpdateProject,
     handleDeleteProject,
     handleReorderProjects,
+    handleReorderPublications,
     resourceFormOpen,
     setResourceFormOpen,
     newResourceTitle,
@@ -913,8 +999,17 @@ export const useProjectBoard = () => {
     handleDeleteResource,
     publications,
     setPublications,
+    standalonePublications: sortedPublications,
+    selectedItem,
+    setSelectedItem,
+    handleItemSelect,
+    selectedPublication: selectedItem?.type === 'PUBLICATION'
+      ? (sortedPublications.find(p => p.id === selectedItem.id) || publications.find(p => p.id === selectedItem.id) || null)
+      : null,
     publicationFormOpen,
     setPublicationFormOpen,
+    formPubProjectId,
+    setFormPubProjectId,
     newPubTitle,
     setNewPubTitle,
     newPubAbstract,
@@ -935,6 +1030,7 @@ export const useProjectBoard = () => {
     editingPublicationId,
     setEditingPublicationId,
     handleOpenCreatePublication,
+    handleOpenCreatePublicationStandalone,
     handleOpenEditPublication,
   };
 };

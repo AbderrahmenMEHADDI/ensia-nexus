@@ -266,7 +266,7 @@ export const TeacherProfileView: React.FC<TeacherProfileViewProps> = ({
                     const pubYear = pub.publication_date ? new Date(pub.publication_date).getFullYear() : null;
                     const authorNames = pub.authors?.map(a => a.user?.full_name || (a as any).full_name).filter(Boolean).join(', ') || 'AISI Faculty';
                     const linkedProject = projects.find(p => Number(p.id) === Number(pub.project_id));
-                    const venueText = pub.venue || 'Journal / Conference';
+                    const venueText = pub.venue || '';
 
                     return (
                       <div

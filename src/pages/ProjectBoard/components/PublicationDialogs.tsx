@@ -5,6 +5,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -12,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { ProjectParticipant, User } from '@/types';
+import type { Project, ProjectParticipant, User } from '@/types';
 
 interface PublicationDialogsProps {
   publicationFormOpen: boolean;
@@ -37,6 +44,9 @@ interface PublicationDialogsProps {
   getUserById: (id: number) => User | undefined;
   authorOptions?: User[];
   editingPublicationId?: number | null;
+  formPubProjectId?: string;
+  setFormPubProjectId?: (val: string) => void;
+  projects?: Project[];
 }
 
 export const PublicationDialogs = ({
@@ -62,6 +72,9 @@ export const PublicationDialogs = ({
   getUserById,
   authorOptions,
   editingPublicationId,
+  formPubProjectId = 'none',
+  setFormPubProjectId,
+  projects = [],
 }: PublicationDialogsProps) => {
 
   const handleAuthorToggle = (userId: number) => {
@@ -80,11 +93,30 @@ export const PublicationDialogs = ({
           <DialogDescription>
             {editingPublicationId 
               ? 'Update the details and authors of this publication.' 
-              : 'Publish the research outputs and academic contributions of this project.'}
+              : 'Publish research outputs, either attached to a project or independent.'}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          {setFormPubProjectId && (
+            <div className="space-y-2">
+              <Label htmlFor="pub-project">Associated Project</Label>
+              <Select value={formPubProjectId} onValueChange={setFormPubProjectId}>
+                <SelectTrigger id="pub-project" className="w-full">
+                  <SelectValue placeholder="Select project (or independent)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Independent (No Project)</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="pub-title">Publication Title <span className="text-destructive">*</span></Label>
             <Input
