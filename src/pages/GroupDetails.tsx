@@ -158,21 +158,13 @@ const GroupDetails = () => {
             </div>
             
             <div className="space-y-4">
-              {projects.map((proj, index) => {
-                const isFeatured = index === 0;
+               {projects.map((proj) => {
                 return (
                   <Link
                     key={proj.id}
                     to={`/projects/${proj.id}`}
-                    className={`block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group ${
-                      isFeatured ? 'border-l-4 border-l-[#F47A1E]' : ''
-                    }`}
+                    className="block relative p-5 bg-white rounded-2xl shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] border border-slate-100 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group"
                   >
-                    {isFeatured && (
-                      <div className="absolute -top-3 left-4 bg-[#F47A1E] text-white text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
-                        Featured
-                      </div>
-                    )}
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-1">

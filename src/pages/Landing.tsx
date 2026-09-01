@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -27,12 +27,26 @@ import {
   Target,
   Globe2,
   Sparkles,
+  X,
+  SlidersHorizontal,
+  Filter,
+  ChevronDown,
+  User,
+  Tag,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { apiRepository } from '@/repositories/apiRepository';
 import type { LandingPageResponse, LandingLab, TeamSummary, GroupMember, PublicationPreview, Teacher, ProjectPreview } from '@/types';
 import { ProfileAvatar } from '@/components/ProfileAvatar';
@@ -86,12 +100,15 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
   }
 
   const defaultBios = [
-    'Leading cutting-edge research in computational sciences and guiding our team toward breakthrough discoveries.',
-    'Passionate educator committed to developing the next generation of researchers with innovative teaching methodologies.',
-    'Expert in advanced technologies with a focus on practical applications and collaborative research initiatives.',
-    'Dedicated to fostering innovation in academic environments with emphasis on interdisciplinary collaboration.',
-    'Specializing in research excellence and mentoring emerging scholars with a commitment to quality.',
-    'Contributing valuable insights in research development and advancement with interdisciplinary expertise.',
+    'Leading cutting-edge research in computational sciences and guiding our team toward breakthrough discoveries, advancing intelligent architectures and state-of-the-art methodology.',
+    'Passionate educator committed to developing the next generation of researchers with innovative teaching methodologies and comprehensive academic mentorship.',
+    'Expert in advanced technologies with a focus on practical applications, algorithmic optimization, and collaborative research initiatives.',
+    'Dedicated to fostering innovation in academic environments with emphasis on interdisciplinary collaboration and applied computational frameworks.',
+    'Specializing in research excellence, machine intelligence foundations, and mentoring emerging scholars with a commitment to quality.',
+    'Contributing valuable insights in research development, data analytics, and advancement with interdisciplinary expertise.',
+    'Leading collaborative projects that bridge theoretical foundations and practice with innovative research methodologies.',
+    'Committed to advancing knowledge through rigorous research, open collaboration, and mentorship of next-generation scientists.',
+    'Fostering innovation and excellence in research while supporting emerging talent across the academic community.',
   ];
   const bioText = teacherInfo?.bio || defaultBios[member.user_id % defaultBios.length];
 
@@ -119,7 +136,7 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
   return (
     <div 
       onClick={handleCardClick}
-      className="bg-white border border-[#e5e7eb] rounded-none p-[20px] text-left flex flex-col h-full hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow duration-300 w-full cursor-pointer"
+      className="group bg-white border border-[#e5e7eb] rounded-none p-[20px] text-left flex flex-col h-full hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-300 w-full cursor-pointer"
     >
       {/* Profile Circle */}
       <div className="mb-4 shrink-0">
@@ -133,7 +150,7 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
       </div>
 
       {/* Member Name */}
-      <div className="text-[16px] font-bold text-[#003d7a] mb-1 leading-snug break-words" title={member.user_name}>
+      <div className="text-[16px] font-bold text-[#003d7a] mb-1 leading-snug break-words group-hover:text-[#2E9FDA] transition-colors" title={member.user_name}>
         {member.user_name || 'Unknown Member'}
       </div>
 
@@ -142,20 +159,14 @@ const TeamMemberCard = ({ member, isLeader, teacherInfo }: { member: GroupMember
         {roleText}
       </div>
 
-      {/* Member Bio Snippet */}
-      <div className="text-[14px] text-[#6b7280] leading-[1.5] mb-4 flex-1 line-clamp-3">
-        {bioText}
+      {/* Member Bio Snippet with three dots in blue */}
+      <div className="text-[14px] text-[#6b7280] leading-[1.55] mb-4 flex-1 line-clamp-5">
+        <span>{bioText}</span>
+        <span className="text-[#2E9FDA] font-bold ml-1 tracking-wider group-hover:underline">...</span>
       </div>
 
       {/* Card Footer */}
-      <div className="flex flex-col gap-3 items-start pt-1">
-        <Link
-          to={`/member/${member.user_id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-[14px] font-medium text-[#2E9FDA] hover:text-[#173C7E] hover:underline cursor-pointer"
-        >
-          Read more &rarr;
-        </Link>
+      <div className="flex flex-col gap-3 items-start pt-1 mt-auto">
         {member.user_email ? (
           <a
             href={`mailto:${member.user_email}`}
@@ -197,6 +208,27 @@ const Landing = () => {
   const [contactMessage, setContactMessage] = useState('');
   const [sendingContact, setSendingContact] = useState(false);
 
+  // Active Tab for activities section
+  const [activitiesTab, setActivitiesTab] = useState<'all' | 'projects' | 'publications'>('all');
+
+  // Filter & Pagination state for Projects
+  const [projectSearch, setProjectSearch] = useState('');
+  const [projectResearcher, setProjectResearcher] = useState('all');
+  const [projectTopic, setProjectTopic] = useState('all');
+  const [projectSort, setProjectSort] = useState<'default' | 'latest' | 'trending'>('default');
+  const [projectLimit, setProjectLimit] = useState(4);
+
+  // Filter & Pagination state for Publications
+  const [pubSearch, setPubSearch] = useState('');
+  const [pubResearcher, setPubResearcher] = useState('all');
+  const [pubTopic, setPubTopic] = useState('all');
+  const [pubSort, setPubSort] = useState<'default' | 'latest' | 'trending'>('default');
+  const [pubLimit, setPubLimit] = useState(4);
+
+  // IntersectionObserver refs
+  const projectObserverTargetRef = useRef<HTMLDivElement | null>(null);
+  const pubObserverTargetRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     setAppliedCallIds(getAppliedCollaborations());
   }, []);
@@ -210,32 +242,42 @@ const Landing = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [res, allTeachers, allGroups] = await Promise.all([
+        const [res, allTeachers, allGroups, allProjectsList] = await Promise.all([
           apiRepository.getLandingPageData(),
           apiRepository.getTeachers({ limit: 1000 }),
-          apiRepository.getGroups()
+          apiRepository.getGroups(),
+          apiRepository.getProjects().catch(() => [])
         ]);
         setData(res);
         setTeachers(allTeachers);
 
-        // Take the first group in the system dynamically (as there will only be one in the db)
+        // Take the first group in the system dynamically
         const mainGroup = allGroups?.[0];
+        let loadedProjects: ProjectPreview[] = [];
         if (mainGroup) {
           const [teamProjects, groupMembers] = await Promise.all([
             apiRepository.getTeamProjects(mainGroup.id),
             apiRepository.getGroupMembersFiltered(mainGroup.id)
           ]);
+          setAisiMembers(groupMembers);
 
           const labName = res.labs?.find(l => l.id === mainGroup.lab_id)?.name || "Artificial Intelligence Research Lab";
 
           // Get all publications including independent publications
           const allPubs = await apiRepository.getPublications({ include_independent: true, limit: 1000 });
           const sortedPubs = [...allPubs].sort((a, b) => {
-            const orderA = (a as any).landing_page_order ?? 0;
-            const orderB = (b as any).landing_page_order ?? 0;
+            const orderA = (a as any).landing_page_order ?? 999999;
+            const orderB = (b as any).landing_page_order ?? 999999;
             if (orderA !== orderB) return orderA - orderB;
             return new Date((b as any).publication_date || (b as any).created_at || 0).getTime() - new Date((a as any).publication_date || (a as any).created_at || 0).getTime();
           });
+
+          // Merge all projects across endpoints into single list
+          const mergedProjectsMap = new Map<number, ProjectPreview>();
+          (teamProjects?.projects || []).forEach(p => mergedProjectsMap.set(p.id, p));
+          (res?.open_projects || []).forEach(p => mergedProjectsMap.set(p.id, p));
+          (allProjectsList || []).forEach((p: any) => mergedProjectsMap.set(p.id, p));
+          loadedProjects = Array.from(mergedProjectsMap.values());
 
           const teamSummary: TeamSummary = {
             id: mainGroup.id,
@@ -245,16 +287,21 @@ const Landing = () => {
             description: mainGroup.description,
             leader_user_id: mainGroup.leader_user_id,
             picture_url: mainGroup.picture_url,
-            project_count: teamProjects.projects.length,
-            open_project_count: teamProjects.projects.filter(p => p.accepting_collaborators).length,
+            project_count: loadedProjects.length,
+            open_project_count: loadedProjects.filter(p => p.accepting_collaborators).length,
             publication_count: sortedPubs.length
           };
 
           setAisiTeam(teamSummary);
-          setAisiProjects(teamProjects.projects);
-          setAisiMembers(groupMembers);
+          setAisiProjects(loadedProjects);
           setAisiPublications(sortedPubs as any);
         } else {
+          const mergedProjectsMap = new Map<number, ProjectPreview>();
+          (res?.open_projects || []).forEach(p => mergedProjectsMap.set(p.id, p));
+          (allProjectsList || []).forEach((p: any) => mergedProjectsMap.set(p.id, p));
+          loadedProjects = Array.from(mergedProjectsMap.values());
+          setAisiProjects(loadedProjects);
+
           const allPubs = await apiRepository.getPublications({ include_independent: true, limit: 1000 });
           setAisiPublications(allPubs as any);
         }
@@ -267,7 +314,302 @@ const Landing = () => {
     fetchData();
   }, []);
 
-  const projectsCount = data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0;
+  // Unique Researchers list for Projects
+  const projectResearchers = useMemo(() => {
+    const set = new Set<string>();
+    aisiProjects.forEach((p) => {
+      if (p.team_name) set.add(p.team_name);
+      if ((p as any).group_name) set.add((p as any).group_name);
+    });
+    aisiMembers.forEach((m) => {
+      if (m.user_name) set.add(m.user_name);
+    });
+    teachers.forEach((t) => {
+      const name = t.full_name || t.user?.full_name;
+      if (name) set.add(name);
+    });
+    return Array.from(set).filter(Boolean).sort();
+  }, [aisiProjects, aisiMembers, teachers]);
+
+  // Unique Topics list for Projects
+  const projectTopics = useMemo(() => {
+    const set = new Set<string>();
+    aisiProjects.forEach((p) => {
+      if (p.focus_areas) {
+        p.focus_areas.split(/[,;/]+/).forEach((t) => {
+          const clean = t.trim();
+          if (clean) set.add(clean);
+        });
+      }
+    });
+    return Array.from(set).filter(Boolean).sort();
+  }, [aisiProjects]);
+
+  // Processed Projects (Filtered & Sorted)
+  const processedProjects = useMemo(() => {
+    let result = [...aisiProjects];
+
+    // Search query: searches title, description, focus_areas, team_name, group_name
+    if (projectSearch.trim()) {
+      const q = projectSearch.toLowerCase().trim();
+      result = result.filter((p) => {
+        const titleMatch = p.title?.toLowerCase().includes(q);
+        const descMatch = p.description?.toLowerCase().includes(q);
+        const focusMatch = p.focus_areas?.toLowerCase().includes(q);
+        const teamMatch = (p.team_name || (p as any).group_name || '').toLowerCase().includes(q);
+        return titleMatch || descMatch || focusMatch || teamMatch;
+      });
+    }
+
+    // Researcher filter
+    if (projectResearcher !== 'all') {
+      const r = projectResearcher.toLowerCase();
+      result = result.filter((p) => {
+        const team = (p.team_name || (p as any).group_name || '').toLowerCase();
+        const focus = (p.focus_areas || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return team.includes(r) || focus.includes(r) || desc.includes(r);
+      });
+    }
+
+    // Topic filter
+    if (projectTopic !== 'all') {
+      const t = projectTopic.toLowerCase();
+      result = result.filter((p) => {
+        const focus = (p.focus_areas || '').toLowerCase();
+        const title = (p.title || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return focus.includes(t) || title.includes(t) || desc.includes(t);
+      });
+    }
+
+    // Sorting logic
+    result.sort((a, b) => {
+      if (projectSort === 'default') {
+        const orderA = a.landing_page_order ?? 999999;
+        const orderB = b.landing_page_order ?? 999999;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      } else if (projectSort === 'latest') {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      } else if (projectSort === 'trending') {
+        // Prioritize active and accepting collaborations, then latest creation date
+        const aActive = a.is_active ?? true;
+        const aAccepting = a.accepting_collaborators ?? false;
+        const bActive = b.is_active ?? true;
+        const bAccepting = b.accepting_collaborators ?? false;
+
+        const getScore = (active: boolean, accepting: boolean) => {
+          if (active && accepting) return 3;
+          if (accepting) return 2;
+          if (active) return 1;
+          return 0;
+        };
+
+        const scoreA = getScore(aActive, aAccepting);
+        const scoreB = getScore(bActive, bAccepting);
+
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA;
+        }
+
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      }
+      return 0;
+    });
+
+    return result;
+  }, [aisiProjects, projectSearch, projectResearcher, projectTopic, projectSort]);
+
+  const visibleProjects = useMemo(() => {
+    return processedProjects.slice(0, projectLimit);
+  }, [processedProjects, projectLimit]);
+
+  // Unique Researchers list for Publications
+  const pubResearchers = useMemo(() => {
+    const set = new Set<string>();
+    aisiPublications.forEach((pub) => {
+      if (pub.authors && Array.isArray(pub.authors)) {
+        pub.authors.forEach((a: any) => {
+          const name = a.user?.full_name || a.full_name;
+          if (name) set.add(name);
+        });
+      }
+    });
+    aisiMembers.forEach((m) => {
+      if (m.user_name) set.add(m.user_name);
+    });
+    return Array.from(set).filter(Boolean).sort();
+  }, [aisiPublications, aisiMembers]);
+
+  // Unique Topics list for Publications
+  const pubTopics = useMemo(() => {
+    const set = new Set<string>();
+    aisiPublications.forEach((pub) => {
+      if (pub.venue) set.add(pub.venue);
+      if (pub.journal) set.add(pub.journal);
+      if (pub.project?.focus_areas) {
+        pub.project.focus_areas.split(/[,;/]+/).forEach((t) => {
+          const clean = t.trim();
+          if (clean) set.add(clean);
+        });
+      }
+    });
+    return Array.from(set).filter(Boolean).sort();
+  }, [aisiPublications]);
+
+  // Shared Researchers list for unified filter
+  const sharedResearchers = useMemo(() => {
+    const set = new Set<string>([...projectResearchers, ...pubResearchers]);
+    return Array.from(set).filter(Boolean).sort();
+  }, [projectResearchers, pubResearchers]);
+
+  // Shared Topics list for unified filter
+  const sharedTopics = useMemo(() => {
+    const set = new Set<string>([...projectTopics, ...pubTopics]);
+    return Array.from(set).filter(Boolean).sort();
+  }, [projectTopics, pubTopics]);
+
+  // Shared Filter Handler callbacks
+  const handleSharedSearch = (val: string) => {
+    setProjectSearch(val);
+    setPubSearch(val);
+    setProjectLimit(4);
+    setPubLimit(4);
+  };
+
+  const handleSharedResearcher = (val: string) => {
+    setProjectResearcher(val);
+    setPubResearcher(val);
+    setProjectLimit(4);
+    setPubLimit(4);
+  };
+
+  const handleSharedTopic = (val: string) => {
+    setProjectTopic(val);
+    setPubTopic(val);
+    setProjectLimit(4);
+    setPubLimit(4);
+  };
+
+  const handleSharedSort = (val: 'default' | 'latest' | 'trending') => {
+    setProjectSort(val);
+    setPubSort(val);
+    setProjectLimit(4);
+    setPubLimit(4);
+  };
+
+  const handleResetSharedFilters = () => {
+    setProjectSearch('');
+    setPubSearch('');
+    setProjectResearcher('all');
+    setPubResearcher('all');
+    setProjectTopic('all');
+    setPubTopic('all');
+    setProjectSort('default');
+    setPubSort('default');
+    setProjectLimit(4);
+    setPubLimit(4);
+  };
+
+  // Processed Publications (Filtered & Sorted)
+  const processedPublications = useMemo(() => {
+    let result = [...aisiPublications];
+
+    // Search query: title, abstract, venue, journal, doi, authors
+    if (pubSearch.trim()) {
+      const q = pubSearch.toLowerCase().trim();
+      result = result.filter((pub) => {
+        const titleMatch = pub.title?.toLowerCase().includes(q);
+        const abstractMatch = pub.abstract?.toLowerCase().includes(q);
+        const venueMatch = (pub.venue || pub.journal || '').toLowerCase().includes(q);
+        const doiMatch = pub.doi?.toLowerCase().includes(q);
+        let authorMatch = false;
+        if (pub.authors && Array.isArray(pub.authors)) {
+          authorMatch = pub.authors.some((a: any) =>
+            (a.user?.full_name || a.full_name || '').toLowerCase().includes(q)
+          );
+        }
+        return titleMatch || abstractMatch || venueMatch || doiMatch || authorMatch;
+      });
+    }
+
+    // Researcher filter
+    if (pubResearcher !== 'all') {
+      const r = pubResearcher.toLowerCase();
+      result = result.filter((pub) => {
+        if (pub.authors && Array.isArray(pub.authors)) {
+          return pub.authors.some((a: any) =>
+            (a.user?.full_name || a.full_name || '').toLowerCase().includes(r)
+          );
+        }
+        return false;
+      });
+    }
+
+    // Topic filter
+    if (pubTopic !== 'all') {
+      const t = pubTopic.toLowerCase();
+      result = result.filter((pub) => {
+        const venue = (pub.venue || pub.journal || '').toLowerCase();
+        const title = (pub.title || '').toLowerCase();
+        const abstract = (pub.abstract || '').toLowerCase();
+        const projectFocus = (pub.project?.focus_areas || '').toLowerCase();
+        return venue.includes(t) || title.includes(t) || abstract.includes(t) || projectFocus.includes(t);
+      });
+    }
+
+    // Sorting logic
+    result.sort((a, b) => {
+      if (pubSort === 'default') {
+        const orderA = (a as any).landing_page_order ?? 999999;
+        const orderB = (b as any).landing_page_order ?? 999999;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        const dateA = new Date(a.publication_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.publication_date || b.created_at || 0).getTime();
+        return dateB - dateA;
+      } else if (pubSort === 'latest') {
+        const dateA = new Date(a.publication_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.publication_date || b.created_at || 0).getTime();
+        return dateB - dateA;
+      } else if (pubSort === 'trending') {
+        const projScoreA = a.project?.accepting_collaborators ? 3 : (a.project?.is_active ? 2 : 1);
+        const projScoreB = b.project?.accepting_collaborators ? 3 : (b.project?.is_active ? 2 : 1);
+        const citeA = a.citation_count ?? 0;
+        const citeB = b.citation_count ?? 0;
+
+        if (projScoreA !== projScoreB) return projScoreB - projScoreA;
+        if (citeA !== citeB) return citeB - citeA;
+
+        const dateA = new Date(a.publication_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.publication_date || b.created_at || 0).getTime();
+        return dateB - dateA;
+      }
+      return 0;
+    });
+
+    return result;
+  }, [aisiPublications, pubSearch, pubResearcher, pubTopic, pubSort]);
+
+  const visiblePublications = useMemo(() => {
+    return processedPublications.slice(0, pubLimit);
+  }, [processedPublications, pubLimit]);
+
+
+
+  const projectsCount = aisiProjects.length > 0
+    ? aisiProjects.length
+    : (data?.featured_teams?.reduce((sum, t) => sum + (t.project_count || 0), 0) ?? 0);
   const publicationsCount = aisiPublications.length > 0
     ? aisiPublications.length
     : (data?.featured_teams?.reduce((sum, t) => sum + (t.publication_count || 0), 0) || data?.publications?.length || 0);
@@ -339,11 +681,11 @@ const Landing = () => {
             <div className="flex items-center flex-wrap gap-6 animate-fade-up [animation-delay:0.12s]">
               <a
                 href="#contact"
-                className="inline-flex items-center gap-2 bg-[#F47A1E] text-white font-sans font-semibold text-base py-4 px-8 rounded-lg hover:bg-[#dd6c14] transition-colors duration-150 group"
+                className="inline-flex items-center gap-2 bg-[#F47A1E] text-white font-sans font-semibold text-base py-4 px-8 rounded-lg hover:bg-[#dd6c14] hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 group"
               >
                 Deploy Solution
                 <svg
-                  className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
+                  className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
                   viewBox="0 0 16 16"
                   fill="none"
                   aria-hidden="true"
@@ -359,7 +701,7 @@ const Landing = () => {
               </a>
               <a
                 href="#opportunities"
-                className="inline-block text-[#2E9FDA] font-sans font-medium text-base py-4 border-b border-[#2E9FDA]/35 hover:border-[#2E9FDA] transition-colors duration-150"
+                className="inline-block text-[#2E9FDA] font-sans font-medium text-base py-4 border-b border-[#2E9FDA]/35 hover:border-[#2E9FDA] hover:text-[#173C7E] transition-all duration-200"
               >
                 Find Opportunities
               </a>
@@ -386,12 +728,18 @@ const Landing = () => {
       <section id="objectives" className="scroll-mt-24 py-16 md:py-24 bg-white relative border-b border-slate-100">
         <div className="container max-w-7xl mx-auto px-8 md:px-12">
           {/* Header */}
-          <div className="mb-12 md:mb-16">
+          <motion.div 
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            viewport={{ once: true, margin: '-40px' }}
+            className="mb-12 md:mb-16"
+          >
             <h2 className="text-3xl md:text-4xl font-display font-bold text-[#003d7a] tracking-tight">
               Team Objectives
             </h2>
             <div className="h-[4.5px] w-24 bg-[#F47A1E] mt-4 rounded-full" />
-          </div>
+          </motion.div>
 
           <div className="grid lg:grid-cols-12 gap-16 lg:gap-24 items-start">
             {/* Column 1: Mission Statement Pull-Quote (lg:col-span-5) */}
@@ -496,7 +844,13 @@ const Landing = () => {
       {/* Dedicated Meet the Team Section (Matching meet_the_team_left_sharp_small_btn.html UI) */}
       <section id="team" className="scroll-mt-24 py-16 md:py-24 bg-[#f9fafb] border-t border-b border-[#e5e7eb] overflow-x-hidden">
         <div className="container max-w-[1400px] mx-auto px-4 md:px-6">
-          <div className="mb-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            viewport={{ once: true, margin: '-40px' }}
+            className="mb-10"
+          >
             <h1 className="text-[36px] font-bold text-[#003d7a] relative inline-block mb-2 font-display">
               Meet the Team
               <span className="absolute -bottom-3 left-0 w-[80px] h-[4px] bg-[#ff6b35]" />
@@ -504,7 +858,7 @@ const Landing = () => {
             <p className="text-[#6b7280] text-[16px] mt-5 max-w-[600px]">
               Meet the scientists, developers, and researchers driving our mission forward.
             </p>
-          </div>
+          </motion.div>
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 mt-10">
@@ -518,7 +872,20 @@ const Landing = () => {
               ))}
             </div>
           ) : aisiTeam ? (
-            <div className="mt-10 space-y-5">
+            <motion.div 
+              className="mt-10 space-y-5"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-40px' }}
+              variants={{
+                hidden: {},
+                visible: {
+                  transition: {
+                    staggerChildren: 0.08,
+                  },
+                },
+              }}
+            >
               {/* 1. DESKTOP LAYOUT (lg screens & up: Row 1 = 5 items, Row 2 = 4 items centered underneath) */}
               <div className="hidden lg:block space-y-5">
                 {/* Row 1: First 5 members */}
@@ -601,7 +968,7 @@ const Landing = () => {
                   })}
                 </div>
               </div>
-            </div>
+            </motion.div>
           ) : (
             <div className="p-8 text-center bg-white rounded-none border border-dashed border-[#e5e7eb] mt-10">
               <p className="text-sm text-slate-500 italic">No team summary found.</p>
@@ -612,59 +979,266 @@ const Landing = () => {
 
       {/* AISI Research Projects & Activities Section */}
       <section id="activities" className="scroll-mt-24 py-16 md:py-24 bg-white border-t border-slate-100">
-        <div className="container max-w-5xl mx-auto px-6">
+        <div className="container max-w-6xl mx-auto px-6 space-y-8">
           <SectionHeader
             title="Research Projects & Publications"
             subtitle="Explore our latest projects and scientific contributions."
           />
 
-          {loading ? (
-            <div className="grid md:grid-cols-2 gap-10 mt-12">
-              <CardSkeleton tall />
-              <CardSkeleton tall />
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-10 mt-12">
-              {/* Left Column: Projects */}
-              <div className="space-y-6">
-                <h3 className="text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2 border-b border-slate-200 pb-3">
-                  <FolderOpen className="h-6 w-6 text-[#173C7E]" /> Latest Projects
-                </h3>
-                <div className="space-y-4">
-                  {aisiProjects.map((proj) => {
-                    return (
-                      <ProjectCard
-                        key={proj.id}
-                        project={proj}
-                        leftAccent="blue"
-                        to={`/discovery/projects/${proj.id}`}
-                      />
-                    );
-                  })}
-                  {aisiProjects.length === 0 && (
-                    <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-                      <p className="text-sm text-slate-500 italic">No public projects listed yet.</p>
-                    </div>
+          {/* Shared Filter Bar (Above Columns) */}
+          <div className="bg-slate-50/80 p-3.5 md:p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+            {/* Single Row: [ Search Bar (replaces Researcher) ] [ Topic ▼ ] [ Sort by ▼ ] */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+              {/* Search box */}
+              <div className="space-y-1 sm:col-span-6">
+                <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 pl-1">
+                  <Search className="h-3.5 w-3.5 text-[#173C7E]" /> Search
+                </label>
+                <div className="relative w-full">
+                  <Input
+                    type="text"
+                    placeholder="Search projects & papers by title, abstract, topic..."
+                    value={projectSearch || pubSearch}
+                    onChange={(e) => handleSharedSearch(e.target.value)}
+                    className="pl-3 pr-8 h-9 rounded-xl border-slate-200 bg-white text-xs shadow-xs focus:ring-2 focus:ring-[#173C7E]/20"
+                  />
+                  {(projectSearch || pubSearch) && (
+                    <button
+                      onClick={() => handleSharedSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   )}
                 </div>
               </div>
 
-              {/* Right Column: Publications */}
-              <div className="space-y-6">
-                <h3 className="text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2 border-b border-slate-200 pb-3">
-                  <BookOpen className="h-6 w-6 text-[#173C7E]" /> Publications & Contributions
-                </h3>
-                <div className="space-y-4">
-                  {aisiPublications.map((pub) => (
-                    <PublicationCard key={pub.id} publication={pub} />
-                  ))}
-                  {aisiPublications.length === 0 && (
-                    <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-                      <p className="text-sm text-slate-500 italic">No publications recorded yet.</p>
-                    </div>
-                  )}
-                </div>
+              {/* Topic Dropdown */}
+              <div className="space-y-1 sm:col-span-3">
+                <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 pl-1">
+                  <Tag className="h-3.5 w-3.5 text-[#173C7E]" /> Topic / Field
+                </label>
+                <Select
+                  value={projectTopic !== 'all' ? projectTopic : (pubTopic !== 'all' ? pubTopic : 'all')}
+                  onValueChange={(val) => handleSharedTopic(val)}
+                >
+                  <SelectTrigger className="w-full h-9 bg-white rounded-xl border-slate-200 text-xs">
+                    <SelectValue placeholder="All Topics" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Topics</SelectItem>
+                    {sharedTopics.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              {/* Sort By Dropdown */}
+              <div className="space-y-1 sm:col-span-3">
+                <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 pl-1">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-[#173C7E]" /> Sort By
+                </label>
+                <Select
+                  value={projectSort !== 'default' ? projectSort : (pubSort !== 'default' ? pubSort : 'default')}
+                  onValueChange={(val: any) => handleSharedSort(val)}
+                >
+                  <SelectTrigger className="w-full h-9 bg-white rounded-xl border-slate-200 text-xs">
+                    <SelectValue placeholder="Sort Order" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default Order</SelectItem>
+                    <SelectItem value="latest">Latest First</SelectItem>
+                    <SelectItem value="trending">Trending & Active</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Active Filters Row */}
+            {((projectSearch || pubSearch) || (projectTopic !== 'all' || pubTopic !== 'all') || (projectSort !== 'default' || pubSort !== 'default')) && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 text-xs border-t border-slate-200/60 mt-2">
+                <span className="font-semibold text-slate-500 flex items-center gap-1">
+                  <Filter className="h-3 w-3 text-[#173C7E]" /> Active:
+                </span>
+                {(projectSearch || pubSearch) && (
+                  <Badge variant="secondary" className="gap-1 bg-white border border-slate-200 text-xs py-0.5">
+                    Search: "{projectSearch || pubSearch}"
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => handleSharedSearch('')} />
+                  </Badge>
+                )}
+                {(projectTopic !== 'all' || pubTopic !== 'all') && (
+                  <Badge variant="secondary" className="gap-1 bg-white border border-slate-200 text-xs py-0.5">
+                    Topic: {projectTopic !== 'all' ? projectTopic : pubTopic}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => handleSharedTopic('all')} />
+                  </Badge>
+                )}
+                {(projectSort !== 'default' || pubSort !== 'default') && (
+                  <Badge variant="secondary" className="gap-1 bg-white border border-slate-200 capitalize text-xs py-0.5">
+                    Sort: {projectSort !== 'default' ? projectSort : pubSort}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => handleSharedSort('default')} />
+                  </Badge>
+                )}
+                <button
+                  onClick={handleResetSharedFilters}
+                  className="ml-auto text-xs text-[#173C7E] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="h-3 w-3" /> Reset
+                </button>
+              </div>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="grid md:grid-cols-2 gap-10 lg:gap-14 mt-8">
+              <CardSkeleton tall />
+              <CardSkeleton tall />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start mt-8">
+              {/* ── Left Column: Latest Projects ── */}
+              {(activitiesTab === 'all' || activitiesTab === 'projects') && (
+                <div className={cn(
+                  "space-y-6",
+                  activitiesTab === 'projects' && "lg:col-span-2 max-w-3xl mx-auto w-full"
+                )}>
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
+                    <h3 className="text-xl md:text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2.5">
+                      <FolderOpen className="h-6 w-6 text-[#173C7E]" /> Latest Projects
+                    </h3>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                      {processedProjects.length} Projects
+                    </span>
+                  </div>
+
+                  <div className="space-y-6">
+                    {visibleProjects.map((proj, idx) => (
+                      <motion.div
+                        key={proj.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                        viewport={{ once: true, margin: '-40px' }}
+                      >
+                        <ProjectCard
+                          project={proj}
+                          leftAccent="blue"
+                          to={`/discovery/projects/${proj.id}`}
+                        />
+                      </motion.div>
+                    ))}
+
+                    {processedProjects.length === 0 && (
+                      <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-slate-200 space-y-2">
+                        <FolderOpen className="h-8 w-8 text-slate-300 mx-auto" />
+                        <p className="text-sm font-semibold text-slate-700">No projects found</p>
+                        <p className="text-xs text-slate-500">
+                          Try modifying your search text or clear active filters.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResetSharedFilters}
+                          className="mt-2 rounded-full text-xs"
+                        >
+                          Clear Filters
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Load More Controls for Projects */}
+                    {processedProjects.length > 0 && (
+                      <div className="pt-4 flex flex-col items-center gap-3">
+                        {projectLimit < processedProjects.length ? (
+                          <Button
+                            onClick={() => setProjectLimit((prev) => prev + 4)}
+                            variant="outline"
+                            className="rounded-full px-6 py-2.5 text-xs font-bold border-[#173C7E]/30 text-[#173C7E] bg-white hover:bg-[#173C7E] hover:text-white transition-all shadow-xs hover:shadow-md group cursor-pointer"
+                          >
+                            Show More Projects ({processedProjects.length - visibleProjects.length} remaining)
+                            <ChevronDown className="h-4 w-4 ml-1.5 group-hover:translate-y-0.5 transition-transform" />
+                          </Button>
+                        ) : (
+                          processedProjects.length > 4 && (
+                            <span className="text-xs text-slate-400 italic font-medium">All {processedProjects.length} projects loaded</span>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Right Column: Publications & Contributions ── */}
+              {(activitiesTab === 'all' || activitiesTab === 'publications') && (
+                <div className={cn(
+                  "space-y-6",
+                  activitiesTab === 'publications' && "lg:col-span-2 max-w-3xl mx-auto w-full"
+                )}>
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
+                    <h3 className="text-xl md:text-2xl font-display font-bold text-[#0F172A] flex items-center gap-2.5">
+                      <BookOpen className="h-6 w-6 text-[#173C7E]" /> Publications & Contributions
+                    </h3>
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                      {processedPublications.length} Papers
+                    </span>
+                  </div>
+
+                  <div className="space-y-6">
+                    {visiblePublications.map((pub, idx) => (
+                      <motion.div
+                        key={pub.id}
+                        initial={{ opacity: 0, y: 16 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                        viewport={{ once: true, margin: '-40px' }}
+                      >
+                        <PublicationCard publication={pub} />
+                      </motion.div>
+                    ))}
+
+                    {processedPublications.length === 0 && (
+                      <div className="p-10 text-center bg-white rounded-2xl border border-dashed border-slate-200 space-y-2">
+                        <BookOpen className="h-8 w-8 text-slate-300 mx-auto" />
+                        <p className="text-sm font-semibold text-slate-700">No research papers found</p>
+                        <p className="text-xs text-slate-500">
+                          Try modifying your search text or clear active filters.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResetSharedFilters}
+                          className="mt-2 rounded-full text-xs"
+                        >
+                          Clear Filters
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Load More Controls for Publications */}
+                    {processedPublications.length > 0 && (
+                      <div className="pt-4 flex flex-col items-center gap-3">
+                        {pubLimit < processedPublications.length ? (
+                          <Button
+                            onClick={() => setPubLimit((prev) => prev + 4)}
+                            variant="outline"
+                            className="rounded-full px-6 py-2.5 text-xs font-bold border-[#173C7E]/30 text-[#173C7E] bg-white hover:bg-[#173C7E] hover:text-white transition-all shadow-xs hover:shadow-md group cursor-pointer"
+                          >
+                            Show More Papers ({processedPublications.length - visiblePublications.length} remaining)
+                            <ChevronDown className="h-4 w-4 ml-1.5 group-hover:translate-y-0.5 transition-transform" />
+                          </Button>
+                        ) : (
+                          processedPublications.length > 4 && (
+                            <span className="text-xs text-slate-400 italic font-medium">All {processedPublications.length} papers loaded</span>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -685,7 +1259,20 @@ const Landing = () => {
               {Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} />)}
             </div>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-7 md:gap-8">
+            <motion.div 
+              className="grid sm:grid-cols-2 gap-7 md:gap-8"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: '-40px' }}
+              variants={{
+                hidden: {},
+                visible: {
+                  transition: {
+                    staggerChildren: 0.08,
+                  },
+                },
+              }}
+            >
               {((data?.open_collaboration_calls && data.open_collaboration_calls.length > 0)
                 ? data.open_collaboration_calls
                 : (data?.open_projects || []))?.slice(0, 6).map((item: any, i: number) => {
@@ -695,25 +1282,32 @@ const Landing = () => {
                   const callTitle = isCall ? item.title : null;
                   const deadline = isCall ? item.deadline : null;
                   return (
-                    <ProjectCard
+                    <motion.div
                       key={isCall ? `call-${item.id}` : `proj-${item.id}`}
-                      project={{
-                        ...project,
-                        deadline: deadline || project.deadline,
-                      }}
-                      leftAccent="orange"
-                      hideTags={true}
-                      to={`/discovery/projects/${project.id}`}
-                      callId={callId}
-                      applied={callId ? appliedCallIds.includes(callId) : false}
-                      onApply={(cId: number) => {
-                        setApplyCallId(cId);
-                        setApplyDialogOpen(true);
-                      }}
-                    />
+                      initial={{ opacity: 0, y: 16 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      viewport={{ once: true }}
+                    >
+                      <ProjectCard
+                        project={{
+                          ...project,
+                          deadline: deadline || project.deadline,
+                        }}
+                        leftAccent="orange"
+                        hideTags={true}
+                        to={`/discovery/projects/${project.id}`}
+                        callId={callId}
+                        applied={callId ? appliedCallIds.includes(callId) : false}
+                        onApply={(cId: number) => {
+                          setApplyCallId(cId);
+                          setApplyDialogOpen(true);
+                        }}
+                      />
+                    </motion.div>
                   );
                 })}
-            </div>
+            </motion.div>
           )}
 
           {/* Browse all CTA */}
@@ -741,12 +1335,26 @@ const Landing = () => {
       {/* Contact Us Section */}
       <section id="contact" className="scroll-mt-24 py-16 md:py-24 bg-white border-t border-b border-slate-100">
         <div className="container max-w-5xl mx-auto px-6">
-          <SectionHeader
-            title="Contact the Team"
-            subtitle="Get in touch with the AISI research group to discuss collaborations, projects, or applications."
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            viewport={{ once: true, margin: '-40px' }}
+          >
+            <SectionHeader
+              title="Contact the Team"
+              subtitle="Get in touch with the AISI research group to discuss collaborations, projects, or applications."
+            />
+          </motion.div>
 
-          <form onSubmit={handleContactSubmit} className="mt-16 max-w-3xl mx-auto bg-slate-50 p-8 md:p-10 rounded-[2rem] border border-slate-100 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] space-y-6">
+          <motion.form 
+            onSubmit={handleContactSubmit} 
+            className="mt-16 max-w-3xl mx-auto bg-slate-50 p-8 md:p-10 rounded-[2rem] border border-slate-100 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] space-y-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+            viewport={{ once: true, margin: '-40px' }}
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="contact-name">Your Name</Label>
@@ -807,7 +1415,7 @@ const Landing = () => {
               {sendingContact ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {sendingContact ? 'Sending Message...' : 'Send Message'}
             </Button>
-          </form>
+          </motion.form>
         </div>
       </section>
 
@@ -815,7 +1423,14 @@ const Landing = () => {
       {/* CTA Section */}
       <section className="py-24 md:py-32">
         <div className="container px-4">
-          <div className="relative rounded-[2.5rem] overflow-hidden p-12 md:p-20 group" style={{ background: '#173C7E' }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            viewport={{ once: true, margin: '-40px' }}
+            className="relative rounded-[2.5rem] overflow-hidden p-12 md:p-20 group" 
+            style={{ background: '#173C7E' }}
+          >
             {/* Subtle orange glow */}
             <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 rounded-full blur-[120px] group-hover:scale-125 transition-transform duration-700" style={{ background: 'rgba(244,122,30,0.15)' }} />
             <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-72 h-72 rounded-full blur-[100px]" style={{ background: 'rgba(244,122,30,0.08)' }} />
@@ -840,7 +1455,7 @@ const Landing = () => {
                 </Link>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 

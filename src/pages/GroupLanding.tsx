@@ -266,19 +266,13 @@ const GroupLanding = () => {
             </div>
             
             <div className="space-y-4">
-              {projects.map((proj, index) => {
-                const isFeatured = index === 0;
-                return (
-                  <ProjectCard
-                    key={proj.id}
-                    project={{
-                      ...proj,
-                      landing_page_order: isFeatured ? 1 : 0,
-                    }}
-                    to={`/discovery/projects/${proj.id}`}
-                  />
-                );
-              })}
+              {projects.map((proj) => (
+                <ProjectCard
+                  key={proj.id}
+                  project={proj}
+                  to={`/discovery/projects/${proj.id}`}
+                />
+              ))}
               {projects.length === 0 && (
                 <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-slate-200">
                   <p className="text-sm text-slate-500 italic">No public projects listed yet.</p>

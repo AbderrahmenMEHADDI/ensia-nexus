@@ -26,10 +26,13 @@ import { useToast } from '@/hooks/use-toast';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { getAppliedCollaborations, markCollaborationAsApplied } from '@/lib/cookies';
 import { ProjectCard } from '@/components/shared/ProjectCard';
+import { PublicationCard } from '@/components/shared/PublicationCard';
 
 const PublicProjects = () => {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'projects' | 'papers'>('projects');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [publications, setPublications] = useState<any[]>([]);
   const [groups, setGroups] = useState<ResearchGroup[]>([]);
   const [labs, setLabs] = useState<ResearchLab[]>([]);
   const [openCalls, setOpenCalls] = useState<CollaborationCall[]>([]);
@@ -51,19 +54,21 @@ const PublicProjects = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [p, g, l, calls] = await Promise.all([
+        const [p, g, l, calls, pubs] = await Promise.all([
           apiRepository.getProjects(),
           apiRepository.getGroups(),
           apiRepository.getLabs(),
           apiRepository.getOpenCollaborationCalls(500),
+          apiRepository.getPublications({ include_independent: true, limit: 1000 }),
         ]);
         setProjects(p.filter(project => project.status === 'APPROVED' && project.visibility === 'PUBLIC'));
         setGroups(g);
         setLabs(l);
         setOpenCalls(calls);
+        setPublications(pubs || []);
         setAppliedCallIds(getAppliedCollaborations());
       } catch (err) {
-        console.error('Failed to load projects', err);
+        console.error('Failed to load projects & publications', err);
       } finally {
         setLoading(false);
       }
@@ -85,14 +90,28 @@ const PublicProjects = () => {
     return Array.from(areas).sort();
   }, [projects]);
 
-  const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         p.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFocusArea = selectedFocusArea === 'all' || 
-      (p.focus_areas && p.focus_areas.split(',').map(a => a.trim()).includes(selectedFocusArea));
-    const matchesCollab = !showCollabOnly || p.accepting_collaborators;
-    return matchesSearch && matchesFocusArea && matchesCollab;
-  });
+  const filteredProjects = useMemo(() => {
+    return projects.filter(p => {
+      const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFocusArea = selectedFocusArea === 'all' || 
+        (p.focus_areas && p.focus_areas.split(',').map(a => a.trim()).includes(selectedFocusArea));
+      const matchesCollab = !showCollabOnly || p.accepting_collaborators;
+      return matchesSearch && matchesFocusArea && matchesCollab;
+    });
+  }, [projects, searchQuery, selectedFocusArea, showCollabOnly]);
+
+  const filteredPublications = useMemo(() => {
+    return publications.filter(pub => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery ||
+        pub.title?.toLowerCase().includes(q) ||
+        pub.abstract?.toLowerCase().includes(q) ||
+        pub.venue?.toLowerCase().includes(q) ||
+        pub.journal?.toLowerCase().includes(q);
+      return matchesSearch;
+    });
+  }, [publications, searchQuery]);
 
   return (
     <PublicLayout>
@@ -103,17 +122,47 @@ const PublicProjects = () => {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
             <div>
               <h1 className="text-2xl md:text-3xl font-display font-bold" style={{ color: '#173C7E' }}>
-                Projects Hub
+                Projects & Research Hub
               </h1>
               <div className="w-10 h-1 rounded-full mt-2 mb-1" style={{ background: '#F47A1E' }} />
               <p className="text-sm" style={{ color: '#64748B' }}>
-                Explore {projects.length} research projects across ENSIA.
+                {activeTab === 'projects'
+                  ? `Explore ${projects.length} research projects by AISI research team.`
+                  : `Explore ${publications.length} research papers and publications by AISI research team.`}
               </p>
             </div>
             <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#64748B' }}>
-              <FolderOpen className="h-4 w-4" />
-              {filteredProjects.length} results
+              {activeTab === 'projects' ? <FolderOpen className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+              {activeTab === 'projects' ? `${filteredProjects.length} results` : `${filteredPublications.length} results`}
             </div>
+          </div>
+
+          {/* Tab Switcher: Projects (Default) vs Papers */}
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs",
+                activeTab === 'projects'
+                  ? "bg-[#173C7E] text-white shadow-xs"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <FolderOpen className="h-4 w-4" />
+              Projects ({projects.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('papers')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs",
+                activeTab === 'papers'
+                  ? "bg-[#173C7E] text-white shadow-xs"
+                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              )}
+            >
+              <FileText className="h-4 w-4" />
+              Papers ({publications.length})
+            </button>
           </div>
 
           {/* Search + Filters row */}
@@ -122,44 +171,47 @@ const PublicProjects = () => {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: '#94A3B8' }} />
               <Input
-                placeholder="Search by title, topic, or tech..."
+                placeholder={activeTab === 'projects' ? "Search by title, topic, or tech..." : "Search papers by title, abstract, or venue..."}
                 className="pl-10 h-10 rounded-lg border-slate-200 text-sm focus-visible:ring-1 focus-visible:ring-[#173C7E]/30"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
 
-            {/* Filter selects */}
-            <select
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none max-w-xs"
-              value={selectedFocusArea}
-              onChange={(e) => setSelectedFocusArea(e.target.value)}
-            >
-              <option value="all">All Focus Areas</option>
-              {allFocusAreas.map(area => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
+            {/* Filter selects (Projects Tab only) */}
+            {activeTab === 'projects' && (
+              <>
+                <select
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm bg-white cursor-pointer focus:ring-1 focus:ring-[#173C7E]/30 outline-none max-w-xs"
+                  value={selectedFocusArea}
+                  onChange={(e) => setSelectedFocusArea(e.target.value)}
+                >
+                  <option value="all">All Focus Areas</option>
+                  {allFocusAreas.map(area => (
+                    <option key={area} value={area}>{area}</option>
+                  ))}
+                </select>
 
-            {/* Collab toggle */}
-            <button
-              className={cn(
-                "h-10 px-4 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shrink-0",
-                showCollabOnly
-                  ? "text-white border-transparent"
-                  : "border-slate-200 text-[#475569] hover:border-[#173C7E]/30"
-              )}
-              style={showCollabOnly ? { background: '#173C7E' } : {}}
-              onClick={() => setShowCollabOnly(!showCollabOnly)}
-            >
-              <span className={cn("h-2 w-2 rounded-full", showCollabOnly ? "bg-emerald-400" : "bg-slate-300")} />
-              Open for Collaboration
-            </button>
+                <button
+                  className={cn(
+                    "h-10 px-4 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 shrink-0",
+                    showCollabOnly
+                      ? "text-white border-transparent"
+                      : "border-slate-200 text-[#475569] hover:border-[#173C7E]/30"
+                  )}
+                  style={showCollabOnly ? { background: '#173C7E' } : {}}
+                  onClick={() => setShowCollabOnly(!showCollabOnly)}
+                >
+                  <span className={cn("h-2 w-2 rounded-full", showCollabOnly ? "bg-emerald-400" : "bg-slate-300")} />
+                  Open for Collaboration
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Projects Grid ── */}
+      {/* ── Grid Content ── */}
       <div className="flex-1">
         <div className="container px-4 py-8">
           {loading ? (
@@ -177,46 +229,72 @@ const PublicProjects = () => {
                 </div>
               ))}
             </div>
-          ) : filteredProjects.length === 0 ? (
-            <div className="py-24 text-center">
-              <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(23,60,126,0.06)' }}>
-                <Search className="h-7 w-7" style={{ color: '#94A3B8' }} />
+          ) : activeTab === 'projects' ? (
+            filteredProjects.length === 0 ? (
+              <div className="py-24 text-center">
+                <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(23,60,126,0.06)' }}>
+                  <Search className="h-7 w-7" style={{ color: '#94A3B8' }} />
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>No matching projects</h3>
+                <p className="text-sm mb-4" style={{ color: '#64748B' }}>Try adjusting your filters or search terms.</p>
+                <button
+                  className="text-sm font-semibold"
+                  style={{ color: '#F47A1E' }}
+                  onClick={() => { setSearchQuery(''); setSelectedFocusArea('all'); setShowCollabOnly(false); }}
+                >
+                  Clear all filters
+                </button>
               </div>
-              <h3 className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>No matching projects</h3>
-              <p className="text-sm mb-4" style={{ color: '#64748B' }}>Try adjusting your filters or search terms.</p>
-              <button
-                className="text-sm font-semibold"
-                style={{ color: '#F47A1E' }}
-                onClick={() => { setSearchQuery(''); setSelectedFocusArea('all'); setShowCollabOnly(false); }}
-              >
-                Clear all filters
-              </button>
-            </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {filteredProjects.map((project) => {
+                  const assocCall = openCalls.find(c => c.project_id === project.id);
+                  const callId = assocCall ? assocCall.id : null;
+                  const applied = callId ? appliedCallIds.includes(callId) : false;
+                  return (
+                    <ProjectCard
+                      key={project.id}
+                      project={{
+                        ...project,
+                        group: groups.find(g => g.id === project.group_id)
+                      }}
+                      to={`/discovery/projects/${project.id}`}
+                      callId={callId}
+                      applied={applied}
+                      showFeaturedAccent={false}
+                      onApply={(cId) => {
+                        setApplyCallId(cId);
+                        setApplyDialogOpen(true);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {filteredProjects.map((project, i) => {
-                const assocCall = openCalls.find(c => c.project_id === project.id);
-                const callId = assocCall ? assocCall.id : null;
-                const applied = callId ? appliedCallIds.includes(callId) : false;
-                return (
-                  <ProjectCard
-                    key={project.id}
-                    project={{
-                      ...project,
-                      group: groups.find(g => g.id === project.group_id)
-                    }}
-                    to={`/discovery/projects/${project.id}`}
-                    callId={callId}
-                    applied={applied}
-                    showFeaturedAccent={false}
-                    onApply={(cId) => {
-                      setApplyCallId(cId);
-                      setApplyDialogOpen(true);
-                    }}
-                  />
-                );
-              })}
-            </div>
+            /* activeTab === 'papers' */
+            filteredPublications.length === 0 ? (
+              <div className="py-24 text-center">
+                <div className="h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{ background: 'rgba(23,60,126,0.06)' }}>
+                  <FileText className="h-7 w-7" style={{ color: '#94A3B8' }} />
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: '#0F172A' }}>No matching research papers</h3>
+                <p className="text-sm mb-4" style={{ color: '#64748B' }}>Try adjusting your search terms.</p>
+                <button
+                  className="text-sm font-semibold"
+                  style={{ color: '#F47A1E' }}
+                  onClick={() => setSearchQuery('')}
+                >
+                  Clear search
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {filteredPublications.map((pub) => (
+                  <PublicationCard key={pub.id} publication={pub} />
+                ))}
+              </div>
+            )
           )}
         </div>
       </div>

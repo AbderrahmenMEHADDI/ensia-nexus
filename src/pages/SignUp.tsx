@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useRef, useState } from 'react';
-import { GoogleLogin } from '@react-oauth/google';
-import { GOOGLE_CLIENT_ID } from '@/lib/googleAuth';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,12 +23,11 @@ const signUpSchema = z.object({
 type SignUpValues = z.infer<typeof signUpSchema>;
 
 const SignUp = () => {
-  const { signInWithGoogle, signUp, isLoading } = useAuth();
+  const { signUp, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const googleLoginContainerRef = useRef<HTMLDivElement | null>(null);
 
   const {
     register,
@@ -80,60 +77,6 @@ const SignUp = () => {
     }
   };
 
-  const onGoogleSignUpSuccess = async (credentialResponse: { credential?: string }) => {
-    const idToken = credentialResponse.credential;
-    if (!idToken) {
-      toast({
-        title: 'Google sign-up failed',
-        description: 'No Google token received',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await signInWithGoogle(idToken);
-      toast({ title: 'Signed in with Google', description: 'Welcome to AISI Research Hub!' });
-      if (res.is_new) {
-        navigate('/complete-registration', { replace: true });
-      } else {
-        navigate('/projects', { replace: true });
-      }
-    } catch (err: any) {
-      toast({
-        title: 'Google sign-up failed',
-        description: err?.message || 'Unable to continue with Google',
-        variant: 'destructive',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const onGoogleSignUpError = () => {
-    toast({
-      title: 'Google sign-up failed',
-      description: 'Unable to continue with Google',
-      variant: 'destructive',
-    });
-  };
-
-  const triggerGoogleSignUp = () => {
-    const googleButton = googleLoginContainerRef.current?.querySelector('div[role="button"]') as HTMLElement | null;
-
-    if (!googleButton) {
-      toast({
-        title: 'Google sign-up unavailable',
-        description: 'Please try again in a moment.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    googleButton.click();
-  };
-
   return (
     <PublicLayout>
       <div className="flex-1 flex flex-col md:flex-row items-center justify-center p-4 py-12 bg-[#F8FAFC] gap-12 md:gap-24">
@@ -148,150 +91,98 @@ const SignUp = () => {
 
         {/* Right Side: Form */}
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-md">
-
-        <div className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100">
-          <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="fullName"
-                  placeholder="John Doe"
-                  className={`pl-10 ${errors.fullName ? 'border-destructive' : ''}`}
-                  {...register('fullName')}
-                />
+          <div className="rounded-2xl bg-white p-8 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100">
+            <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    placeholder="John Doe"
+                    className={`pl-10 ${errors.fullName ? 'border-destructive' : ''}`}
+                    {...register('fullName')}
+                  />
+                </div>
+                {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
               </div>
-              {errors.fullName && <p className="text-xs text-destructive">{errors.fullName.message}</p>}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@ensia.edu.dz"
-                  className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
-                  {...register('email')}
-                />
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@ensia.edu.dz"
+                    className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
+                    {...register('email')}
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
-                  {...register('password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className={`pl-10 pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                    {...register('password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <Select
+                  value={selectedRole}
+                  onValueChange={(v: any) => setValue('role', v, { shouldValidate: true })}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Role</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={(v: any) => setValue('role', v, { shouldValidate: true })}
-              >
-                <SelectTrigger className="w-full">
-                  <div className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4 text-muted-foreground" />
-                    <SelectValue placeholder="Select your role" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="STUDENT">Student</SelectItem>
-                  <SelectItem value="TEACHER">Professor / Researcher</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
-              style={{ background: '#F47A1E', color: '#fff' }}
-              disabled={submitting || isLoading}
-            >
-              {submitting ? (
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-              ) : null}
-              Create Account
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
-          {GOOGLE_CLIENT_ID ? (
-            <>
-              <div
-                ref={googleLoginContainerRef}
-                className="absolute pointer-events-none opacity-0 h-0 overflow-hidden"
-                aria-hidden="true"
-              >
-                <GoogleLogin
-                  onSuccess={onGoogleSignUpSuccess}
-                  onError={onGoogleSignUpError}
-                  useOneTap={false}
-                />
+                  <SelectTrigger className="w-full">
+                    <div className="flex items-center gap-2">
+                      <UserCircle className="h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Select your role" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="STUDENT">Student</SelectItem>
+                    <SelectItem value="TEACHER">Professor / Researcher</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.role && <p className="text-xs text-destructive">{errors.role.message}</p>}
               </div>
 
               <Button
-                variant="outline"
-                className="w-full h-11"
-                onClick={triggerGoogleSignUp}
+                type="submit"
+                className="w-full h-11 mt-2 rounded-lg font-semibold transition-all hover:brightness-110"
+                style={{ background: '#F47A1E', color: '#fff' }}
                 disabled={submitting || isLoading}
-                type="button"
               >
-                Google
+                {submitting ? (
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                ) : null}
+                Create Account
               </Button>
-            </>
-          ) : (
-            <Button
-              variant="outline"
-              className="w-full h-11"
-              onClick={() => {
-                toast({
-                  title: 'Google client ID missing',
-                  description: 'Set VITE_GOOGLE_CLIENT_ID before using Google sign-up.',
-                  variant: 'destructive',
-                });
-              }}
-              disabled={submitting || isLoading}
-              type="button"
-            >
-              Google
-            </Button>
-          )}
+            </form>
 
-          <p className="text-sm text-center mt-6" style={{ color: '#64748B' }}>
-            Already have an account?{' '}
-            <a href="/signin" style={{ color: '#F47A1E' }} className="font-semibold hover:underline">Sign in</a>
-          </p>
-        </div>
-      </motion.div>
+            <p className="text-sm text-center mt-6" style={{ color: '#64748B' }}>
+              Already have an account?{' '}
+              <a href="/signin" style={{ color: '#F47A1E' }} className="font-semibold hover:underline">Sign in</a>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </PublicLayout>
   );

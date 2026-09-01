@@ -77,6 +77,8 @@ export interface Teacher {
   google_scholar?: string;
   linkedin?: string;
   created_at: string;
+  full_name?: string;
+  user?: any;
 }
 
 export interface ResearchLab {
@@ -364,6 +366,7 @@ export interface ProjectPreview {
   created_at?: string;
   is_active?: boolean;
   focus_areas?: string;
+  landing_page_order?: number;
 }
 
 export interface TeamSummary {
@@ -414,12 +417,15 @@ export interface PublicationPreview {
   abstract?: string;
   publication_date?: string;
   venue?: string;
+  journal?: string;
   doi?: string;
   paper_url?: string;
   citation_count: number;
   author_count: number;
+  authors?: any[];
   project?: ProjectPreview;
   created_at?: string;
+  landing_page_order?: number;
 }
 
 export interface LandingPageResponse {

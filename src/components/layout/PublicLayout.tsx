@@ -87,18 +87,18 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
     <div className="min-h-screen flex flex-col bg-background selection:bg-primary/20 overflow-x-hidden w-full">
       {/* ── Slim Top Utility Bar ── */}
       <div className="w-full" style={{ background: '#0E1B2E' }}>
-        <div className="container flex items-center justify-between px-4 sm:px-6 h-8 text-[11px] tracking-wide" style={{ color: 'rgba(255,255,255,0.45)' }}>
-          <div className="flex items-center gap-3">
-            <span className="cursor-pointer hover:text-white/70 transition-colors">EN</span>
-            <span>|</span>
-            <span className="cursor-pointer hover:text-white/70 transition-colors">FR</span>
-            <span>|</span>
-            <span className="cursor-pointer hover:text-white/70 transition-colors">AR</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-3">
-            <a href="https://ensia.edu.dz" className="hover:text-white/70 transition-colors">ENSIA Website</a>
-            <span style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.15)', display: 'inline-block' }} />
-            <Link to="/signin" className="hover:text-white/70 transition-colors">Sign in</Link>
+        <div className="container flex items-center justify-end px-4 sm:px-6 h-8 text-[11px] tracking-wide">
+          <div className="flex items-center gap-4">
+            <a href="https://ensia.edu.dz" target="_blank" rel="noopener noreferrer" className="text-white/75 hover:text-white transition-colors duration-200">
+              ENSIA Website
+            </a>
+            <span style={{ width: 1, height: 12, background: 'rgba(255,255,255,0.25)', display: 'inline-block' }} />
+            <Link 
+              to="/signin" 
+              className="px-2.5 py-0.5 text-white font-medium hover:bg-white/15 rounded transition-colors duration-200"
+            >
+              Sign in
+            </Link>
           </div>
         </div>
       </div>
@@ -246,26 +246,23 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 </div>
                 <span className="font-display font-bold text-white text-lg">AISI</span>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                The official research management and collaboration platform of the École Nationale Supérieure d'Intelligence Artificielle.
-              </p>
             </div>
             <FooterCol title="Platform" links={[
               { label: 'Home', href: '/' },
               { label: 'Project Board', href: '/discovery/projects' },
-              { label: 'Publications', href: '/publications' },
+              { label: 'Research & Publications', href: '/#activities' },
+              { label: 'Research Opportunities', href: '/#opportunities' },
             ]} />
-            <FooterCol title="Resources" links={[
-              { label: 'Documentation', href: '#' },
-              { label: 'API Reference', href: '#' },
-              { label: 'Research Guidelines', href: '#' },
-              { label: 'Terms of Service', href: '#' },
+            <FooterCol title="Quick Links" links={[
+              { label: 'Team Objectives', href: '/#objectives' },
+              { label: 'Meet the Team', href: '/#team' },
+              { label: 'Contact Us', href: '/#contact' },
+              { label: 'Sign In', href: '/signin' },
+              { label: 'Join Hub', href: '/signup' },
             ]} />
             <FooterCol title="Connect" links={[
-              { label: 'Lab Support', href: '#' },
-              { label: 'Institutional Contact', href: '#' },
-              { label: 'ENSIA Website', href: 'https://ensia.edu.dz' },
-              { label: 'Feedback Hub', href: '#' },
+              { label: 'ENSIA Website', href: 'https://ensia.edu.dz', isExternal: true },
+              { label: 'LinkedIn', href: 'https://www.linkedin.com/company/aisi-research-team', isExternal: true },
             ]} />
           </div>
           <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
@@ -276,6 +273,7 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:scale-105 transition-transform"
+                aria-label="LinkedIn"
                 onMouseEnter={e => {
                   const iconEl = e.currentTarget.querySelector('div');
                   if (iconEl) {
@@ -336,13 +334,45 @@ export const PublicLayout = ({ children, navLinks }: PublicLayoutProps) => {
 };
 
 /* ── Footer sub-components ── */
-const FooterCol = ({ title, links }: { title: string; links: { label: string; href: string }[] }) => (
+const FooterCol = ({ title, links }: { title: string; links: { label: string; href: string; isExternal?: boolean }[] }) => (
   <div className="space-y-6">
     <h4 className="text-sm font-bold uppercase tracking-widest text-white">{title}</h4>
     <ul className="space-y-4">
       {links.map(link => (
         <li key={link.label}>
-          <Link to={link.href} className="text-sm transition-colors" style={{ color: 'rgba(255,255,255,0.45)' }} onMouseEnter={e => (e.currentTarget.style.color = '#F47A1E')} onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}>{link.label}</Link>
+          {link.isExternal || link.href.startsWith('http') ? (
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm transition-colors inline-block"
+              style={{ color: 'rgba(255,255,255,0.45)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#F47A1E')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
+            >
+              {link.label}
+            </a>
+          ) : link.href.startsWith('/#') || link.href.startsWith('#') ? (
+            <a
+              href={link.href}
+              className="text-sm transition-colors inline-block"
+              style={{ color: 'rgba(255,255,255,0.45)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#F47A1E')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
+            >
+              {link.label}
+            </a>
+          ) : (
+            <Link
+              to={link.href}
+              className="text-sm transition-colors inline-block"
+              style={{ color: 'rgba(255,255,255,0.45)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#F47A1E')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.45)')}
+            >
+              {link.label}
+            </Link>
+          )}
         </li>
       ))}
     </ul>

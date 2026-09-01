@@ -1,11 +1,15 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Calendar, FileText, Sparkles, FolderKanban } from 'lucide-react';
+import { Loader2, Calendar, FileText, Sparkles, FolderKanban, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ApplicationStatusBadge } from '@/components/Badges';
 import type { Project, ProjectApplication, ResearchGroup } from '@/types';
+import { apiRepository } from '@/repositories/apiRepository';
+import { PublicationCard } from '@/components/shared/PublicationCard';
+import { cn } from '@/lib/utils';
 
 interface StudentDiscoveryViewProps {
   publicProjects: Project[];
@@ -40,6 +44,25 @@ export const StudentDiscoveryView = ({
   handleApplyToProject,
   className = "container py-10",
 }: StudentDiscoveryViewProps) => {
+  const [activeTab, setActiveTab] = useState<'projects' | 'papers'>('projects');
+  const [publications, setPublications] = useState<any[]>([]);
+  const [loadingPubs, setLoadingPubs] = useState(false);
+
+  useEffect(() => {
+    const fetchPubs = async () => {
+      setLoadingPubs(true);
+      try {
+        const pubs = await apiRepository.getPublications({ include_independent: true, limit: 1000 });
+        setPublications(pubs || []);
+      } catch (err) {
+        console.error('Failed to load publications in StudentDiscoveryView', err);
+      } finally {
+        setLoadingPubs(false);
+      }
+    };
+    fetchPubs();
+  }, []);
+
   return (
     <div className={className}>
       <motion.div
@@ -49,29 +72,48 @@ export const StudentDiscoveryView = ({
       >
         <div className="mb-8 border-b pb-6" style={{ borderColor: '#F1F5F9' }}>
           <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#F47A1E' }}>Student Portal</span>
-          <h1 className="text-3xl md:text-4xl font-display font-extrabold mt-1" style={{ color: '#173C7E' }}>Project Hub</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-extrabold mt-1" style={{ color: '#173C7E' }}>Project & Research Hub</h1>
           <p className="text-sm text-slate-500 mt-2">
-            Explore approved public research projects and track your application progress in real-time.
+            Explore approved public research projects, scientific papers, and track your application progress in real-time.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-12 gap-8">
-          {/* Left Column: Public Projects (Available to Join) */}
+          {/* Left Column: Public Projects or Papers */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-display font-bold flex items-center gap-2" style={{ color: '#0F172A' }}>
-                <FolderKanban className="h-5 w-5" style={{ color: '#F47A1E' }} />
-                Available Projects
-              </h2>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                {publicProjects.length} Available
-              </span>
+            {/* Tab Switcher: Projects (Default) vs Papers */}
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <button
+                onClick={() => setActiveTab('projects')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
+                  activeTab === 'projects'
+                    ? "bg-[#173C7E] text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                <FolderKanban className="h-4 w-4" />
+                Available Projects ({publicProjects.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('papers')}
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer",
+                  activeTab === 'papers'
+                    ? "bg-[#173C7E] text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                )}
+              >
+                <BookOpen className="h-4 w-4" />
+                Research Papers ({publications.length})
+              </button>
             </div>
 
-            <div className="grid sm:grid-cols-1 gap-4">
-              {publicProjects.map(pubProject => {
-                const pubGroup = pubProject.group_id ? getGroupById(pubProject.group_id) : undefined;
-                const blockingApplication = getBlockingApplication(pubProject.id);
+            {activeTab === 'projects' ? (
+              <div className="grid sm:grid-cols-1 gap-4">
+                {publicProjects.map(pubProject => {
+                  const pubGroup = pubProject.group_id ? getGroupById(pubProject.group_id) : undefined;
+                  const blockingApplication = getBlockingApplication(pubProject.id);
 
                 return (
                   <div
@@ -136,7 +178,25 @@ export const StudentDiscoveryView = ({
                 </div>
               )}
             </div>
-          </div>
+          ) : (
+            <div className="grid sm:grid-cols-1 gap-4">
+              {loadingPubs ? (
+                <div className="p-8 text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-slate-400" />
+                </div>
+              ) : publications.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
+                  <BookOpen className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+                  <p className="text-sm font-medium text-slate-600">No research papers available right now</p>
+                </div>
+              ) : (
+                publications.map(pub => (
+                  <PublicationCard key={pub.id} publication={pub} />
+                ))
+              )}
+            </div>
+          )}
+        </div>
 
           {/* Right Column: My Applications & Statuses */}
           <div className="lg:col-span-5 space-y-6 lg:border-l lg:pl-8" style={{ borderColor: '#F1F5F9' }}>

@@ -107,7 +107,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         'hover:shadow-[0_12px_30px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 hover:scale-[1.015]',
         leftAccent === 'orange' && 'border-l-[5px] border-l-[#F47A1E]',
         leftAccent === 'blue' && 'border-l-[5px] border-l-[#173C7E]',
-        leftAccent === 'none' && isFeatured && showFeaturedAccent && 'border-l-[5px] border-l-[#F47A1E] bg-[#F47A1E]/10',
         to ? 'active:scale-[0.99]' : '',
         className
       )}
@@ -115,14 +114,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       {/* Top Row: status badges */}
       {!hideTags && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {isFeatured && (
-            <Badge
-              className="bg-[#F47A1E] text-white hover:bg-[#F47A1E] border-none text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5"
-            >
-              Featured
-            </Badge>
-          )}
-          
           {isActive ? (
             <Badge
               className="bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-50 text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5"
